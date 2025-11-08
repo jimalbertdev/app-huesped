@@ -19,8 +19,9 @@ class Guest {
             first_name, last_name, birth_date, sex,
             phone, email, is_responsible, registration_method,
             document_image_path, accepted_terms, accepted_terms_date,
+            signature_path, contract_path,
             ip_address, user_agent, registration_completed_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
 
         try {
             $this->db->execute($sql, [
@@ -39,6 +40,8 @@ class Guest {
                 $data['document_image_path'] ?? null,
                 $data['accepted_terms'] ?? true,
                 $data['accepted_terms'] ? date('Y-m-d H:i:s') : null,
+                $data['signature_path'] ?? null,
+                $data['contract_path'] ?? null,
                 $_SERVER['REMOTE_ADDR'] ?? null,
                 $_SERVER['HTTP_USER_AGENT'] ?? null
             ]);
@@ -79,7 +82,7 @@ class Guest {
         $allowed_fields = [
             'document_type', 'document_number', 'nationality',
             'first_name', 'last_name', 'birth_date', 'sex',
-            'phone', 'email'
+            'phone', 'email', 'signature_path', 'contract_path'
         ];
 
         foreach ($allowed_fields as $field) {

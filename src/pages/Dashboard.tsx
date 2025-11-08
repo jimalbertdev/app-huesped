@@ -24,6 +24,7 @@ import {
   MessageSquare,
   Plus,
   Minus,
+  FileText,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -48,6 +49,10 @@ const Dashboard = () => {
   const { language, setLanguage, t, getLanguageName } = useLanguage();
   const { reservationData, loading, error, guests } = useReservation();
   const { buildPathWithReservation } = useReservationParams();
+
+  // Obtener contrato del huésped responsable
+  const responsibleGuest = guests.find(g => g.is_responsible === 1 || g.is_responsible === true);
+  const contractPath = responsibleGuest?.contract_path;
 
   // Obtener datos de la reserva - Sin valores por defecto, mostrar '?' si no hay datos
   const totalGuests = reservationData?.total_guests || 0;
@@ -376,8 +381,8 @@ const Dashboard = () => {
                 
                 {/* Ver Historial de Aperturas */}
                 <Dialog open={showUnlockDialog} onOpenChange={setShowUnlockDialog}>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="w-full text-xs"
                     onClick={() => setShowUnlockDialog(true)}
                   >
@@ -392,11 +397,11 @@ const Dashboard = () => {
                     </DialogHeader>
                     <div className="space-y-2 max-h-96 overflow-y-auto">
                       {unlockHistory.map((entry, index) => (
-                        <div 
+                        <div
                           key={index}
                           className={`p-3 rounded-lg flex items-center justify-between ${
-                            entry.success 
-                              ? 'bg-success/10 border border-success/20' 
+                            entry.success
+                              ? 'bg-success/10 border border-success/20'
                               : 'bg-destructive/10 border border-destructive/20'
                           }`}
                         >
@@ -416,6 +421,24 @@ const Dashboard = () => {
                     </div>
                   </DialogContent>
                 </Dialog>
+
+                {/* Descargar Contrato */}
+                {contractPath && (
+                  <a
+                    href={`${import.meta.env.VITE_API_URL || 'http://localhost.local'}${contractPath}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                  >
+                    <Button
+                      variant="outline"
+                      className="w-full text-xs gap-2"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Descargar Contrato PDF
+                    </Button>
+                  </a>
+                )}
               </div>
             </div>
           </Card>

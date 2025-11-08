@@ -5,14 +5,23 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowRight, ArrowLeft, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useReservationParams } from "@/hooks/useReservationParams";
+import { useRegistrationFlow } from "@/hooks/useRegistrationFlow";
+import { useReservation } from "@/hooks/useReservation";
+import { guestService, preferenceService, handleApiError } from "@/services/api";
+import { toast } from "@/hooks/use-toast";
 import vacanflyLogo from "@/assets/vacanfly-logo.png";
 
 const RegisterTerms = () => {
+  const navigate = useNavigate();
   const { buildPathWithReservation } = useReservationParams();
+  const { guestData, preferenceData, signatureData, setSignatureData, clearRegistrationData, isGuestDataComplete } = useRegistrationFlow();
+  const { reservationData, refreshReservation } = useReservation();
+
   const [accepted, setAccepted] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
+  const [loading, setLoading] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasSignature, setHasSignature] = useState(false);
 
@@ -71,6 +80,126 @@ const RegisterTerms = () => {
 
   const isFormValid = accepted && hasSignature;
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validar que tengamos los datos del huésped
+    if (!isGuestDataComplete || !guestData) {
+      toast({
+        title: "Error",
+        description: "No se encontraron datos del huésped. Por favor, completa el registro nuevamente.",
+        variant: "destructive",
+      });
+      navigate(buildPathWithReservation("/register"));
+      return;
+    }
+
+    // Validar que tengamos reservation_id
+    if (!reservationData?.id) {
+      toast({
+        title: "Error",
+        description: "No se encontró información de la reserva.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isFormValid) {
+      toast({
+        title: "Campos requeridos",
+        description: "Debes aceptar los términos y firmar para continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // 1. CAPTURAR FIRMA DEL CANVAS COMO BLOB
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        toast({
+          title: "Error",
+          description: "No se pudo capturar la firma.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Convertir canvas a blob
+      const signatureBlob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('No se pudo generar la imagen de la firma'));
+          }
+        }, 'image/png');
+      });
+
+      // 2. CREAR FORMDATA CON TODOS LOS DATOS
+      const formData = new FormData();
+      formData.append('reservation_id', String(reservationData.id));
+      formData.append('document_type', guestData.document_type);
+      formData.append('document_number', guestData.document_number);
+      formData.append('nationality', guestData.nationality);
+      formData.append('first_name', guestData.first_name);
+      formData.append('last_name', guestData.last_name);
+      formData.append('birth_date', guestData.birth_date);
+      formData.append('sex', guestData.sex);
+      formData.append('is_responsible', guestData.is_responsible ? '1' : '0');
+      formData.append('registration_method', guestData.registration_method);
+      formData.append('accepted_terms', '1');
+
+      // Campos opcionales
+      if (guestData.phone) formData.append('phone', guestData.phone);
+      if (guestData.email) formData.append('email', guestData.email);
+      if (guestData.document_image_path) formData.append('document_image_path', guestData.document_image_path);
+
+      // Agregar firma como archivo
+      formData.append('signature', signatureBlob, `signature_${guestData.document_number}.png`);
+
+      // 3. GUARDAR HUÉSPED EN DB CON FIRMA
+      const guestResponse = await guestService.createWithSignature(formData);
+
+      const createdGuest = guestResponse.data.data;
+
+      // 4. SI ES RESPONSABLE, GUARDAR PREFERENCIAS
+      if (guestData.is_responsible && preferenceData) {
+        await preferenceService.save({
+          reservation_id: reservationData.id,
+          ...preferenceData,
+        });
+      }
+
+      // 5. ACTUALIZAR DATOS DE LA RESERVA
+      await refreshReservation();
+
+      // 6. LIMPIAR CONTEXTO TEMPORAL
+      clearRegistrationData();
+
+      toast({
+        title: "¡Registro completado!",
+        description: "Tu información ha sido guardada correctamente.",
+        variant: "success",
+      });
+
+      // 7. REDIRIGIR A CONFIRMACIÓN
+      navigate(buildPathWithReservation("/register/confirmation"));
+    } catch (error: any) {
+      const errorMessage = handleApiError(error);
+      toast({
+        title: "Error al completar registro",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-hero">
       {/* Header con progreso */}
@@ -111,7 +240,7 @@ const RegisterTerms = () => {
           </div>
 
           <Card className="p-6 md:p-8 shadow-elegant">
-            <div className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Contrato scrollable */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Términos y Condiciones</h3>
@@ -226,19 +355,17 @@ const RegisterTerms = () => {
                     Atrás
                   </Button>
                 </Link>
-                <Link to={buildPathWithReservation("/register/confirmation")} className="flex-1">
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="w-full gap-2 bg-gradient-primary hover:opacity-90"
-                    disabled={!isFormValid}
-                  >
-                    ✓ Completar Registro
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="flex-1 gap-2 bg-gradient-primary hover:opacity-90"
+                  disabled={!isFormValid || loading}
+                >
+                  {loading ? "Guardando..." : "✓ Completar Registro"}
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
               </div>
-            </div>
+            </form>
           </Card>
         </div>
       </main>

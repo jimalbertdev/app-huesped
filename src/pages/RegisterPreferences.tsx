@@ -6,19 +6,52 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, ArrowLeft, Plus, Minus } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useReservationParams } from "@/hooks/useReservationParams";
+import { useRegistrationFlow } from "@/hooks/useRegistrationFlow";
 import vacanflyLogo from "@/assets/vacanfly-logo.png";
 
 const RegisterPreferences = () => {
+  const navigate = useNavigate();
   const { buildPathWithReservation } = useReservationParams();
+  const { setPreferenceData, isGuestDataComplete } = useRegistrationFlow();
+
   const [needsCrib, setNeedsCrib] = useState(false);
   const [doubleBeds, setDoubleBeds] = useState(0);
   const [singleBeds, setSingleBeds] = useState(0);
   const [sofaBeds, setSofaBeds] = useState(0);
+  const [estimatedArrivalTime, setEstimatedArrivalTime] = useState("");
+  const [additionalInfo, setAdditionalInfo] = useState("");
+  const [allergies, setAllergies] = useState("");
+  const [specialRequests, setSpecialRequests] = useState("");
 
   // Esta página solo debe mostrarse al responsable de la reserva
   // En producción, verificar si el usuario actual es el responsable
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Verificar que los datos del huésped estén completos
+    if (!isGuestDataComplete) {
+      navigate(buildPathWithReservation("/register"));
+      return;
+    }
+
+    // GUARDAR TEMPORALMENTE EN CONTEXTO (NO en DB todavía)
+    setPreferenceData({
+      needs_crib: needsCrib,
+      double_beds: doubleBeds,
+      single_beds: singleBeds,
+      sofa_beds: sofaBeds,
+      estimated_arrival_time: estimatedArrivalTime || undefined,
+      additional_info: additionalInfo || undefined,
+      allergies: allergies || undefined,
+      special_requests: specialRequests || undefined,
+    });
+
+    // Continuar a términos y condiciones
+    navigate(buildPathWithReservation("/register/terms"));
+  };
 
   const Counter = ({ 
     label, 
@@ -104,13 +137,13 @@ const RegisterPreferences = () => {
           </div>
 
           <Card className="p-6 md:p-8 shadow-elegant">
-            <form className="space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-8">
               {/* Hora de llegada */}
               <div className="space-y-2">
                 <Label htmlFor="arrivalTime">
                   Hora de Llegada Estimada
                 </Label>
-                <Select defaultValue="15:00">
+                <Select value={estimatedArrivalTime} onValueChange={setEstimatedArrivalTime}>
                   <SelectTrigger id="arrivalTime" className="h-12">
                     <SelectValue placeholder="Seleccionar hora" />
                   </SelectTrigger>
@@ -177,9 +210,11 @@ const RegisterPreferences = () => {
                   placeholder="Alergias, peticiones especiales, comentarios..."
                   className="min-h-[120px] resize-none"
                   maxLength={500}
+                  value={additionalInfo}
+                  onChange={(e) => setAdditionalInfo(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground text-right">
-                  Máximo 500 caracteres
+                  {additionalInfo.length}/500 caracteres
                 </p>
               </div>
 
@@ -196,16 +231,14 @@ const RegisterPreferences = () => {
                     Atrás
                   </Button>
                 </Link>
-                <Link to={buildPathWithReservation("/register/terms")} className="flex-1">
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="w-full gap-2 bg-gradient-primary hover:opacity-90"
-                  >
-                    Continuar
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="flex-1 gap-2 bg-gradient-primary hover:opacity-90"
+                >
+                  Continuar
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
               </div>
             </form>
           </Card>

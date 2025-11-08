@@ -74,6 +74,16 @@ export const guestService = {
   }) => api.post('/guests', data),
 
   /**
+   * Crear huésped con firma (FormData)
+   */
+  createWithSignature: (formData: FormData) =>
+    api.post('/guests', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }),
+
+  /**
    * Obtener huésped por ID
    */
   getById: (id: number) =>

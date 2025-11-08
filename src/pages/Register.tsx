@@ -9,14 +9,15 @@ import { Camera, Edit3, ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react
 import { Link, useNavigate } from "react-router-dom";
 import { useReservation } from "@/hooks/useReservation";
 import { useReservationParams } from "@/hooks/useReservationParams";
-import { guestService, handleApiError } from "@/services/api";
+import { useRegistrationFlow } from "@/hooks/useRegistrationFlow";
 import { toast } from "@/hooks/use-toast";
 import vacanflyLogo from "@/assets/vacanfly-logo.png";
 
 const Register = () => {
   const navigate = useNavigate();
-  const { reservationData, refreshReservation, guests } = useReservation();
+  const { reservationData, guests } = useReservation();
   const { buildPathWithReservation } = useReservationParams();
+  const { setGuestData } = useRegistrationFlow();
 
   // Verificar si ya hay un huésped responsable
   const hasResponsible = guests.some(guest => guest.is_responsible);
@@ -24,7 +25,6 @@ const Register = () => {
   const [step, setStep] = useState<"method" | "upload" | "form">("method");
   const [captureMethod, setCaptureMethod] = useState<"scan" | "manual" | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   // Form state
   const [documentType, setDocumentType] = useState<string>("");
@@ -59,7 +59,7 @@ const Register = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validar que tengamos reservation_id
@@ -82,52 +82,30 @@ const Register = () => {
       return;
     }
 
-    setLoading(true);
+    // Si ya hay responsable, forzar is_responsible a false
+    const isResponsibleValue = hasResponsible ? false : isResponsible;
 
-    try {
-      // Si ya hay responsable, forzar is_responsible a false
-      const isResponsibleValue = hasResponsible ? false : isResponsible;
+    // GUARDAR TEMPORALMENTE EN CONTEXTO (NO en DB todavía)
+    setGuestData({
+      document_type: documentType as 'dni' | 'nie' | 'passport' | 'other',
+      document_number: documentNumber,
+      nationality: nationality,
+      first_name: firstName,
+      last_name: lastName,
+      birth_date: birthDate,
+      sex: sex as 'm' | 'f' | 'other' | 'prefer-not',
+      phone: phone || undefined,
+      email: email || undefined,
+      is_responsible: isResponsibleValue,
+      registration_method: captureMethod || 'manual',
+      document_image_path: uploadedImage || undefined,
+    });
 
-      await guestService.create({
-        reservation_id: reservationData.id,
-        document_type: documentType as 'dni' | 'nie' | 'passport' | 'other',
-        document_number: documentNumber,
-        nationality: nationality,
-        first_name: firstName,
-        last_name: lastName,
-        birth_date: birthDate,
-        sex: sex as 'm' | 'f' | 'other' | 'prefer-not',
-        phone: phone || undefined,
-        email: email || undefined,
-        is_responsible: isResponsibleValue,
-        registration_method: captureMethod || 'manual',
-        document_image_path: uploadedImage || undefined,
-        accepted_terms: true,
-      });
-
-      // Actualizar datos de la reserva
-      await refreshReservation();
-
-      toast({
-        title: "¡Registro exitoso!",
-        description: "Tus datos han sido guardados correctamente.",
-      });
-
-      // Redirigir según si es responsable o no
-      if (isResponsibleValue) {
-        navigate(buildPathWithReservation("/register/preferences"));
-      } else {
-        navigate(buildPathWithReservation("/register/terms"));
-      }
-    } catch (error: any) {
-      const errorMessage = handleApiError(error);
-      toast({
-        title: "Error al registrar",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    // Redirigir según si es responsable o no
+    if (isResponsibleValue) {
+      navigate(buildPathWithReservation("/register/preferences"));
+    } else {
+      navigate(buildPathWithReservation("/register/terms"));
     }
   };
 
@@ -502,9 +480,8 @@ const Register = () => {
                       type="submit"
                       size="lg"
                       className="flex-1 gap-2 bg-gradient-primary hover:opacity-90"
-                      disabled={loading}
                     >
-                      {loading ? "Guardando..." : "Continuar"}
+                      Continuar
                       <ArrowRight className="w-4 h-4" />
                     </Button>
                   </div>
