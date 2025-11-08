@@ -1,0 +1,8 @@
+{
+    "name": "vacanfly/api",
+    "description": "VACANFLY Guest API",
+    "type": "project",
+    "require": {
+        "vlucas/phpdotenv": "^5.6"
+    }
+}

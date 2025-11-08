@@ -1,0 +1,21 @@
+# VACANFLY API - Configuración de Apache
+
+# Habilitar RewriteEngine
+RewriteEngine On
+
+# CORS se maneja ahora desde api/config/cors.php
+# NO configurar headers CORS aquí para evitar duplicados
+
+# Redirigir todo a index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# Deshabilitar listado de directorios
+Options -Indexes
+
+# Proteger archivos de configuración
+<FilesMatch "\.(env|ini|log|sh)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
