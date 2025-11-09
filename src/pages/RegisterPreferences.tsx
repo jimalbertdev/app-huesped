@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, ArrowLeft, Plus, Minus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useReservationParams } from "@/hooks/useReservationParams";
@@ -143,21 +143,14 @@ const RegisterPreferences = () => {
                 <Label htmlFor="arrivalTime">
                   Hora de Llegada Estimada
                 </Label>
-                <Select value={estimatedArrivalTime} onValueChange={setEstimatedArrivalTime}>
-                  <SelectTrigger id="arrivalTime" className="h-12">
-                    <SelectValue placeholder="Seleccionar hora" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 24 }, (_, i) => {
-                      const hour = i.toString().padStart(2, '0');
-                      return (
-                        <SelectItem key={`${hour}:00`} value={`${hour}:00`}>
-                          {hour}:00
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
+                <Input
+                  id="arrivalTime"
+                  type="time"
+                  value={estimatedArrivalTime}
+                  onChange={(e) => setEstimatedArrivalTime(e.target.value)}
+                  className="h-12 text-base"
+                  placeholder="15:00"
+                />
                 <p className="text-sm text-muted-foreground">
                   Nos ayuda a preparar tu alojamiento
                 </p>

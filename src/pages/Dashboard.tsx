@@ -26,10 +26,13 @@ import {
   Minus,
   FileText,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useReservation } from "@/hooks/useReservation";
 import { useReservationParams } from "@/hooks/useReservationParams";
+import { preferenceService, handleApiError } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
 import {
   Accordion,
   AccordionContent,
@@ -49,6 +52,8 @@ const Dashboard = () => {
   const { language, setLanguage, t, getLanguageName } = useLanguage();
   const { reservationData, loading, error, guests } = useReservation();
   const { buildPathWithReservation } = useReservationParams();
+  const { toast } = useToast();
+  const [showContactDialog, setShowContactDialog] = useState(false);
 
   // Obtener contrato del huésped responsable
   const responsibleGuest = guests.find(g => g.is_responsible === 1 || g.is_responsible === true);
@@ -92,7 +97,37 @@ const Dashboard = () => {
   const [doubleBeds, setDoubleBeds] = useState(0);
   const [singleBeds, setSingleBeds] = useState(0);
   const [sofaBeds, setSofaBeds] = useState(0);
+  const [estimatedArrivalTime, setEstimatedArrivalTime] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+
+  // Cargar preferencias cuando se carga la reserva
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (!reservationData?.id || preferencesLoaded) return;
+
+      try {
+        const response = await preferenceService.get(reservationData.id);
+        const preferences = response.data.data;
+
+        if (preferences) {
+          setNeedsCrib(preferences.needs_crib || false);
+          setDoubleBeds(preferences.double_beds || 0);
+          setSingleBeds(preferences.single_beds || 0);
+          setSofaBeds(preferences.sofa_beds || 0);
+          setEstimatedArrivalTime(preferences.estimated_arrival_time || "");
+          setAdditionalInfo(preferences.additional_info || "");
+        }
+        setPreferencesLoaded(true);
+      } catch (error) {
+        console.error("Error al cargar preferencias:", error);
+        // No mostrar error al usuario, simplemente dejar valores por defecto
+        setPreferencesLoaded(true);
+      }
+    };
+
+    loadPreferences();
+  }, [reservationData?.id, preferencesLoaded]);
 
   // Contador para confirmación de apertura
   useEffect(() => {
@@ -150,9 +185,42 @@ const Dashboard = () => {
     setIncidentType("complaint");
   };
 
-  const handleUpdatePreferences = () => {
-    console.log("Preferences updated:", { needsCrib, doubleBeds, singleBeds, sofaBeds, additionalInfo });
-    setShowPreferencesDialog(false);
+  const handleUpdatePreferences = async () => {
+    if (!reservationData?.id) {
+      toast({
+        title: "Error",
+        description: "No se encontró información de la reserva",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await preferenceService.save({
+        reservation_id: reservationData.id,
+        needs_crib: needsCrib,
+        double_beds: doubleBeds,
+        single_beds: singleBeds,
+        sofa_beds: sofaBeds,
+        estimated_arrival_time: estimatedArrivalTime || undefined,
+        additional_info: additionalInfo || undefined,
+      });
+
+      toast({
+        title: "¡Preferencias actualizadas!",
+        description: "Tus preferencias han sido guardadas correctamente.",
+        variant: "success",
+      });
+
+      setShowPreferencesDialog(false);
+    } catch (error) {
+      const errorMessage = handleApiError(error);
+      toast({
+        title: "Error al actualizar preferencias",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
   };
 
   const Counter = ({ 
@@ -271,7 +339,7 @@ const Dashboard = () => {
 
           </div>
           <div className="flex items-center gap-2">
-          <Globe className="w-5 h-5 text-muted-foreground" />
+            <Globe className="w-5 h-5 text-muted-foreground" />
             <Select value={language} onValueChange={(value) => setLanguage(value as any)}>
               <SelectTrigger className="w-[140px] border-none bg-transparent">
                 <SelectValue />
@@ -285,8 +353,14 @@ const Dashboard = () => {
                 <SelectItem value="nl">{getLanguageName('nl')}</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="ghost" size="icon">
-              <User className="w-5 h-5" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+              onClick={() => setShowContactDialog(true)}
+            >
+              <Phone className="w-4 h-4" />
+              {t('welcome.contact')}
             </Button>
           </div>
         </div>
@@ -465,14 +539,35 @@ const Dashboard = () => {
                 <h2 className="text-xl font-bold">{t('dashboard.preferences')}</h2>
               </div>
               <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span>Llegada: 15:00</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Bed className="w-4 h-4 text-muted-foreground" />
-                  <span>2 camas dobles, 1 individual</span>
-                </div>
+                {estimatedArrivalTime && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="w-4 h-4 text-muted-foreground" />
+                    <span>Llegada: {estimatedArrivalTime}</span>
+                  </div>
+                )}
+                {(doubleBeds > 0 || singleBeds > 0 || sofaBeds > 0) && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Bed className="w-4 h-4 text-muted-foreground" />
+                    <span>
+                      {doubleBeds > 0 && `${doubleBeds} ${doubleBeds === 1 ? 'cama doble' : 'camas dobles'}`}
+                      {doubleBeds > 0 && (singleBeds > 0 || sofaBeds > 0) && ', '}
+                      {singleBeds > 0 && `${singleBeds} ${singleBeds === 1 ? 'cama individual' : 'camas individuales'}`}
+                      {singleBeds > 0 && sofaBeds > 0 && ', '}
+                      {sofaBeds > 0 && `${sofaBeds} sofá${sofaBeds === 1 ? '' : 's'} cama`}
+                    </span>
+                  </div>
+                )}
+                {needsCrib && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span>🛏️</span>
+                    <span>Cuna solicitada</span>
+                  </div>
+                )}
+                {!estimatedArrivalTime && !doubleBeds && !singleBeds && !sofaBeds && !needsCrib && (
+                  <p className="text-sm text-muted-foreground italic">
+                    No hay preferencias configuradas
+                  </p>
+                )}
               </div>
               <Dialog open={showPreferencesDialog} onOpenChange={setShowPreferencesDialog}>
                 <Button 
@@ -494,21 +589,16 @@ const Dashboard = () => {
                     {/* Hora de llegada */}
                     <div className="space-y-2">
                       <Label htmlFor="arrivalTime">Hora de Llegada Estimada</Label>
-                      <Select defaultValue="15:00">
-                        <SelectTrigger id="arrivalTime">
-                          <SelectValue placeholder="Seleccionar hora" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: 24 }, (_, i) => {
-                            const hour = i.toString().padStart(2, '0');
-                            return (
-                              <SelectItem key={`${hour}:00`} value={`${hour}:00`}>
-                                {hour}:00
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
+                      <Input
+                        id="arrivalTime"
+                        type="time"
+                        value={estimatedArrivalTime}
+                        onChange={(e) => setEstimatedArrivalTime(e.target.value)}
+                        className="h-12 text-base"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Nos ayuda a preparar tu alojamiento
+                      </p>
                     </div>
 
                     {/* Necesita cuna */}
@@ -879,14 +969,14 @@ const Dashboard = () => {
             <div className="w-24 h-24 rounded-full border-4 border-orange-500 flex items-center justify-center">
               <span className="text-6xl font-bold text-orange-500">?</span>
             </div>
-            
+
             {/* Mensaje */}
             <div className="text-center space-y-2">
               <p className="text-xl font-semibold text-foreground">
                 {selectedDoor === "portal" ? "🏢 ¡Perfecto! Vamos a abrir el portal" : "🏠 ¡Perfecto! Vamos a abrir el alojamiento"}
               </p>
             </div>
-            
+
             {/* Botones */}
             <div className="flex gap-3 w-full">
               <Button
@@ -902,6 +992,43 @@ const Dashboard = () => {
                 disabled={countdown > 0}
               >
                 {countdown > 0 ? `Confirmar en (${countdown})` : "Confirmar"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Contact Dialog */}
+      <Dialog open={showContactDialog} onOpenChange={setShowContactDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('contact.title')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl">
+                👤
+              </div>
+              <div>
+                <p className="font-semibold">{hostName}</p>
+                <p className="text-sm text-muted-foreground">{t('contact.available')}</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                onClick={() => window.location.href = `tel:${hostPhone}`}
+              >
+                <Phone className="w-4 h-4" />
+                {hostPhone}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                onClick={() => window.location.href = `mailto:${hostEmail}`}
+              >
+                📧 {hostEmail}
               </Button>
             </div>
           </div>

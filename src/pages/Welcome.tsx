@@ -33,6 +33,7 @@ const Welcome = () => {
   const hostPhone = reservationData?.host_phone || '?';
   const hostEmail = reservationData?.host_email || '?';
   const hasResponsibleGuest = guests.some(guest => guest.is_responsible);
+  const allGuestsRegistered = totalGuests > 0 && registeredGuests >= totalGuests;
 
   const handleCopyLink = () => {
     const basename = import.meta.env.PROD ? '/web/site' : '';
@@ -178,48 +179,82 @@ const Welcome = () => {
                 </div>
               )}
 
-              {/* Mensaje motivador */}
-              <div className="text-center p-4 bg-muted/50 rounded-xl">
-                <p className="text-sm text-muted-foreground">
-                  {t('welcome.timeEstimate')}
-                </p>
-              </div>
+              {allGuestsRegistered ? (
+                /* Todos registrados - Mostrar acceso completo */
+                <>
+                  <div className="text-center p-8 bg-yellow-50/80 dark:bg-yellow-950/30 rounded-xl border-2 border-yellow-500/50">
+                    <div className="text-5xl mb-4">🎉</div>
+                    <h3 className="text-xl font-bold mb-2 text-yellow-700 dark:text-yellow-300">
+                      {t('confirmation.allGuestsComplete')}
+                    </h3>
+                    <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                      {t('confirmation.fullAccessUnlocked')}
+                    </p>
+                  </div>
 
-              {/* CTA Principal */}
-              <Link to={buildPathWithReservation("/register")}>
-                <Button
-                  size="lg"
-                  className="w-full h-14 text-lg font-semibold bg-gradient-primary hover:opacity-90 animate-breathing gap-2"
-                >
-                  {t('welcome.completeRegistration')}
-                  <ArrowRight className="w-5 h-5" />
-                </Button>
-              </Link>
+                  <div className="pt-6">
+                    <Link to={buildPathWithReservation("/dashboard")}>
+                      <Button
+                        size="lg"
+                        className="w-full h-14 text-lg font-semibold bg-success hover:bg-success/90 text-white shadow-lg gap-2"
+                      >
+                        {t('confirmation.goToDashboard')}
+                        <ArrowRight className="w-5 h-5" />
+                      </Button>
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                /* Faltan huéspedes - Mostrar botón de registro */
+                <>
+                  {/* Mensaje motivador */}
+                  <div className="text-center p-4 bg-muted/50 rounded-xl">
+                    <p className="text-sm text-muted-foreground">
+                      {t('welcome.timeEstimate')}
+                    </p>
+                  </div>
 
-              {/* Barra de progreso */}
-              <div className="text-center">
-                <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  {t('welcome.step')}
-                </span>
-              </div>
+                  {/* CTA Principal */}
+                  <div className="pt-2">
+                    <Link to={buildPathWithReservation("/register")}>
+                      <Button
+                        size="lg"
+                        className="w-full h-14 text-lg font-semibold bg-gradient-primary hover:opacity-90 animate-breathing gap-2"
+                      >
+                        {t('welcome.completeRegistration')}
+                        <ArrowRight className="w-5 h-5" />
+                      </Button>
+                    </Link>
+                  </div>
+
+                  {/* Barra de progreso */}
+                  <div className="text-center pt-2">
+                    <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                      {t('welcome.step')}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </Card>
 
           {/* Acciones secundarias */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={() => setShowShareDialog(true)}
-            >
-              <Share2 className="w-4 h-4" />
-              {t('welcome.share')}
-            </Button>
-            {/* Solo mostrar "Ver Alojamiento" si hay un huésped responsable registrado */}
-            {hasResponsibleGuest && (
+            {!allGuestsRegistered && (
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => setShowShareDialog(true)}
+              >
+                <Share2 className="w-4 h-4" />
+                {t('welcome.share')}
+              </Button>
+            )}
+            {/* Solo mostrar "Ver Alojamiento" si hay un huésped responsable registrado pero NO todos */}
+            {hasResponsibleGuest && !allGuestsRegistered && (
               <Link to={buildPathWithReservation("/dashboard")}>
-                <Button variant="ghost" className="w-full sm:w-auto">
+                <Button variant="ghost" className="w-full sm:w-auto mt-4">
                   {t('welcome.viewAccommodation')}
                 </Button>
               </Link>

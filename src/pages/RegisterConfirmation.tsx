@@ -1,40 +1,124 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2, Share2, Copy, QrCode, Mail } from "lucide-react";
+import { CheckCircle2, Share2, Copy, QrCode, Mail, User, UserPlus, Globe, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useReservationParams } from "@/hooks/useReservationParams";
+import { useReservation } from "@/hooks/useReservation";
+import { useLanguage } from "@/hooks/useLanguage";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import vacanflyLogo from "@/assets/vacanfly-logo.png";
 
 const RegisterConfirmation = () => {
   const { toast } = useToast();
   const { buildPathWithReservation } = useReservationParams();
-  const [allGuestsRegistered] = useState(false);
-  
-  const pendingGuests = [
-    { name: "María García", status: "pending" },
-    { name: "Carlos Rodríguez", status: "pending" },
-  ];
+  const { reservationData, guests } = useReservation();
+  const { language, setLanguage, t, getLanguageName } = useLanguage();
+  const [showContactDialog, setShowContactDialog] = useState(false);
 
-  const registeredGuests = [
-    { name: "Juan Pérez", status: "completed" },
-  ];
+  // Obtener el total de huéspedes esperados
+  const totalGuests = reservationData?.total_guests || 0;
+  const registeredCount = guests.length;
+  const allGuestsRegistered = totalGuests > 0 && registeredCount >= totalGuests;
+
+  // Datos del anfitrión
+  const hostName = reservationData?.host_name || '?';
+  const hostPhone = reservationData?.host_phone || '?';
+  const hostEmail = reservationData?.host_email || '?';
+
+  // Crear lista completa de huéspedes (registrados + placeholders para los que faltan)
+  const guestSlots = [];
+
+  // Agregar huéspedes registrados
+  guests.forEach(guest => {
+    guestSlots.push({
+      type: 'registered',
+      isResponsible: guest.is_responsible === 1 || guest.is_responsible === true,
+      firstName: guest.first_name,
+      lastName: guest.last_name,
+      fullName: `${guest.first_name} ${guest.last_name}`,
+    });
+  });
+
+  // Agregar placeholders para huéspedes faltantes
+  const missingCount = totalGuests - registeredCount;
+  for (let i = 0; i < missingCount; i++) {
+    guestSlots.push({
+      type: 'pending',
+      isResponsible: false,
+      fullName: `Huésped ${i + 1}`,
+    });
+  }
+
+  // Obtener el último huésped registrado (el que acaba de completar el registro)
+  const lastRegisteredGuest = guests.length > 0 ? guests[guests.length - 1] : null;
+  const currentGuestName = lastRegisteredGuest
+    ? `${lastRegisteredGuest.first_name} ${lastRegisteredGuest.last_name}`
+    : 'Huésped';
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.origin + "/register");
+    const basename = import.meta.env.PROD ? '/web/site' : '';
+    const url = window.location.origin + basename + buildPathWithReservation("/register");
+    navigator.clipboard.writeText(url);
     toast({
-      title: "¡Enlace copiado!",
-      description: "El enlace de registro se ha copiado al portapapeles",
+      title: t('share.copied'),
+      duration: 2000,
     });
   };
 
   const handleShareWhatsApp = () => {
-    const message = encodeURIComponent("Completa tu registro para nuestra estancia: " + window.location.origin + "/register");
+    const basename = import.meta.env.PROD ? '/web/site' : '';
+    const url = window.location.origin + basename + buildPathWithReservation("/register");
+    const message = encodeURIComponent(`${t('share.message')}: ${url}`);
     window.open(`https://wa.me/?text=${message}`, '_blank');
   };
 
   return (
     <div className="min-h-screen bg-gradient-hero">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link to={buildPathWithReservation("/")}>
+              <img src={vacanflyLogo} alt="Vacanfly" className="w-20" />
+            </Link>
+          </div>
+          <div className="flex items-center gap-2">
+            <Globe className="w-5 h-5 text-muted-foreground" />
+            <Select value={language} onValueChange={(value) => setLanguage(value as any)}>
+              <SelectTrigger className="w-[140px] border-none bg-transparent">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="es">{getLanguageName('es')}</SelectItem>
+                <SelectItem value="en">{getLanguageName('en')}</SelectItem>
+                <SelectItem value="ca">{getLanguageName('ca')}</SelectItem>
+                <SelectItem value="fr">{getLanguageName('fr')}</SelectItem>
+                <SelectItem value="de">{getLanguageName('de')}</SelectItem>
+                <SelectItem value="nl">{getLanguageName('nl')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+              onClick={() => setShowContactDialog(true)}
+            >
+              <Phone className="w-4 h-4" />
+              {t('welcome.contact')}
+            </Button>
+          </div>
+        </div>
+      </header>
+
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
           {/* Icono de éxito */}
@@ -43,85 +127,135 @@ const RegisterConfirmation = () => {
               <CheckCircle2 className="w-12 h-12 text-success" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold mb-2">¡Registro Completo!</h1>
+              <h1 className="text-3xl font-bold mb-2">{t('confirmation.title')}</h1>
               <p className="text-lg text-muted-foreground">
-                Gracias, <span className="text-foreground font-semibold">Juan Pérez</span>
+                {t('confirmation.thankYou')}, <span className="text-foreground font-semibold">{currentGuestName}</span>
               </p>
               <p className="text-sm text-muted-foreground">
-                Tu información ha sido guardada correctamente
+                {t('confirmation.dataSaved')}
               </p>
             </div>
           </div>
 
           {/* Estado del grupo */}
           <Card className="p-6 shadow-elegant">
-            <h3 className="text-lg font-semibold mb-4">Estado del Grupo</h3>
-            
-            {/* Huéspedes registrados */}
+            <h3 className="text-lg font-semibold mb-4">
+              {t('confirmation.groupStatus')} ({registeredCount} {t('confirmation.of')} {totalGuests})
+            </h3>
+
+            {/* Lista de huéspedes */}
             <div className="space-y-3 mb-4">
-              {registeredGuests.map((guest, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-success/10 border border-success/20"
-                >
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
-                  <span className="text-success font-medium">{guest.name}</span>
-                  <span className="ml-auto text-xs text-success">Registrado</span>
-                </div>
-              ))}
-
-              {/* Huéspedes pendientes */}
-              {pendingGuests.map((guest, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border"
-                >
-                  <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 flex-shrink-0" />
-                  <span className="text-muted-foreground">{guest.name}</span>
-                  <span className="ml-auto text-xs text-muted-foreground">Pendiente</span>
-                </div>
-              ))}
+              {guestSlots.map((slot, index) => {
+                if (slot.type === 'registered') {
+                  // Huésped registrado
+                  if (slot.isResponsible) {
+                    // Responsable - Color azul
+                    return (
+                      <div
+                        key={`guest-${index}`}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-500/50"
+                      >
+                        <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-blue-700 dark:text-blue-300 font-semibold">
+                              {slot.fullName}
+                            </span>
+                            <span className="px-2 py-0.5 text-xs font-medium bg-blue-600 text-white rounded-full">
+                              {t('confirmation.responsible')}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-xs text-blue-600 dark:text-blue-400">{t('confirmation.registered')}</span>
+                      </div>
+                    );
+                  } else {
+                    // Huésped normal - Color verde
+                    return (
+                      <div
+                        key={`guest-${index}`}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-success/10 border border-success/20"
+                      >
+                        <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                        <span className="text-success font-medium">{slot.fullName}</span>
+                        <span className="ml-auto text-xs text-success">{t('confirmation.registered')}</span>
+                      </div>
+                    );
+                  }
+                } else {
+                  // Huésped pendiente - Color gris
+                  return (
+                    <div
+                      key={`pending-${index}`}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border"
+                    >
+                      <User className="w-5 h-5 text-muted-foreground/50 flex-shrink-0" />
+                      <span className="text-muted-foreground italic">{slot.fullName}</span>
+                      <span className="ml-auto text-xs text-muted-foreground">{t('confirmation.pending')}</span>
+                    </div>
+                  );
+                }
+              })}
             </div>
 
-            {/* Contador */}
-            <div className="text-center p-4 bg-muted/30 rounded-lg">
-              <p className="text-sm font-medium">
-                Faltan <span className="text-primary text-lg font-bold">{pendingGuests.length}</span> huéspedes por registrar
-              </p>
-            </div>
+            {/* Botón para registrar más huéspedes */}
+            {missingCount > 0 && (
+              <Link to={buildPathWithReservation("/register")}>
+                <Button
+                  size="lg"
+                  className="w-full gap-2 bg-gradient-primary hover:opacity-90 h-14"
+                >
+                  <UserPlus className="w-5 h-5" />
+                  {t('confirmation.registerNext')}
+                  <span className="ml-2 px-2 py-0.5 text-xs font-bold bg-white/20 rounded-full">
+                    {missingCount} {missingCount !== 1 ? t('confirmation.pendingPlural') : t('confirmation.pendingSingular')}
+                  </span>
+                </Button>
+              </Link>
+            )}
+
+            {missingCount === 0 && totalGuests > 0 && (
+              <div className="text-center p-4 bg-success/10 rounded-lg border border-success/20">
+                <p className="text-sm font-semibold text-success">
+                  ✓ {t('confirmation.allRegistered')}
+                </p>
+              </div>
+            )}
           </Card>
 
           {allGuestsRegistered ? (
             /* Todos registrados */
             <div className="space-y-6 animate-fade-in">
-              <div className="text-center p-6 bg-gradient-primary rounded-xl text-white">
-                <div className="text-4xl mb-2">🎉</div>
-                <h2 className="text-xl font-bold mb-2">
-                  ¡Todos los huéspedes registrados!
+              <div className="text-center p-8 bg-yellow-50/80 dark:bg-yellow-950/30 rounded-xl border-2 border-yellow-500/50">
+                <div className="text-5xl mb-4">🎉</div>
+                <h2 className="text-xl font-bold mb-2 text-yellow-700 dark:text-yellow-300">
+                  {t('confirmation.allGuestsComplete')}
                 </h2>
-                <p className="text-sm opacity-90">
-                  Acceso completo desbloqueado
+                <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                  {t('confirmation.fullAccessUnlocked')}
                 </p>
               </div>
 
-              <Link to={buildPathWithReservation("/dashboard")}>
-                <Button
-                  size="lg"
-                  className="w-full gap-2 bg-gradient-primary hover:opacity-90 text-lg h-14"
-                >
-                  Ir a Mi Estancia →
-                </Button>
-              </Link>
+              <div className="pt-4">
+                <Link to={buildPathWithReservation("/dashboard")}>
+                  <Button
+                    size="lg"
+                    className="w-full gap-2 bg-success hover:bg-success/90 text-white text-lg h-14 shadow-lg"
+                  >
+                    {t('confirmation.goToDashboard')} →
+                  </Button>
+                </Link>
+              </div>
             </div>
           ) : (
             /* Faltan huéspedes */
-            <div className="space-y-4">
+            <div className="space-y-6">
               <Card className="p-6 shadow-elegant">
-                <h3 className="text-lg font-semibold mb-4">Compartir Registro</h3>
+                <h3 className="text-lg font-semibold mb-4">{t('confirmation.shareRegistration')}</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Envía este enlace a los demás huéspedes para que completen su registro
+                  {t('confirmation.shareDescription')}
                 </p>
-                
+
                 <div className="space-y-3">
                   <Button
                     variant="outline"
@@ -129,7 +263,7 @@ const RegisterConfirmation = () => {
                     onClick={handleCopyLink}
                   >
                     <Copy className="w-5 h-5" />
-                    Copiar enlace de registro
+                    {t('confirmation.copyLink')}
                   </Button>
 
                   <Button
@@ -138,7 +272,7 @@ const RegisterConfirmation = () => {
                     onClick={handleShareWhatsApp}
                   >
                     <Share2 className="w-5 h-5" />
-                    Compartir por WhatsApp
+                    {t('confirmation.shareWhatsApp')}
                   </Button>
 
                   <Button
@@ -146,7 +280,7 @@ const RegisterConfirmation = () => {
                     className="w-full justify-start gap-3 h-12"
                   >
                     <Mail className="w-5 h-5" />
-                    Enviar por Email
+                    {t('confirmation.shareEmail')}
                   </Button>
 
                   <Button
@@ -154,33 +288,72 @@ const RegisterConfirmation = () => {
                     className="w-full justify-start gap-3 h-12"
                   >
                     <QrCode className="w-5 h-5" />
-                    Mostrar código QR
+                    {t('confirmation.showQR')}
                   </Button>
                 </div>
               </Card>
 
-              <Link to={buildPathWithReservation("/dashboard")}>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="w-full"
-                >
-                  Continuar a la app
-                </Button>
-              </Link>
+              <div className="pt-2">
+                <Link to={buildPathWithReservation("/dashboard")}>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full"
+                  >
+                    {t('confirmation.continueToApp')}
+                  </Button>
+                </Link>
+              </div>
 
               <p className="text-xs text-center text-muted-foreground">
-                Algunas funciones estarán limitadas hasta que todos los huéspedes completen su registro
+                {t('confirmation.limitedFeatures')}
               </p>
             </div>
           )}
 
           {/* Info adicional */}
           <div className="text-center text-sm text-muted-foreground">
-            💾 Tu progreso se ha guardado correctamente
+            💾 {t('confirmation.progressSaved')}
           </div>
         </div>
       </main>
+
+      {/* Contact Dialog */}
+      <Dialog open={showContactDialog} onOpenChange={setShowContactDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('contact.title')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl">
+                👤
+              </div>
+              <div>
+                <p className="font-semibold">{hostName}</p>
+                <p className="text-sm text-muted-foreground">{t('contact.available')}</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                onClick={() => window.location.href = `tel:${hostPhone}`}
+              >
+                <Phone className="w-4 h-4" />
+                {hostPhone}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                onClick={() => window.location.href = `mailto:${hostEmail}`}
+              >
+                📧 {hostEmail}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
