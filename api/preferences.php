@@ -88,10 +88,6 @@ try {
         // Leer datos del body
         $input = json_decode(file_get_contents('php://input'), true);
 
-        // DEBUG: Ver qué llega del frontend
-        error_log("DEBUG POST /api/preferences - Input recibido: " . json_encode($input));
-        error_log("DEBUG needs_crib valor: " . var_export($input['needs_crib'] ?? 'NO_EXISTE', true) . " tipo: " . gettype($input['needs_crib'] ?? null));
-
         if (!$input) {
             Response::error('Datos inválidos', 400);
         }
@@ -114,9 +110,19 @@ try {
         }
 
         // Preparar datos (con valores por defecto)
-        // Convertir boolean a int (0 o 1) para MySQL
-        // Manejar empty string, false, 0, null como 0
-        $needsCrib = (!empty($input['needs_crib']) && $input['needs_crib'] !== false && $input['needs_crib'] !== '0') ? 1 : 0;
+        // Convertir boolean a int (0 o 1) para MySQL - Manejo robusto de todos los casos
+        $needsCrib = 0;
+        if (isset($input['needs_crib'])) {
+            $value = $input['needs_crib'];
+            // Convertir a boolean y luego a int
+            if (is_bool($value)) {
+                $needsCrib = $value ? 1 : 0;
+            } else {
+                // Manejar strings: 'true', '1', 'false', '0', ''
+                $needsCrib = (filter_var($value, FILTER_VALIDATE_BOOLEAN) || $value === 1 || $value === '1') ? 1 : 0;
+            }
+        }
+
         $doubleBeds = isset($input['double_beds']) && $input['double_beds'] !== '' ? (int)$input['double_beds'] : 0;
         $singleBeds = isset($input['single_beds']) && $input['single_beds'] !== '' ? (int)$input['single_beds'] : 0;
         $sofaBeds = isset($input['sofa_beds']) && $input['sofa_beds'] !== '' ? (int)$input['sofa_beds'] : 0;
@@ -132,13 +138,6 @@ try {
 
         if ($existingPreferences) {
             // UPDATE - Actualizar preferencias existentes
-
-            // Debug logging
-            error_log("DEBUG preferences.php - Valores antes de UPDATE:");
-            error_log("needsCrib: " . var_export($needsCrib, true) . " type: " . gettype($needsCrib));
-            error_log("doubleBeds: " . var_export($doubleBeds, true) . " type: " . gettype($doubleBeds));
-            error_log("Input original: " . json_encode($input));
-
             $stmt = $db->prepare("
                 UPDATE preferences SET
                     needs_crib = ?,

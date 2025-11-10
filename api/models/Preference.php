@@ -33,9 +33,12 @@ class Preference {
             estimated_arrival_time, additional_info, allergies, special_requests
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
+        // Convertir needs_crib a int (0 o 1) de forma robusta
+        $needsCrib = $this->convertToInt($data['needs_crib'] ?? false);
+
         return $this->db->execute($sql, [
             $reservation_id,
-            $data['needs_crib'] ?? false,
+            $needsCrib,
             $data['double_beds'] ?? 0,
             $data['single_beds'] ?? 0,
             $data['sofa_beds'] ?? 0,
@@ -62,8 +65,11 @@ class Preference {
             updated_at = NOW()
             WHERE reservation_id = ?";
 
+        // Convertir needs_crib a int (0 o 1) de forma robusta
+        $needsCrib = $this->convertToInt($data['needs_crib'] ?? false);
+
         return $this->db->execute($sql, [
-            $data['needs_crib'] ?? false,
+            $needsCrib,
             $data['double_beds'] ?? 0,
             $data['single_beds'] ?? 0,
             $data['sofa_beds'] ?? 0,
@@ -81,5 +87,26 @@ class Preference {
     public function getByReservation($reservation_id) {
         $sql = "SELECT * FROM preferences WHERE reservation_id = ?";
         return $this->db->queryOne($sql, [$reservation_id]);
+    }
+
+    /**
+     * Convertir valor a int (0 o 1) de forma robusta
+     * Maneja: boolean, string ('true', 'false', '1', '0', ''), int, null
+     */
+    private function convertToInt($value) {
+        // Si ya es int, retornar 0 o 1
+        if (is_int($value)) {
+            return $value ? 1 : 0;
+        }
+
+        // Si es boolean, convertir directamente
+        if (is_bool($value)) {
+            return $value ? 1 : 0;
+        }
+
+        // Si es string o cualquier otro tipo, usar filter_var
+        // filter_var retorna true para: 'true', '1', 'on', 'yes'
+        // filter_var retorna false para: 'false', '0', 'off', 'no', ''
+        return (filter_var($value, FILTER_VALIDATE_BOOLEAN) || $value === 1 || $value === '1') ? 1 : 0;
     }
 }

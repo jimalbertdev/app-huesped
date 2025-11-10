@@ -229,7 +229,7 @@ const Dashboard = () => {
     try {
       await preferenceService.save({
         reservation_id: reservationData.id,
-        needs_crib: needsCrib,
+        needs_crib: Boolean(needsCrib),
         double_beds: doubleBeds,
         single_beds: singleBeds,
         sofa_beds: sofaBeds,
@@ -580,7 +580,7 @@ const Dashboard = () => {
                       <Checkbox
                         id="needsCrib"
                         checked={needsCrib}
-                        onCheckedChange={(checked) => setNeedsCrib(checked as boolean)}
+                        onCheckedChange={(checked) => setNeedsCrib(checked === true)}
                       />
                       <Label htmlFor="needsCrib" className="cursor-pointer">
                         Necesita Cuna
