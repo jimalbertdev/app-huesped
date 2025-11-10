@@ -68,6 +68,155 @@
 
 ---
 
+## 🗓️ Sesión #011 - [2025-11-10 04:39]
+
+### 🎯 Objetivos Iniciales
+- [x] Corregir error al desmarcar checkbox 'necesita cuna' (error 500 con valor false) - **PENDIENTE de sesión #010**
+- [x] Actualizar base de datos y compilar aplicación para despliegue
+- [x] Actualizar SESSION_LOG.md
+
+### ✅ Logros Completados
+- ✅ **Bug checkbox "necesita cuna" RESUELTO COMPLETAMENTE**
+  - **Problema identificado**: Componente Checkbox de Radix UI devuelve valores `boolean | 'indeterminate'`, y al convertir incorrectamente llegaba al backend como string vacío `''` en vez de `false`
+  - **Error MySQL**: `SQLSTATE[HY000]: General error: 1366 Incorrect integer value: '' for column 'needs_crib' at row 1`
+  - **Causa raíz descubierta**: Había DOS archivos `preferences.php`:
+    - `/api/preferences.php` (no usado, legacy)
+    - `/api/endpoints/preferences.php` (activo, ejecutado por el router)
+    - El fix inicial se aplicó al archivo incorrecto
+
+- ✅ **Fix implementado en Frontend** (`src/pages/Dashboard.tsx`)
+  - Línea 583: Mejorado handler del Checkbox para garantizar boolean puro:
+    ```typescript
+    onCheckedChange={(checked) => setNeedsCrib(checked === true)}
+    ```
+  - Línea 232: Conversión explícita a Boolean antes de enviar a API:
+    ```typescript
+    needs_crib: Boolean(needsCrib)
+    ```
+
+- ✅ **Fix implementado en Backend** (`api/models/Preference.php`)
+  - Creado método helper `convertToInt()` que maneja TODOS los casos posibles:
+    - Boolean: `true` → 1, `false` → 0
+    - String: `'true'`, `'1'` → 1, `'false'`, `'0'`, `''` → 0
+    - Integer: `1` → 1, `0` → 0
+    - Null: → 0
+  - Aplicado en métodos `create()` (línea 37) y `update()` (línea 69)
+  - Utiliza `filter_var($value, FILTER_VALIDATE_BOOLEAN)` para conversión robusta
+
+- ✅ **Testing exhaustivo realizado**
+  - Script de prueba PHP creado (`test_checkbox_fix.php`) con 10 casos de prueba
+  - Todos los casos pasaron exitosamente (boolean, string, int, null, empty string)
+  - Pruebas con curl confirmadas:
+    - `needs_crib: false` → guarda `0` ✅
+    - `needs_crib: true` → guarda `1` ✅
+  - Error 500 eliminado completamente
+
+- ✅ **Código limpio y refactorizado**
+  - Removidos todos los `error_log()` de debug
+  - Eliminado archivo de prueba temporal
+  - Código documentado con comentarios explicativos
+
+- ✅ **Aplicación compilada para producción**
+  - `npm run build` ejecutado exitosamente
+  - Bundle generado: 523.40 kB (159.91 kB gzip)
+  - CSS: 65.59 kB (11.56 kB gzip)
+  - Assets generados en `/dist/`
+  - Build time: 44.42 segundos
+
+### 🔄 Trabajo en Progreso
+- Ninguno - Todos los objetivos completados
+
+### 📁 Archivos Modificados
+- `src/pages/Dashboard.tsx` - **MODIFICADO**
+  - Línea 583: Handler del Checkbox mejorado (`checked === true`)
+  - Línea 232: Conversión explícita `Boolean(needsCrib)`
+- `api/models/Preference.php` - **MODIFICADO**
+  - Método `create()`: Agregado `convertToInt()` para `needs_crib`
+  - Método `update()`: Agregado `convertToInt()` para `needs_crib`
+  - Método `convertToInt()`: Nuevo método helper (líneas 96-111)
+- `api/preferences.php` - **MODIFICADO** (legacy, no usado pero actualizado para consistencia)
+  - Lógica de conversión mejorada (líneas 118-128)
+  - Código de debug removido
+- `test_checkbox_fix.php` - **CREADO y ELIMINADO** (temporal para testing)
+- `dist/*` - **REGENERADO** (build de producción actualizado)
+
+### 🐛 Bugs Encontrados y Resueltos
+- ✅ **Bug checkbox "necesita cuna" RESUELTO COMPLETAMENTE**
+  - Descripción: Error 500 al desmarcar checkbox y guardar
+  - Causa: Conversión incorrecta de boolean false → string vacío ''
+  - Solución: Conversión robusta en frontend y backend
+  - Estado: **RESUELTO** ✅
+  - Tiempo de resolución: ~1 hora (investigación + implementación + testing)
+
+### 💡 Aprendizajes y Decisiones
+
+**Decisión arquitectónica: Validación en múltiples capas**
+- Frontend: Garantizar tipos correctos antes de enviar
+- Backend: Validar y convertir defensivamente (nunca confiar en el frontend)
+- Patrón aplicable a otros campos similares
+
+**Descubrimiento importante: Arquitectura del API**
+- El proyecto tiene dos capas de endpoints:
+  - `/api/*.php` - Archivos legacy directos (no usados)
+  - `/api/endpoints/*.php` - Archivos actuales enrutados por `index.php`
+- **Lección**: Siempre verificar qué archivo se está ejecutando realmente
+
+**Patrón de conversión robusta:**
+```php
+private function convertToInt($value) {
+    if (is_int($value)) return $value ? 1 : 0;
+    if (is_bool($value)) return $value ? 1 : 0;
+    return (filter_var($value, FILTER_VALIDATE_BOOLEAN) || $value === 1 || $value === '1') ? 1 : 0;
+}
+```
+- Aplicable a cualquier campo boolean → tinyint(1)
+- Evita errores de tipo en MySQL
+
+**Testing metodológico:**
+- Script de prueba independiente antes de probar en frontend
+- Pruebas de API con curl para verificar comportamiento
+- Verificación de logs de Apache para confirmar ausencia de errores
+
+### 📋 Próximos Pasos
+1. Implementar panel de administración para gestionar información de alojamientos
+2. Permitir upload de videos a servidor (actualmente solo URLs externas)
+3. Agregar más campos a guía local (horarios, precios, coordenadas GPS)
+4. Implementar cache en frontend para datos de alojamiento
+5. Integrar Google Maps API para ubicaciones en guía local
+6. Integración con cerraduras inteligentes (Raixer API)
+7. Sistema de notificaciones push
+
+### ⚠️ Notas Importantes
+- **IMPORTANTE**: El proyecto tiene dos estructuras de endpoints:
+  - `/api/*.php` (legacy, no usado)
+  - `/api/endpoints/*.php` (activo, ejecutado por router en `/api/index.php`)
+  - Siempre modificar los archivos en `/api/endpoints/` y `/api/models/`
+
+- **Patrón aplicable a otros campos boolean:**
+  - El método `convertToInt()` puede reutilizarse para otros campos similares
+  - Considerar moverlo a una clase helper compartida
+
+- **Build de producción:**
+  - Comando: `npm run build`
+  - Output: `/dist/`
+  - Warning sobre chunk size (>500KB) - considerar code splitting para optimización futura
+
+- **Base de datos:**
+  - Todas las migraciones están aplicadas correctamente
+  - Tablas de accommodation funcionando correctamente
+  - Campo `needs_crib` ahora acepta correctamente 0 y 1
+
+- **Apache logs limpios:**
+  - No más errores SQLSTATE[HY000]: 1366
+  - Sistema funcionando sin errores 500
+
+- **Performance:**
+  - Build time: ~44 segundos
+  - Bundle size aceptable para MVP
+  - Considerar lazy loading para optimización futura
+
+---
+
 ## 🗓️ Sesión #010 - [2025-11-09 19:47]
 
 ### 🎯 Objetivos Iniciales
@@ -529,23 +678,30 @@
 ## 📊 ESTADÍSTICAS DEL PROYECTO
 
 ### Sesiones Totales
-**10 sesiones** de desarrollo activo
+**11 sesiones** de desarrollo activo
 
 ### Tiempo Aproximado
 - **Sesión promedio**: 1-2 horas
-- **Total estimado**: 14-20 horas
+- **Total estimado**: 15-22 horas
 
 ### Métricas de Código (Aproximadas)
 - **Archivos TypeScript/TSX**: ~15 archivos
-- **Archivos PHP**: ~12 archivos
+- **Archivos PHP**: ~13 archivos (incluyendo models)
 - **Líneas de código frontend**: ~3,500 líneas
-- **Líneas de código backend**: ~2,500 líneas
+- **Líneas de código backend**: ~2,600 líneas
 - **Archivos de spec**: 10 especificaciones técnicas
-- **Migraciones de BD**: 3 archivos (003_accommodation_info_tables.sql nuevo)
+- **Migraciones de BD**: 3 archivos aplicados correctamente
 
 ### Commits Git
-- **Total**: 2 commits iniciales
-- **Próximo commit recomendado**: Después de cada sesión significativa
+- **Total**: 4 commits
+- **Último commit**: Sesión #011 - Bug fix checkbox + compilation
+- **Próximo commit recomendado**: Después de implementar nuevas features
+
+### Build de Producción
+- **Bundle size**: 523.40 kB (159.91 kB gzip)
+- **CSS size**: 65.59 kB (11.56 kB gzip)
+- **Build time**: ~44 segundos
+- **Última compilación**: 2025-11-10 05:47
 
 ---
 
@@ -584,5 +740,5 @@
 
 ---
 
-**Última actualización:** 2025-11-09 23:47
+**Última actualización:** 2025-11-10 05:47
 **Próxima sesión:** TBD
