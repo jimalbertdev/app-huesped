@@ -88,6 +88,10 @@ try {
         // Leer datos del body
         $input = json_decode(file_get_contents('php://input'), true);
 
+        // DEBUG: Ver qué llega del frontend
+        error_log("DEBUG POST /api/preferences - Input recibido: " . json_encode($input));
+        error_log("DEBUG needs_crib valor: " . var_export($input['needs_crib'] ?? 'NO_EXISTE', true) . " tipo: " . gettype($input['needs_crib'] ?? null));
+
         if (!$input) {
             Response::error('Datos inválidos', 400);
         }
@@ -110,14 +114,16 @@ try {
         }
 
         // Preparar datos (con valores por defecto)
-        $needsCrib = isset($input['needs_crib']) ? (bool)$input['needs_crib'] : false;
-        $doubleBeds = isset($input['double_beds']) ? (int)$input['double_beds'] : 0;
-        $singleBeds = isset($input['single_beds']) ? (int)$input['single_beds'] : 0;
-        $sofaBeds = isset($input['sofa_beds']) ? (int)$input['sofa_beds'] : 0;
-        $estimatedArrivalTime = $input['estimated_arrival_time'] ?? null;
-        $additionalInfo = $input['additional_info'] ?? null;
-        $allergies = $input['allergies'] ?? null;
-        $specialRequests = $input['special_requests'] ?? null;
+        // Convertir boolean a int (0 o 1) para MySQL
+        // Manejar empty string, false, 0, null como 0
+        $needsCrib = (!empty($input['needs_crib']) && $input['needs_crib'] !== false && $input['needs_crib'] !== '0') ? 1 : 0;
+        $doubleBeds = isset($input['double_beds']) && $input['double_beds'] !== '' ? (int)$input['double_beds'] : 0;
+        $singleBeds = isset($input['single_beds']) && $input['single_beds'] !== '' ? (int)$input['single_beds'] : 0;
+        $sofaBeds = isset($input['sofa_beds']) && $input['sofa_beds'] !== '' ? (int)$input['sofa_beds'] : 0;
+        $estimatedArrivalTime = !empty($input['estimated_arrival_time']) ? $input['estimated_arrival_time'] : null;
+        $additionalInfo = !empty($input['additional_info']) ? $input['additional_info'] : null;
+        $allergies = !empty($input['allergies']) ? $input['allergies'] : null;
+        $specialRequests = !empty($input['special_requests']) ? $input['special_requests'] : null;
 
         // Verificar si ya existen preferencias para esta reserva
         $stmt = $db->prepare("SELECT id FROM preferences WHERE reservation_id = ?");
@@ -126,6 +132,13 @@ try {
 
         if ($existingPreferences) {
             // UPDATE - Actualizar preferencias existentes
+
+            // Debug logging
+            error_log("DEBUG preferences.php - Valores antes de UPDATE:");
+            error_log("needsCrib: " . var_export($needsCrib, true) . " type: " . gettype($needsCrib));
+            error_log("doubleBeds: " . var_export($doubleBeds, true) . " type: " . gettype($doubleBeds));
+            error_log("Input original: " . json_encode($input));
+
             $stmt = $db->prepare("
                 UPDATE preferences SET
                     needs_crib = ?,
@@ -158,7 +171,7 @@ try {
             $preferences = $stmt->fetch(PDO::FETCH_ASSOC);
             $preferences['needs_crib'] = (bool)$preferences['needs_crib'];
 
-            Response::success($preferences, 'Preferencias actualizadas correctamente');
+            Response::success($preferences, 'Preferencias actualizadas correctamente', 200);
         } else {
             // INSERT - Crear nuevas preferencias
             $stmt = $db->prepare("
@@ -207,9 +220,11 @@ try {
     }
 
 } catch (PDOException $e) {
-    error_log("Error en preferences.php: " . $e->getMessage());
+    error_log("Error PDO en preferences.php: " . $e->getMessage());
+    error_log("Error detalle: " . print_r($e->errorInfo, true));
     Response::error('Error en la base de datos: ' . $e->getMessage(), 500);
 } catch (Exception $e) {
-    error_log("Error en preferences.php: " . $e->getMessage());
+    error_log("Error Exception en preferences.php: " . $e->getMessage());
+    error_log("Trace: " . $e->getTraceAsString());
     Response::error('Error interno del servidor: ' . $e->getMessage(), 500);
 }

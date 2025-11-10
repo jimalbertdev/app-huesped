@@ -164,6 +164,33 @@ export const incidentService = {
     api.get(`/incidents/${reservationId}`),
 };
 
+// Alojamiento (Información, Videos, Guía Local)
+export const accommodationService = {
+  /**
+   * Obtener toda la información del alojamiento (info, videos, guía)
+   */
+  getAll: (accommodationId: number) =>
+    api.get(`/accommodation/${accommodationId}`),
+
+  /**
+   * Obtener solo información general del alojamiento
+   */
+  getInfo: (accommodationId: number) =>
+    api.get(`/accommodation/${accommodationId}/info`),
+
+  /**
+   * Obtener solo videos de bienvenida
+   */
+  getVideos: (accommodationId: number) =>
+    api.get(`/accommodation/${accommodationId}/videos`),
+
+  /**
+   * Obtener solo guía local
+   */
+  getGuide: (accommodationId: number) =>
+    api.get(`/accommodation/${accommodationId}/guide`),
+};
+
 // Health Check
 export const healthCheck = () => api.get('/health');
 

@@ -31,7 +31,7 @@ import { Link } from "react-router-dom";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useReservation } from "@/hooks/useReservation";
 import { useReservationParams } from "@/hooks/useReservationParams";
-import { preferenceService, handleApiError } from "@/services/api";
+import { preferenceService, accommodationService, handleApiError } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import {
   Accordion,
@@ -101,6 +101,12 @@ const Dashboard = () => {
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
 
+  // Accommodation info state
+  const [accommodationInfo, setAccommodationInfo] = useState<any>(null);
+  const [accommodationVideos, setAccommodationVideos] = useState<any[]>([]);
+  const [accommodationGuide, setAccommodationGuide] = useState<any[]>([]);
+  const [accommodationLoaded, setAccommodationLoaded] = useState(false);
+
   // Cargar preferencias cuando se carga la reserva
   useEffect(() => {
     const loadPreferences = async () => {
@@ -128,6 +134,31 @@ const Dashboard = () => {
 
     loadPreferences();
   }, [reservationData?.id, preferencesLoaded]);
+
+  // Cargar información del alojamiento cuando se carga la reserva
+  useEffect(() => {
+    const loadAccommodationInfo = async () => {
+      if (!reservationData?.accommodation_id || accommodationLoaded) return;
+
+      try {
+        const response = await accommodationService.getAll(reservationData.accommodation_id);
+        const data = response.data.data;
+
+        if (data) {
+          setAccommodationInfo(data.info);
+          setAccommodationVideos(data.videos || []);
+          setAccommodationGuide(data.guide || []);
+        }
+        setAccommodationLoaded(true);
+      } catch (error) {
+        console.error("Error al cargar información del alojamiento:", error);
+        // No mostrar error al usuario, los datos hardcodeados se mantendrán
+        setAccommodationLoaded(true);
+      }
+    };
+
+    loadAccommodationInfo();
+  }, [reservationData?.accommodation_id, accommodationLoaded]);
 
   // Contador para confirmación de apertura
   useEffect(() => {
@@ -263,69 +294,6 @@ const Dashboard = () => {
       </div>
     </div>
   );
-
-  const localGuideCategories = [
-    {
-      id: 'restaurants',
-      title: t('localGuide.restaurants'),
-      items: [
-        { name: 'La Terraza del Mar', description: 'Cocina mediterránea con vistas al mar', distance: '500m', rating: '4.8⭐' },
-        { name: 'El Rincón Tradicional', description: 'Tapas y platos típicos españoles', distance: '300m', rating: '4.6⭐' },
-        { name: 'Pizzería Bella Napoli', description: 'Auténtica pizza italiana', distance: '700m', rating: '4.7⭐' },
-      ]
-    },
-    {
-      id: 'cafes',
-      title: t('localGuide.cafes'),
-      items: [
-        { name: 'Café Central', description: 'Café de especialidad y repostería', distance: '200m', rating: '4.5⭐' },
-        { name: 'La Bohème', description: 'Ambiente acogedor, wifi gratis', distance: '400m', rating: '4.4⭐' },
-      ]
-    },
-    {
-      id: 'supermarkets',
-      title: t('localGuide.supermarkets'),
-      items: [
-        { name: 'Mercadona', description: 'Supermercado de confianza', distance: '600m', rating: '4.2⭐' },
-        { name: 'Carrefour Express', description: 'Abierto hasta las 22:00', distance: '350m', rating: '4.0⭐' },
-      ]
-    },
-    {
-      id: 'transport',
-      title: t('localGuide.transport'),
-      items: [
-        { name: 'Estación de Metro L3', description: 'Acceso directo al centro', distance: '800m', rating: '' },
-        { name: 'Parada de Bus 24/7', description: 'Líneas 15, 42, 87', distance: '150m', rating: '' },
-      ]
-    },
-    {
-      id: 'tourist',
-      title: t('localGuide.tourist'),
-      items: [
-        { name: 'Mirador Vista Hermosa', description: 'Vistas panorámicas de la ciudad', distance: '1.2km', rating: '4.9⭐' },
-        { name: 'Museo de Arte Moderno', description: 'Exposiciones contemporáneas', distance: '2km', rating: '4.7⭐' },
-        { name: 'Playa del Sol', description: 'Arena dorada y aguas cristalinas', distance: '3km', rating: '4.8⭐' },
-      ]
-    },
-    {
-      id: 'emergency',
-      title: t('localGuide.emergency'),
-      items: [
-        { name: 'Hospital General', description: 'Urgencias 24h: +34 112', distance: '2.5km', rating: '' },
-        { name: 'Farmacia 24h', description: 'Servicio nocturno disponible', distance: '400m', rating: '' },
-        { name: 'Policía Local', description: 'Emergencias: 112', distance: '1km', rating: '' },
-      ]
-    },
-    {
-      id: 'entertainment',
-      title: t('localGuide.entertainment'),
-      items: [
-        { name: 'Cinema Multiplex', description: 'Últimos estrenos', distance: '1.5km', rating: '4.3⭐' },
-        { name: 'Teatro Municipal', description: 'Espectáculos en vivo', distance: '2.2km', rating: '4.6⭐' },
-        { name: 'Club Nocturno Luna', description: 'Música en vivo los fines de semana', distance: '1.8km', rating: '4.4⭐' },
-      ]
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-hero">
@@ -563,7 +531,13 @@ const Dashboard = () => {
                     <span>Cuna solicitada</span>
                   </div>
                 )}
-                {!estimatedArrivalTime && !doubleBeds && !singleBeds && !sofaBeds && !needsCrib && (
+                {additionalInfo && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <FileText className="w-4 h-4 text-muted-foreground" />
+                    <span>{additionalInfo}</span>
+                  </div>
+                )}
+                {!estimatedArrivalTime && !doubleBeds && !singleBeds && !sofaBeds && !needsCrib && !additionalInfo && (
                   <p className="text-sm text-muted-foreground italic">
                     No hay preferencias configuradas
                   </p>
@@ -717,39 +691,56 @@ const Dashboard = () => {
                 </div>
                 <h2 className="text-xl font-bold">{t('dashboard.accommodationInfo')}</h2>
               </div>
-              <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="how-to-arrive">
-                  <AccordionTrigger className="text-sm">🗺️ ¿Cómo llegar?</AccordionTrigger>
-                  <AccordionContent className="space-y-2 text-sm">
-                    <p>Desde el aeropuerto: Toma el metro línea 3 hasta la estación Central (30 min)</p>
-                    <p>En coche: Parking disponible en calle lateral</p>
-                    <p>Código de acceso al edificio: 1234#</p>
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="amenities">
-                  <AccordionTrigger className="text-sm">🏡 ¿Qué hay aquí?</AccordionTrigger>
-                  <AccordionContent className="text-sm">
-                    WiFi, Cocina completa, TV Smart, Aire acondicionado, Calefacción, Secador, Plancha, Lavadora
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="how-it-works">
-                  <AccordionTrigger className="text-sm">🔧 ¿Cómo funciona?</AccordionTrigger>
-                  <AccordionContent className="space-y-2 text-sm">
-                    <p><strong>WiFi:</strong> Red: CasaVH | Contraseña: hermosa2024</p>
-                    <p><strong>Calefacción:</strong> Panel táctil en salón, temperatura recomendada 21°C</p>
-                    <p><strong>TV:</strong> Netflix y Prime Video ya configurados</p>
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="rules">
-                  <AccordionTrigger className="text-sm">📋 Normas</AccordionTrigger>
-                  <AccordionContent className="space-y-1 text-sm">
-                    <p>• Check-in: 15:00 - Check-out: 11:00</p>
-                    <p>• No fumar en el interior</p>
-                    <p>• No fiestas ni eventos</p>
-                    <p>• Respetar el silencio 22:00-08:00</p>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+              {accommodationInfo ? (
+                <Accordion type="single" collapsible className="w-full">
+                  {(accommodationInfo.how_to_arrive_airport || accommodationInfo.how_to_arrive_car || accommodationInfo.building_access_code) && (
+                    <AccordionItem value="how-to-arrive">
+                      <AccordionTrigger className="text-sm">🗺️ ¿Cómo llegar?</AccordionTrigger>
+                      <AccordionContent className="space-y-2 text-sm">
+                        {accommodationInfo.how_to_arrive_airport && <p>{accommodationInfo.how_to_arrive_airport}</p>}
+                        {accommodationInfo.how_to_arrive_car && <p>{accommodationInfo.how_to_arrive_car}</p>}
+                        {accommodationInfo.building_access_code && <p>Código de acceso al edificio: {accommodationInfo.building_access_code}</p>}
+                      </AccordionContent>
+                    </AccordionItem>
+                  )}
+                  {accommodationInfo.amenities && (
+                    <AccordionItem value="amenities">
+                      <AccordionTrigger className="text-sm">🏡 ¿Qué hay aquí?</AccordionTrigger>
+                      <AccordionContent className="text-sm">
+                        {accommodationInfo.amenities}
+                      </AccordionContent>
+                    </AccordionItem>
+                  )}
+                  {(accommodationInfo.wifi_network || accommodationInfo.heating_info || accommodationInfo.tv_info || accommodationInfo.other_instructions) && (
+                    <AccordionItem value="how-it-works">
+                      <AccordionTrigger className="text-sm">🔧 ¿Cómo funciona?</AccordionTrigger>
+                      <AccordionContent className="space-y-2 text-sm">
+                        {accommodationInfo.wifi_network && (
+                          <p><strong>WiFi:</strong> Red: {accommodationInfo.wifi_network}{accommodationInfo.wifi_password && ` | Contraseña: ${accommodationInfo.wifi_password}`}</p>
+                        )}
+                        {accommodationInfo.heating_info && <p><strong>Calefacción:</strong> {accommodationInfo.heating_info}</p>}
+                        {accommodationInfo.tv_info && <p><strong>TV:</strong> {accommodationInfo.tv_info}</p>}
+                        {accommodationInfo.other_instructions && <p>{accommodationInfo.other_instructions}</p>}
+                      </AccordionContent>
+                    </AccordionItem>
+                  )}
+                  {(accommodationInfo.check_in_time || accommodationInfo.check_out_time || accommodationInfo.rules) && (
+                    <AccordionItem value="rules">
+                      <AccordionTrigger className="text-sm">📋 Normas</AccordionTrigger>
+                      <AccordionContent className="space-y-1 text-sm">
+                        {(accommodationInfo.check_in_time || accommodationInfo.check_out_time) && (
+                          <p>• Check-in: {accommodationInfo.check_in_time || '?'} - Check-out: {accommodationInfo.check_out_time || '?'}</p>
+                        )}
+                        {accommodationInfo.rules && Array.isArray(accommodationInfo.rules) && accommodationInfo.rules.map((rule: string, idx: number) => (
+                          <p key={idx}>• {rule}</p>
+                        ))}
+                      </AccordionContent>
+                    </AccordionItem>
+                  )}
+                </Accordion>
+              ) : (
+                <p className="text-sm text-muted-foreground">Cargando información...</p>
+              )}
             </div>
           </Card>
 
@@ -762,56 +753,33 @@ const Dashboard = () => {
                 </div>
                 <h2 className="text-xl font-bold">{t('dashboard.welcomeVideo')}</h2>
               </div>
-              <div className="space-y-3">
-                <a 
-                  href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors group"
-                >
-                  <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center flex-shrink-0">
-                    <Video className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm group-hover:text-primary transition-colors">
-                      Tour Virtual del Alojamiento
-                    </p>
-                    <p className="text-xs text-muted-foreground">Ver en YouTube</p>
-                  </div>
-                </a>
-                <a 
-                  href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors group"
-                >
-                  <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center flex-shrink-0">
-                    <Video className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm group-hover:text-primary transition-colors">
-                      Cómo Usar las Amenidades
-                    </p>
-                    <p className="text-xs text-muted-foreground">Ver en YouTube</p>
-                  </div>
-                </a>
-                <a 
-                  href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors group"
-                >
-                  <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center flex-shrink-0">
-                    <Video className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm group-hover:text-primary transition-colors">
-                      Guía de la Zona y Lugares de Interés
-                    </p>
-                    <p className="text-xs text-muted-foreground">Ver en YouTube</p>
-                  </div>
-                </a>
-              </div>
+              {accommodationVideos.length > 0 ? (
+                <div className="space-y-3">
+                  {accommodationVideos.map((video) => (
+                    <a
+                      key={video.id}
+                      href={video.video_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors group"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center flex-shrink-0">
+                        <Video className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm group-hover:text-primary transition-colors">
+                          {video.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {video.description || 'Ver en YouTube'}
+                        </p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Cargando videos...</p>
+              )}
             </div>
           </Card>
 
@@ -857,27 +825,37 @@ const Dashboard = () => {
                 </div>
                 <h2 className="text-xl font-bold">{t('dashboard.localGuide')}</h2>
               </div>
-              <Accordion type="single" collapsible className="w-full">
-                {localGuideCategories.map((category) => (
-                  <AccordionItem key={category.id} value={category.id}>
-                    <AccordionTrigger className="text-sm">{category.title}</AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-2">
-                        {category.items.map((item, idx) => (
-                          <div key={idx} className="p-2 bg-muted/50 rounded-lg space-y-1">
-                            <div className="flex items-start justify-between">
-                              <p className="font-medium text-xs">{item.name}</p>
-                              {item.rating && <span className="text-xs">{item.rating}</span>}
+              {accommodationGuide.length > 0 ? (
+                <Accordion type="single" collapsible className="w-full">
+                  {accommodationGuide.map((category) => (
+                    <AccordionItem key={category.id} value={category.id}>
+                      <AccordionTrigger className="text-sm">
+                        {category.title[language] || category.title.es}
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="space-y-2">
+                          {category.items.map((item: any) => (
+                            <div key={item.id} className="p-2 bg-muted/50 rounded-lg space-y-1">
+                              <div className="flex items-start justify-between">
+                                <p className="font-medium text-xs">{item.name}</p>
+                                {item.rating && <span className="text-xs">{item.rating}</span>}
+                              </div>
+                              {item.description && (
+                                <p className="text-xs text-muted-foreground">{item.description}</p>
+                              )}
+                              {item.distance && (
+                                <p className="text-xs text-primary font-medium">📍 {item.distance}</p>
+                              )}
                             </div>
-                            <p className="text-xs text-muted-foreground">{item.description}</p>
-                            <p className="text-xs text-primary font-medium">📍 {item.distance}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              ) : (
+                <p className="text-sm text-muted-foreground">Cargando guía local...</p>
+              )}
             </div>
           </Card>
 
