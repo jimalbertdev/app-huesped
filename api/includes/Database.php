@@ -70,7 +70,7 @@ class Database {
             return $stmt->fetch();
         } catch(PDOException $e) {
             error_log("Error en queryOne: " . $e->getMessage());
-            throw new Exception("Error al ejecutar consulta");
+            throw new Exception("Error al ejecutar consulta ". $e->getMessage());
         }
     }
 
