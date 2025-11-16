@@ -235,11 +235,14 @@
 - [x] Configuración de base de datos con PDO
 - [x] Sistema de respuestas JSON estandarizadas
 - [x] CORS configurado para desarrollo
-- [x] Endpoint de huéspedes (POST /guests)
+- [x] Endpoint de huéspedes extendido (POST /guests) con 36 campos
 - [x] Endpoint de preferencias (GET/POST /preferences)
+- [x] Endpoint de países (GET /api/countries)
+- [x] Endpoint de municipios (GET /api/municipalities/search)
 - [x] Servicio de generación de contratos PDF
 - [x] Manejo de firma digital (upload + validación)
 - [x] Vista SQL `v_reservations_with_host`
+- [x] 8 validaciones condicionales complejas (DNI/NIE, menor edad, residencia)
 - [x] Scripts de prueba y test
 
 #### Frontend
@@ -251,7 +254,15 @@
 - [x] Hook de flujo de registro temporal
 - [x] Cliente Axios configurado
 - [x] Página Welcome con estado condicional
-- [x] Página Register (paso 1 - datos personales)
+- [x] Página Register COMPLETAMENTE REDISEÑADA (paso 1):
+  - [x] 4 secciones organizadas (Documento, Personal, Residencia, Contacto)
+  - [x] 23+ campos con validaciones condicionales
+  - [x] Autocompletado de municipios españoles con debounce
+  - [x] Cálculo automático de edad en tiempo real
+  - [x] Auto-asignación de nacionalidad para DNI/NIE
+  - [x] Auto-completado de código postal
+  - [x] Campos condicionales (segundo apellido, soporte, parentesco)
+  - [x] 246 países y 8,107 municipios disponibles
 - [x] Página RegisterPreferences (paso 2 - solo responsable)
 - [x] Página RegisterTerms (paso 3 - firma digital)
 - [x] Página RegisterConfirmation con lista de huéspedes
@@ -264,6 +275,8 @@
   - [x] Guía local (accordion)
   - [x] Videos de bienvenida
   - [x] Descarga de contrato PDF
+- [x] Catálogos de datos (documentos, parentesco, sexo)
+- [x] Schemas Zod con 8 refinements condicionales
 - [x] Toast de éxito con color verde
 - [x] Persistencia de parámetros de URL
 - [x] Diseño responsive completo
@@ -271,22 +284,29 @@
 
 #### Base de Datos
 - [x] Esquema completo de 12+ tablas
+- [x] Tabla `guests` con 36 campos (12 agregados en migración 009)
+- [x] Tabla `paises` con 246 países
+- [x] Tabla `municipios_ine_esp` con 8,107 municipios
 - [x] Datos de ejemplo (1 reserva, 1 alojamiento, guía local)
-- [x] Migraciones numeradas
+- [x] 9 migraciones numeradas aplicadas
 - [x] Vistas SQL para consultas complejas
+- [x] Índices optimizados para búsquedas
 
 #### Documentación
 - [x] README.md inicial
 - [x] INSTRUCCIONES.md con guía de instalación
 - [x] CLAUDE.md con contexto para IA
-- [x] Carpeta spec/ con 9 especificaciones técnicas
+- [x] Carpeta spec/ con 12 especificaciones técnicas
 - [x] PROJECT_CONTEXT.md (este archivo)
+- [x] SESSION_LOG.md actualizado con 12 sesiones
 
 ### 🔄 EN PROGRESO
+- [ ] Testing manual del formulario extendido (DNI, NIE, Pasaporte, menor edad)
+- [ ] Optimización de bundle size (code splitting)
+- [ ] Tests unitarios (frontend y backend)
 - [ ] Integración completa de sistema de puertas inteligentes con API real
 - [ ] Sistema de notificaciones push
 - [ ] Validación avanzada de documentos (OCR)
-- [ ] Tests unitarios (frontend y backend)
 
 ### 📋 PENDIENTE
 - [ ] Autenticación de anfitriones (admin panel)

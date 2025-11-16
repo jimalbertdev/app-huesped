@@ -141,21 +141,42 @@ const RegisterTerms = () => {
 
       // 2. CREAR FORMDATA CON TODOS LOS DATOS
       const formData = new FormData();
+
+      // Datos de reserva y documento
       formData.append('reservation_id', String(reservationData.id));
       formData.append('document_type', guestData.document_type);
       formData.append('document_number', guestData.document_number);
       formData.append('nationality', guestData.nationality);
+
+      // Datos personales
       formData.append('first_name', guestData.first_name);
       formData.append('last_name', guestData.last_name);
       formData.append('birth_date', guestData.birth_date);
       formData.append('sex', guestData.sex);
+
+      // Datos de contacto (REQUERIDOS)
+      formData.append('phone_country_code', guestData.phone_country_code);
+      formData.append('phone', guestData.phone);
+      formData.append('email', guestData.email);
+
+      // Datos de residencia (REQUERIDOS)
+      formData.append('residence_country', guestData.residence_country);
+      formData.append('residence_address', guestData.residence_address);
+
+      // Datos de registro
       formData.append('is_responsible', guestData.is_responsible ? '1' : '0');
       formData.append('registration_method', guestData.registration_method);
       formData.append('accepted_terms', '1');
 
-      // Campos opcionales
-      if (guestData.phone) formData.append('phone', guestData.phone);
-      if (guestData.email) formData.append('email', guestData.email);
+      // Campos opcionales pero comunes
+      if (guestData.second_last_name) formData.append('second_last_name', guestData.second_last_name);
+      if (guestData.support_number) formData.append('support_number', guestData.support_number);
+      if (guestData.issue_date) formData.append('issue_date', guestData.issue_date);
+      if (guestData.expiry_date) formData.append('expiry_date', guestData.expiry_date);
+      if (guestData.relationship) formData.append('relationship', guestData.relationship);
+      if (guestData.residence_municipality_code) formData.append('residence_municipality_code', guestData.residence_municipality_code);
+      if (guestData.residence_municipality_name) formData.append('residence_municipality_name', guestData.residence_municipality_name);
+      if (guestData.residence_postal_code) formData.append('residence_postal_code', guestData.residence_postal_code);
       if (guestData.document_image_path) formData.append('document_image_path', guestData.document_image_path);
 
       // Agregar firma como archivo

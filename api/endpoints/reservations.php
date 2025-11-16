@@ -10,6 +10,7 @@ require_once __DIR__ . '/../includes/Database.php';
 require_once __DIR__ . '/../includes/Response.php';
 require_once __DIR__ . '/../models/Reservation.php';
 require_once __DIR__ . '/../models/Guest.php';
+require_once __DIR__ . '/../models/Viajero.php';
 require_once __DIR__ . '/../models/Preference.php';
 require_once __DIR__ . '/../models/LocalGuide.php';
 
@@ -19,6 +20,7 @@ try {
 
     $reservationModel = new Reservation($database);
     $guestModel = new Guest($database);
+    $viajeroModel = new Viajero($database);
     $preferenceModel = new Preference($database);
     $localGuideModel = new LocalGuide($database);
 
@@ -41,8 +43,8 @@ try {
                 Response::notFound("Reserva no encontrada");
             }
 
-            // Obtener huéspedes
-            $guests = $guestModel->getByReservation($reservation['id']);
+            // Obtener huéspedes (viajeros)
+            $guests = $viajeroModel->getByReservation($reservation['id']);
 
             // Obtener preferencias
             $preferences = $preferenceModel->getByReservation($reservation['id']);
@@ -66,7 +68,7 @@ try {
 
             // Obtener toda la información necesaria para el dashboard
             $accommodation = $reservationModel->getAccommodationInfo($reservation_id);
-            $guests = $guestModel->getByReservation($reservation_id);
+            $guests = $viajeroModel->getByReservation($reservation_id);
             $preferences = $preferenceModel->getByReservation($reservation_id);
             $localGuide = $localGuideModel->getGroupedByCategory($accommodation['id']);
 

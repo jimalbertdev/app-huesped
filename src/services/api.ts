@@ -191,6 +191,37 @@ export const accommodationService = {
     api.get(`/accommodation/${accommodationId}/guide`),
 };
 
+// Países
+export const countryService = {
+  /**
+   * Obtener todos los países
+   */
+  getAll: () => api.get('/countries'),
+
+  /**
+   * Buscar países por nombre o código
+   */
+  search: (query: string) => api.get(`/countries/search?q=${encodeURIComponent(query)}`),
+
+  /**
+   * Obtener país por código (ISO 2 o 3 letras)
+   */
+  getByCode: (code: string) => api.get(`/countries/${code}`),
+};
+
+// Municipios Españoles
+export const municipalityService = {
+  /**
+   * Buscar municipios por nombre o código postal
+   */
+  search: (query: string) => api.get(`/municipalities/search?q=${encodeURIComponent(query)}`),
+
+  /**
+   * Obtener municipio por código INE
+   */
+  getByCode: (code: string) => api.get(`/municipalities/${code}`),
+};
+
 // Health Check
 export const healthCheck = () => api.get('/health');
 

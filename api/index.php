@@ -60,6 +60,14 @@ switch ($resource) {
         require_once __DIR__ . '/endpoints/accommodation.php';
         break;
 
+    case 'countries':
+        require_once __DIR__ . '/endpoints/countries.php';
+        break;
+
+    case 'municipalities':
+        require_once __DIR__ . '/endpoints/municipalities.php';
+        break;
+
     case 'health':
         // Endpoint de health check
         http_response_code(200);
@@ -92,7 +100,12 @@ switch ($resource) {
                 '/api/accommodation/{accommodation_id}',
                 '/api/accommodation/{accommodation_id}/info',
                 '/api/accommodation/{accommodation_id}/videos',
-                '/api/accommodation/{accommodation_id}/guide'
+                '/api/accommodation/{accommodation_id}/guide',
+                '/api/countries',
+                '/api/countries/search?q={query}',
+                '/api/countries/{code}',
+                '/api/municipalities/search?q={query}',
+                '/api/municipalities/{code}'
             ]
         ], JSON_UNESCAPED_UNICODE);
         break;

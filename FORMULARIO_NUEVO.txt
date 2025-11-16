@@ -1,0 +1,13 @@
+Esta es una referencia para el nuevo formulario con todos los campos.
+El formulario completo está siendo actualizado en Register.tsx desde la línea 461.
+
+Debido al tamaño del formulario completo (~400 líneas de JSX), lo estoy escribiendo
+en una sola edición para mantener la coherencia.
+
+La estructura del nuevo formulario es:
+1. Sección Documento (6 campos)
+2. Sección Datos Personales (7 campos + edad calculada)
+3. Sección Residencia (5 campos + autocompletado)
+4. Sección Contacto (3 campos)
+
+Total: 21+ campos visuales con validaciones condicionales

@@ -14,32 +14,62 @@ class Guest {
      * Crear nuevo huésped
      */
     public function create($data) {
+        // Calcular edad automáticamente desde birth_date
+        $age = null;
+        if (isset($data['birth_date'])) {
+            $birthDate = new DateTime($data['birth_date']);
+            $today = new DateTime();
+            $age = $today->diff($birthDate)->y;
+        }
+
+        // Normalizar document_type a mayúsculas
+        $data['document_type'] = strtoupper($data['document_type']);
+
         $sql = "INSERT INTO guests (
             reservation_id, document_type, document_number, nationality,
-            first_name, last_name, birth_date, sex,
-            phone, email, is_responsible, registration_method,
-            document_image_path, accepted_terms, accepted_terms_date,
-            signature_path, contract_path,
+            first_name, last_name, second_last_name, birth_date, age, sex,
+            support_number, issue_date, expiry_date, relationship,
+            phone_country_code, phone, email,
+            residence_country, residence_municipality_code, residence_municipality_name,
+            residence_postal_code, residence_address,
+            is_responsible, registration_method, document_image_path,
+            accepted_terms, accepted_terms_date, signature_path, contract_path,
             ip_address, user_agent, registration_completed_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW()
+        )";
 
         try {
             $this->db->execute($sql, [
                 $data['reservation_id'],
                 $data['document_type'],
-                $data['document_number'],
+                strtoupper(trim($data['document_number'])),
                 $data['nationality'],
-                $data['first_name'],
-                $data['last_name'],
+                trim($data['first_name']),
+                trim($data['last_name']),
+                isset($data['second_last_name']) ? trim($data['second_last_name']) : null,
                 $data['birth_date'],
+                $age,
                 $data['sex'],
+                isset($data['support_number']) ? strtoupper(trim($data['support_number'])) : null,
+                $data['issue_date'] ?? null,
+                $data['expiry_date'] ?? null,
+                $data['relationship'] ?? null,
+                $data['phone_country_code'] ?? null,
                 $data['phone'] ?? null,
-                $data['email'] ?? null,
+                isset($data['email']) ? strtolower(trim($data['email'])) : null,
+                $data['residence_country'] ?? null,
+                $data['residence_municipality_code'] ?? null,
+                $data['residence_municipality_name'] ?? null,
+                $data['residence_postal_code'] ?? null,
+                $data['residence_address'] ?? null,
                 $data['is_responsible'] ?? false,
                 $data['registration_method'] ?? 'manual',
                 $data['document_image_path'] ?? null,
                 $data['accepted_terms'] ?? true,
-                $data['accepted_terms'] ? date('Y-m-d H:i:s') : null,
+                isset($data['accepted_terms']) && $data['accepted_terms'] ? date('Y-m-d H:i:s') : null,
                 $data['signature_path'] ?? null,
                 $data['contract_path'] ?? null,
                 $_SERVER['REMOTE_ADDR'] ?? null,
@@ -79,16 +109,37 @@ class Guest {
         $fields = [];
         $values = [];
 
+        // Recalcular edad si se actualiza birth_date
+        if (isset($data['birth_date'])) {
+            $birthDate = new DateTime($data['birth_date']);
+            $today = new DateTime();
+            $data['age'] = $today->diff($birthDate)->y;
+        }
+
         $allowed_fields = [
             'document_type', 'document_number', 'nationality',
-            'first_name', 'last_name', 'birth_date', 'sex',
-            'phone', 'email', 'signature_path', 'contract_path'
+            'first_name', 'last_name', 'second_last_name', 'birth_date', 'age', 'sex',
+            'support_number', 'issue_date', 'expiry_date', 'relationship',
+            'phone_country_code', 'phone', 'email',
+            'residence_country', 'residence_municipality_code', 'residence_municipality_name',
+            'residence_postal_code', 'residence_address',
+            'signature_path', 'contract_path'
         ];
 
         foreach ($allowed_fields as $field) {
             if (isset($data[$field])) {
                 $fields[] = "$field = ?";
-                $values[] = $data[$field];
+
+                // Aplicar transformaciones según campo
+                if (in_array($field, ['document_type', 'document_number', 'support_number'])) {
+                    $values[] = strtoupper(trim($data[$field]));
+                } elseif (in_array($field, ['first_name', 'last_name', 'second_last_name'])) {
+                    $values[] = trim($data[$field]);
+                } elseif ($field === 'email') {
+                    $values[] = strtolower(trim($data[$field]));
+                } else {
+                    $values[] = $data[$field];
+                }
             }
         }
 

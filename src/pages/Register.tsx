@@ -1,17 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Camera, Edit3, ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Camera, Edit3, ArrowRight, ArrowLeft, CheckCircle2, Search } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useReservation } from "@/hooks/useReservation";
 import { useReservationParams } from "@/hooks/useReservationParams";
 import { useRegistrationFlow } from "@/hooks/useRegistrationFlow";
 import { toast } from "@/hooks/use-toast";
 import vacanflyLogo from "@/assets/vacanfly-logo.png";
+import { DOCUMENT_TYPES, RELATIONSHIP_TYPES, SEX_OPTIONS, calculateAge, isMinor, requiresSecondSurname, requiresSupportNumber } from "@/lib/catalogs";
+import { validateDNI, validateNIE, validateDocument } from "@/lib/documentValidation";
+import { countryService, municipalityService } from "@/services/api";
+import type { Country, Municipality } from "@/schemas/guestSchema";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -26,17 +30,128 @@ const Register = () => {
   const [captureMethod, setCaptureMethod] = useState<"scan" | "manual" | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
 
-  // Form state
+  // Form state - Documento
   const [documentType, setDocumentType] = useState<string>("");
   const [documentNumber, setDocumentNumber] = useState("");
+  const [supportNumber, setSupportNumber] = useState("");
+  const [issueDate, setIssueDate] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+
+  // Form state - Personal
   const [nationality, setNationality] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [secondLastName, setSecondLastName] = useState("");
   const [birthDate, setBirthDate] = useState("");
+  const [age, setAge] = useState<number | null>(null);
   const [sex, setSex] = useState<string>("");
+  const [relationship, setRelationship] = useState<string>("");
+
+  // Form state - Residencia
+  const [residenceCountry, setResidenceCountry] = useState("");
+  const [residenceMunicipalityCode, setResidenceMunicipalityCode] = useState("");
+  const [residenceMunicipalityName, setResidenceMunicipalityName] = useState("");
+  const [residencePostalCode, setResidencePostalCode] = useState("");
+  const [residenceAddress, setResidenceAddress] = useState("");
+
+  // Form state - Contacto
+  const [phoneCountryCode, setPhoneCountryCode] = useState("+34");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [isResponsible, setIsResponsible] = useState(false);
+
+  // Estados para autocompletado y búsqueda
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [countrySearch, setCountrySearch] = useState("");
+  const [filteredCountries, setFilteredCountries] = useState<Country[]>([]);
+  const [municipalitySearch, setMunicipalitySearch] = useState("");
+  const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
+  const [loadingMunicipalities, setLoadingMunicipalities] = useState(false);
+
+  // Estados para validación de documentos
+  const [documentError, setDocumentError] = useState<string>("");
+
+  // Cargar países al montar el componente
+  useEffect(() => {
+    const loadCountries = async () => {
+      try {
+        const response = await countryService.getAll();
+        if (response.data.success) {
+          setCountries(response.data.data);
+        }
+      } catch (error) {
+        console.error('Error cargando países:', error);
+      }
+    };
+    loadCountries();
+  }, []);
+
+  // Calcular edad automáticamente cuando cambia la fecha de nacimiento
+  useEffect(() => {
+    if (birthDate) {
+      const calculatedAge = calculateAge(birthDate);
+      setAge(calculatedAge);
+    } else {
+      setAge(null);
+    }
+  }, [birthDate]);
+
+  // Auto-seleccionar nacionalidad española para DNI/NIE
+  useEffect(() => {
+    if (documentType === 'DNI' || documentType === 'NIE') {
+      setNationality('ES');
+    }
+  }, [documentType]);
+
+  // Buscar municipios con debounce
+  useEffect(() => {
+    if (residenceCountry === 'ES' && municipalitySearch.length >= 2) {
+      const timer = setTimeout(async () => {
+        setLoadingMunicipalities(true);
+        try {
+          const response = await municipalityService.search(municipalitySearch);
+          if (response.data.success) {
+            setMunicipalities(response.data.data);
+          }
+        } catch (error) {
+          console.error('Error buscando municipios:', error);
+        } finally {
+          setLoadingMunicipalities(false);
+        }
+      }, 300); // Debounce de 300ms
+
+      return () => clearTimeout(timer);
+    } else {
+      setMunicipalities([]);
+    }
+  }, [municipalitySearch, residenceCountry]);
+
+  // Filtrar países por búsqueda
+  useEffect(() => {
+    if (countrySearch.length >= 2) {
+      const filtered = countries.filter(country =>
+        country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+        country.code.toLowerCase().includes(countrySearch.toLowerCase())
+      );
+      setFilteredCountries(filtered);
+    } else {
+      setFilteredCountries([]);
+    }
+  }, [countrySearch, countries]);
+
+  // Validar formato de documento en tiempo real
+  useEffect(() => {
+    if (documentNumber && documentType) {
+      const result = validateDocument(documentType, documentNumber);
+      if (!result.valid && documentNumber.length > 5) {
+        setDocumentError(result.error || "");
+      } else {
+        setDocumentError("");
+      }
+    } else {
+      setDocumentError("");
+    }
+  }, [documentNumber, documentType]);
 
   const handleMethodSelect = (method: "scan" | "manual") => {
     setCaptureMethod(method);
@@ -62,6 +177,22 @@ const Register = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Helper para scroll y focus a un campo
+    const focusField = (fieldId: string, errorMessage: string) => {
+      const element = document.getElementById(fieldId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => {
+          element.focus();
+        }, 300);
+      }
+      toast({
+        title: "Campo requerido",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    };
+
     // Validar que tengamos reservation_id
     if (!reservationData?.id) {
       toast({
@@ -72,13 +203,113 @@ const Register = () => {
       return;
     }
 
-    // Validaciones básicas
-    if (!documentType || !documentNumber || !nationality || !firstName || !lastName || !birthDate || !sex) {
-      toast({
-        title: "Campos requeridos",
-        description: "Por favor completa todos los campos obligatorios marcados con *",
-        variant: "destructive",
-      });
+    // Validaciones básicas obligatorias - Documento
+    if (!documentType) {
+      focusField("docType", "Debes seleccionar el tipo de documento");
+      return;
+    }
+
+    if (!documentNumber) {
+      focusField("docNumber", "Debes ingresar el número de documento");
+      return;
+    }
+
+    // Validar formato de documento DNI/NIE
+    if (documentType === 'DNI' || documentType === 'NIE') {
+      const validationResult = validateDocument(documentType, documentNumber);
+      if (!validationResult.valid) {
+        focusField("docNumber", validationResult.error || "Formato de documento inválido");
+        return;
+      }
+    }
+
+    // Validaciones condicionales - DNI/NIE requiere número de soporte
+    if ((documentType === 'DNI' || documentType === 'NIE') && !supportNumber) {
+      focusField("supportNumber", "El número de soporte es obligatorio para DNI/NIE");
+      return;
+    }
+
+    // Validaciones de datos personales
+    if (!nationality) {
+      focusField("nationality", "Debes seleccionar la nacionalidad");
+      return;
+    }
+
+    if (!firstName) {
+      focusField("firstName", "Debes ingresar el nombre");
+      return;
+    }
+
+    if (!lastName) {
+      focusField("lastName", "Debes ingresar el primer apellido");
+      return;
+    }
+
+    // Validaciones condicionales - DNI/NIE requiere segundo apellido
+    if ((documentType === 'DNI' || documentType === 'NIE') && !secondLastName) {
+      focusField("secondLastName", "El segundo apellido es obligatorio para DNI/NIE");
+      return;
+    }
+
+    if (!birthDate) {
+      focusField("birthDate", "Debes ingresar la fecha de nacimiento");
+      return;
+    }
+
+    if (!sex) {
+      focusField("sex", "Debes seleccionar el sexo");
+      return;
+    }
+
+    // Validación condicional - Menor de edad
+    if (age !== null && age < 18 && !relationship) {
+      focusField("relationship", "El parentesco es obligatorio para menores de 18 años");
+      return;
+    }
+
+    // Validaciones de residencia
+    if (!residenceCountry) {
+      focusField("residenceCountry", "Debes seleccionar el país de residencia");
+      return;
+    }
+
+    // Validación condicional - España requiere municipio
+    if (residenceCountry === 'ES' && !residenceMunicipalityCode && !residenceMunicipalityName) {
+      focusField("municipalitySearch", "Debes seleccionar un municipio español");
+      return;
+    }
+
+    // Para países no españoles, verificar que se haya ingresado la ciudad
+    if (residenceCountry !== 'ES' && !residenceMunicipalityName) {
+      focusField("residenceMunicipalityName", "Debes ingresar la ciudad o municipio");
+      return;
+    }
+
+    if (!residenceAddress) {
+      focusField("residenceAddress", "Debes ingresar la dirección completa");
+      return;
+    }
+
+    // Validaciones de contacto
+    if (!phoneCountryCode) {
+      focusField("phoneCountryCode", "Debes seleccionar el código de país");
+      return;
+    }
+
+    if (!phone) {
+      focusField("phone", "Debes ingresar el número de teléfono");
+      return;
+    }
+
+    if (!email) {
+      focusField("email", "Debes ingresar el correo electrónico");
+      return;
+    }
+
+    // Validación - Email formato
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      focusField("email", "Por favor ingresa un correo electrónico válido");
       return;
     }
 
@@ -87,19 +318,30 @@ const Register = () => {
 
     // GUARDAR TEMPORALMENTE EN CONTEXTO (NO en DB todavía)
     setGuestData({
-      document_type: documentType as 'dni' | 'nie' | 'passport' | 'other',
+      document_type: documentType.toUpperCase() as any,
       document_number: documentNumber,
+      support_number: supportNumber || undefined,
+      issue_date: issueDate || undefined,
+      expiry_date: expiryDate || undefined,
       nationality: nationality,
       first_name: firstName,
       last_name: lastName,
+      second_last_name: secondLastName || undefined,
       birth_date: birthDate,
       sex: sex as 'm' | 'f' | 'other' | 'prefer-not',
-      phone: phone || undefined,
-      email: email || undefined,
+      relationship: relationship || undefined,
+      residence_country: residenceCountry,
+      residence_municipality_code: residenceMunicipalityCode || undefined,
+      residence_municipality_name: residenceMunicipalityName || undefined,
+      residence_postal_code: residencePostalCode || undefined,
+      residence_address: residenceAddress,
+      phone_country_code: phoneCountryCode,
+      phone: phone,
+      email: email,
       is_responsible: isResponsibleValue,
       registration_method: captureMethod || 'manual',
       document_image_path: uploadedImage || undefined,
-    });
+    } as any);
 
     // Redirigir según si es responsable o no
     if (isResponsibleValue) {
@@ -302,46 +544,84 @@ const Register = () => {
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
                         1
                       </div>
-                      Documento de Identidad
+                      📄 Documento de Identidad
                     </h3>
                     <div className="grid md:grid-cols-2 gap-4 ml-10">
                       <div className="space-y-2">
                         <Label htmlFor="docType">Tipo de Documento *</Label>
                         <Select value={documentType} onValueChange={setDocumentType}>
                           <SelectTrigger id="docType">
-                            <SelectValue placeholder="Seleccionar" />
+                            <SelectValue placeholder="Seleccionar tipo" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="dni">DNI</SelectItem>
-                            <SelectItem value="nie">NIE</SelectItem>
-                            <SelectItem value="passport">Pasaporte</SelectItem>
-                            <SelectItem value="other">Otro</SelectItem>
+                            {DOCUMENT_TYPES.map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="nationality">Nacionalidad *</Label>
-                        <Select value={nationality} onValueChange={setNationality}>
-                          <SelectTrigger id="nationality">
-                            <SelectValue placeholder="Seleccionar país" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="es">🇪🇸 España</SelectItem>
-                            <SelectItem value="fr">🇫🇷 Francia</SelectItem>
-                            <SelectItem value="de">🇩🇪 Alemania</SelectItem>
-                            <SelectItem value="uk">🇬🇧 Reino Unido</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2 md:col-span-2">
                         <Label htmlFor="docNumber">Número de Documento *</Label>
                         <Input
                           id="docNumber"
-                          placeholder="Ej: 12345678A"
-                          className="h-12"
+                          placeholder={documentType === 'DNI' ? "Ej: 12345678Z" : documentType === 'NIE' ? "Ej: X1234567L" : "Número de documento"}
+                          className={`h-12 ${documentError ? 'border-destructive' : ''}`}
                           value={documentNumber}
-                          onChange={(e) => setDocumentNumber(e.target.value)}
+                          onChange={(e) => setDocumentNumber(e.target.value.toUpperCase())}
                           required
+                        />
+                        {documentError && (
+                          <p className="text-xs text-destructive">
+                            ⚠️ {documentError}
+                          </p>
+                        )}
+                        {!documentError && documentNumber && documentType === 'DNI' && (
+                          <p className="text-xs text-success">
+                            ✓ Formato de DNI correcto
+                          </p>
+                        )}
+                        {!documentError && documentNumber && documentType === 'NIE' && (
+                          <p className="text-xs text-success">
+                            ✓ Formato de NIE correcto
+                          </p>
+                        )}
+                      </div>
+                      {requiresSupportNumber(documentType) && (
+                        <div className="space-y-2">
+                          <Label htmlFor="supportNumber">Número de Soporte *</Label>
+                          <Input
+                            id="supportNumber"
+                            placeholder="Ej: ABC123456"
+                            className="h-12"
+                            value={supportNumber}
+                            onChange={(e) => setSupportNumber(e.target.value.toUpperCase())}
+                            required
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            📌 Aparece en la parte superior del DNI/NIE
+                          </p>
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <Label htmlFor="issueDate">Fecha de Expedición</Label>
+                        <Input
+                          id="issueDate"
+                          type="date"
+                          className="h-12"
+                          value={issueDate}
+                          onChange={(e) => setIssueDate(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="expiryDate">Fecha de Vencimiento</Label>
+                        <Input
+                          id="expiryDate"
+                          type="date"
+                          className="h-12"
+                          value={expiryDate}
+                          onChange={(e) => setExpiryDate(e.target.value)}
                         />
                       </div>
                     </div>
@@ -353,9 +633,60 @@ const Register = () => {
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
                         2
                       </div>
-                      Datos Personales
+                      👤 Datos Personales
                     </h3>
                     <div className="grid md:grid-cols-2 gap-4 ml-10">
+                      <div className="space-y-2">
+                        <Label htmlFor="nationality">Nacionalidad *</Label>
+                        {(documentType === 'DNI' || documentType === 'NIE') ? (
+                          <>
+                            <Input
+                              id="nationality"
+                              className="h-12"
+                              value="España"
+                              disabled
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Auto-asignado para DNI/NIE
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                              <Input
+                                id="nationality"
+                                placeholder="Buscar país..."
+                                className="h-12 pl-10"
+                                value={countrySearch || countries.find(c => c.code === nationality)?.name || ""}
+                                onChange={(e) => {
+                                  setCountrySearch(e.target.value);
+                                  if (!e.target.value) setNationality("");
+                                }}
+                                required
+                              />
+                            </div>
+                            {filteredCountries.length > 0 && (
+                              <div className="border rounded-lg max-h-48 overflow-y-auto">
+                                {filteredCountries.map((country) => (
+                                  <button
+                                    key={country.code}
+                                    type="button"
+                                    className="w-full text-left px-3 py-2 hover:bg-muted transition-colors text-sm"
+                                    onClick={() => {
+                                      setNationality(country.code);
+                                      setCountrySearch(country.name);
+                                      setFilteredCountries([]);
+                                    }}
+                                  >
+                                    {country.name}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
                       <div className="space-y-2">
                         <Label htmlFor="firstName">Nombres *</Label>
                         <Input
@@ -371,13 +702,26 @@ const Register = () => {
                         <Label htmlFor="lastName">Primer Apellido *</Label>
                         <Input
                           id="lastName"
-                          placeholder="Apellido"
+                          placeholder="Primer apellido"
                           className="h-12"
                           value={lastName}
                           onChange={(e) => setLastName(e.target.value)}
                           required
                         />
                       </div>
+                      {requiresSecondSurname(documentType) && (
+                        <div className="space-y-2">
+                          <Label htmlFor="secondLastName">Segundo Apellido *</Label>
+                          <Input
+                            id="secondLastName"
+                            placeholder="Segundo apellido"
+                            className="h-12"
+                            value={secondLastName}
+                            onChange={(e) => setSecondLastName(e.target.value)}
+                            required
+                          />
+                        </div>
+                      )}
                       <div className="space-y-2">
                         <Label htmlFor="birthDate">Fecha de Nacimiento *</Label>
                         <Input
@@ -388,6 +732,11 @@ const Register = () => {
                           onChange={(e) => setBirthDate(e.target.value)}
                           required
                         />
+                        {age !== null && (
+                          <p className="text-xs text-muted-foreground">
+                            📅 Edad: {age} años
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="sex">Sexo *</Label>
@@ -396,13 +745,34 @@ const Register = () => {
                             <SelectValue placeholder="Seleccionar" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="m">Masculino</SelectItem>
-                            <SelectItem value="f">Femenino</SelectItem>
-                            <SelectItem value="other">Otro</SelectItem>
-                            <SelectItem value="prefer-not">Prefiero no decir</SelectItem>
+                            {SEX_OPTIONS.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
+                      {age !== null && age < 18 && (
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="relationship">Parentesco con el Responsable *</Label>
+                          <Select value={relationship} onValueChange={setRelationship}>
+                            <SelectTrigger id="relationship">
+                              <SelectValue placeholder="Seleccionar parentesco" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {RELATIONSHIP_TYPES.map((rel) => (
+                                <SelectItem key={rel.value} value={rel.value}>
+                                  {rel.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-warning">
+                            ⚠️ Obligatorio para menores de 18 años
+                          </p>
+                        </div>
+                      )}
                       {/* Mostrar checkbox de responsable solo si no hay uno ya */}
                       {!hasResponsible && (
                         <div className="space-y-2 md:col-span-2">
@@ -430,27 +800,189 @@ const Register = () => {
                     </div>
                   </div>
 
-                  {/* Sección: Información de Contacto */}
+                  {/* Sección: Datos de Residencia */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
                         3
                       </div>
-                      Información de Contacto
+                      🏠 Datos de Residencia
                     </h3>
                     <div className="grid md:grid-cols-2 gap-4 ml-10">
                       <div className="space-y-2">
-                        <Label htmlFor="phone">Teléfono *</Label>
+                        <Label htmlFor="residenceCountry">País de Residencia *</Label>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            id="residenceCountry"
+                            placeholder="Buscar país..."
+                            className="h-12 pl-10"
+                            value={countrySearch || countries.find(c => c.code === residenceCountry)?.name || ""}
+                            onChange={(e) => {
+                              setCountrySearch(e.target.value);
+                              if (!e.target.value) {
+                                setResidenceCountry("");
+                                setResidenceMunicipalityCode("");
+                                setResidenceMunicipalityName("");
+                                setResidencePostalCode("");
+                              }
+                            }}
+                            required
+                          />
+                        </div>
+                        {filteredCountries.length > 0 && (
+                          <div className="border rounded-lg max-h-48 overflow-y-auto z-10 bg-background">
+                            {filteredCountries.map((country) => (
+                              <button
+                                key={country.code}
+                                type="button"
+                                className="w-full text-left px-3 py-2 hover:bg-muted transition-colors text-sm"
+                                onClick={() => {
+                                  setResidenceCountry(country.code);
+                                  setCountrySearch(country.name);
+                                  setFilteredCountries([]);
+                                  setResidenceMunicipalityCode("");
+                                  setResidenceMunicipalityName("");
+                                  setResidencePostalCode("");
+                                }}
+                              >
+                                {country.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {residenceCountry === 'ES' ? (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor="municipalitySearch">Municipio *</Label>
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                              <Input
+                                id="municipalitySearch"
+                                placeholder="Buscar municipio..."
+                                className="h-12 pl-10"
+                                value={municipalitySearch}
+                                onChange={(e) => setMunicipalitySearch(e.target.value)}
+                              />
+                            </div>
+                            {loadingMunicipalities && (
+                              <p className="text-xs text-muted-foreground">Buscando...</p>
+                            )}
+                            {municipalities.length > 0 && (
+                              <div className="border rounded-lg max-h-48 overflow-y-auto">
+                                {municipalities.map((mun) => (
+                                  <button
+                                    key={mun.code}
+                                    type="button"
+                                    className="w-full text-left px-3 py-2 hover:bg-muted transition-colors text-sm"
+                                    onClick={() => {
+                                      setResidenceMunicipalityCode(mun.code);
+                                      setResidenceMunicipalityName(mun.name);
+                                      setResidencePostalCode(mun.postal_code);
+                                      setMunicipalitySearch(mun.display_name);
+                                      setMunicipalities([]);
+                                    }}
+                                  >
+                                    {mun.display_name}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="residencePostalCode">Código Postal *</Label>
+                            <Input
+                              id="residencePostalCode"
+                              placeholder="28001"
+                              className="h-12"
+                              value={residencePostalCode}
+                              onChange={(e) => setResidencePostalCode(e.target.value)}
+                              disabled
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Se completa automáticamente al seleccionar municipio
+                            </p>
+                          </div>
+                        </>
+                      ) : residenceCountry ? (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor="residenceMunicipalityName">Ciudad/Municipio *</Label>
+                            <Input
+                              id="residenceMunicipalityName"
+                              placeholder="Nombre de la ciudad"
+                              className="h-12"
+                              value={residenceMunicipalityName}
+                              onChange={(e) => setResidenceMunicipalityName(e.target.value)}
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="residencePostalCode">Código Postal</Label>
+                            <Input
+                              id="residencePostalCode"
+                              placeholder="Código postal"
+                              className="h-12"
+                              value={residencePostalCode}
+                              onChange={(e) => setResidencePostalCode(e.target.value)}
+                            />
+                          </div>
+                        </>
+                      ) : null}
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="residenceAddress">Dirección Completa *</Label>
+                        <Input
+                          id="residenceAddress"
+                          placeholder="Calle, número, piso, puerta..."
+                          className="h-12"
+                          value={residenceAddress}
+                          onChange={(e) => setResidenceAddress(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sección: Información de Contacto */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                        4
+                      </div>
+                      📞 Información de Contacto
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-4 ml-10">
+                      <div className="space-y-2">
+                        <Label htmlFor="phoneCountryCode">Código País *</Label>
+                        <Select value={phoneCountryCode} onValueChange={setPhoneCountryCode}>
+                          <SelectTrigger id="phoneCountryCode">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="+34">🇪🇸 +34 (España)</SelectItem>
+                            <SelectItem value="+33">🇫🇷 +33 (Francia)</SelectItem>
+                            <SelectItem value="+49">🇩🇪 +49 (Alemania)</SelectItem>
+                            <SelectItem value="+44">🇬🇧 +44 (Reino Unido)</SelectItem>
+                            <SelectItem value="+351">🇵🇹 +351 (Portugal)</SelectItem>
+                            <SelectItem value="+39">🇮🇹 +39 (Italia)</SelectItem>
+                            <SelectItem value="+1">🇺🇸 +1 (USA/Canadá)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Número de Teléfono *</Label>
                         <Input
                           id="phone"
                           type="tel"
-                          placeholder="+34 600 000 000"
+                          placeholder="600 000 000"
                           className="h-12"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
+                          required
                         />
                       </div>
-                      <div className="space-y-2">
+                      <div className="space-y-2 md:col-span-2">
                         <Label htmlFor="email">Correo Electrónico *</Label>
                         <Input
                           id="email"
@@ -459,6 +991,7 @@ const Register = () => {
                           className="h-12"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
+                          required
                         />
                       </div>
                     </div>
