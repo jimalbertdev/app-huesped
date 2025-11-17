@@ -14,6 +14,7 @@ interface ReservationData {
   registered_guests: number;
   all_guests_registered: boolean;
   status: string;
+  cliente_id: number;
   accommodation_name?: string;
   host_name?: string;
   host_email?: string;

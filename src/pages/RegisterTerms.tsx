@@ -365,7 +365,12 @@ const RegisterTerms = () => {
 
               {/* Navegación */}
               <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                <Link to={buildPathWithReservation("/register/preferences")} className="sm:w-auto">
+                <Link
+                  to={buildPathWithReservation(
+                    guestData?.is_responsible ? "/register/preferences" : "/register"
+                  )}
+                  className="sm:w-auto"
+                >
                   <Button
                     type="button"
                     variant="outline"

@@ -12,6 +12,7 @@
 // Cargar las clases necesarias
 require_once __DIR__ . '/../includes/Database.php';
 require_once __DIR__ . '/../includes/Response.php';
+require_once __DIR__ . '/../models/BedAvailability.php';
 
 header('Content-Type: application/json');
 
@@ -107,6 +108,18 @@ try {
             $stmt->execute([$accommodationId]);
             $videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $result['videos'] = $videos;
+        }
+
+        // Obtener disponibilidad de camas
+        if ($endpoint === 'beds') {
+            $bedAvailabilityModel = new BedAvailability($database);
+            $beds = $bedAvailabilityModel->getByAccommodation($accommodationId);
+
+            if (!$beds) {
+                Response::error('No se encontró información de camas para este alojamiento', 404);
+            }
+
+            Response::success($beds, 'Disponibilidad de camas obtenida correctamente');
         }
 
         // Obtener guía local

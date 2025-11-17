@@ -25,6 +25,7 @@ interface PreferenceData {
   double_beds: number;
   single_beds: number;
   sofa_beds: number;
+  bunk_beds: number;
   estimated_arrival_time?: string;
   additional_info?: string;
   allergies?: string;

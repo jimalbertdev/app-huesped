@@ -68,6 +68,334 @@
 
 ---
 
+## 🗓️ Sesión #014 - [2025-11-16 14:00]
+
+### 🎯 Objetivos Iniciales
+- [x] Corregir problema de autocompletado de país de residencia desde nacionalidad
+- [x] Actualizar vista v_reservations_full para usar nueva tabla viajeros
+- [x] Implementar escaneo de documentos con Klippa AI
+- [x] Integrar extracción automática de datos de documentos
+
+### ✅ Logros Completados
+
+#### 1. Corrección de Campos Independientes
+- ✅ **Separación de estados en Register.tsx** (líneas 65-68)
+  - Antes: Un solo estado `countrySearch` compartido entre nacionalidad y residencia
+  - Ahora: Dos estados separados:
+    - `nationalitySearch` para campo de nacionalidad
+    - `residenceCountrySearch` para país de residencia
+  - Dos listas filtradas independientes:
+    - `filteredCountriesNationality`
+    - `filteredCountriesResidence`
+  - Dos useEffect separados para filtrado (líneas 131-155)
+  - Problema resuelto: Seleccionar nacionalidad ya NO autocompleta país de residencia
+
+#### 2. Actualización de Vista de Base de Datos
+- ✅ **Migración 011 creada y ejecutada** (`database/migrations/011_update_reservations_view_for_viajeros.sql`)
+  - Vista `v_reservations_full` actualizada
+  - Cambio de JOIN: De `guests` (antigua) → `viajeros` + `checkin` (nueva)
+  - Campos mapeados correctamente:
+    - `responsible_first_name` ← `viajeros.n0mbr3s`
+    - `responsible_last_name` ← `viajeros.p3ll1d01`
+    - `responsible_email` ← `viajeros.m41l`
+  - Script `run_migration_011.php` creado para ejecución automatizada
+  - Verificación exitosa: 2 reservas visibles en la vista
+
+#### 3. Actualización de Contador de Huéspedes
+- ✅ **Método updateRegisteredGuests() actualizado** (`api/models/Reservation.php:54-71`)
+  - Antes: Consultaba tabla `guests` antigua
+  - Ahora: Consulta `checkin` + `viajeros`
+  - Query optimizado:
+    ```sql
+    SELECT COUNT(*)
+    FROM checkin c
+    INNER JOIN viajeros v ON c.viajero_id = v.id
+    WHERE c.reserva_id = r.id
+    ```
+  - Campo `registered_guests` se actualiza correctamente
+  - Campo `all_guests_registered` calcula correctamente si total alcanzado
+
+#### 4. Campo is_responsible Corregido
+- ✅ **Conversión explícita a entero** (`api/models/Viajero.php:169`)
+  - Antes: `$viajero['responsable'] ?? false` (podía devolver null)
+  - Ahora: `isset($viajero['responsable']) ? (int)$viajero['responsable'] : 0`
+  - Garantiza compatibilidad con frontend que espera `0` o `1`
+  - Badge "Responsable" ahora se muestra correctamente en página de confirmación
+
+#### 5. Implementación Completa de Escaneo con Klippa
+
+##### 5.1 Backend - Endpoint de Escaneo
+- ✅ **Creado `api/endpoints/document-scan.php`** (7.2 KB)
+  - Endpoint: POST `/api/document-scan`
+  - Recibe imagen vía `$_FILES['file']`
+  - Codifica imagen en base64
+  - Envía a Klippa API: `https://dochorizon.klippa.com/api/services/document_capturing/v1/identity`
+  - Headers: `x-api-key`, `Content-Type: application/json`
+  - Timeout: 30 segundos (proceso de IA puede tardar)
+
+- ✅ **Función extractDocumentData()** (líneas 108-196)
+  - Extrae y mapea 11 campos:
+    1. `first_name` ← `given_names`
+    2. `last_name` + `second_last_name` ← `surname` (split por espacio)
+    3. `document_number` ← Campo varía según tipo
+    4. `support_number` ← Número de soporte (DNI/NIE)
+    5. `birth_date` ← `date_of_birth` (convertido a YYYY-MM-DD)
+    6. `sex` ← `gender` (lowercase)
+    7. `nationality` ← Código de país
+    8. `document_type` ← Detectado automáticamente (DNI/NIE/PASSPORT)
+    9. `issue_date` ← `date_of_issue`
+    10. `expiry_date` ← `date_of_expiry`
+
+  - Lógica especial para DNI/NIE vs Pasaportes:
+    - **DNI/NIE**: `document_number` es soporte, `personal_number` es el DNI real
+    - **Pasaportes**: `document_number` es el número del pasaporte
+
+  - Autodetección de tipo:
+    - `I` → DNI
+    - `P` → PASSPORT
+    - `place_of_birth = "RESIDENCIA"` → NIE
+
+  - Conversión de fechas: `DD.MM.YYYY` → `YYYY-MM-DD`
+
+- ✅ **Logging detallado agregado**
+  - Logs en Apache error log para debugging
+  - Captura de errores de cURL
+  - Validación de JSON response
+  - Tracking de estructura de respuesta
+
+- ✅ **Rutas agregadas** (`api/index.php:71-73`)
+  - Case `'document-scan'` en router
+  - Endpoint visible en lista de available_endpoints
+
+##### 5.2 Frontend - Servicio de API
+- ✅ **documentScanService creado** (`src/services/api.ts:225-243`)
+  - Método: `scanDocument(file: File)`
+  - Usa `FormData` para upload
+  - Headers: `Content-Type: multipart/form-data`
+  - Timeout extendido: 30,000ms (30 segundos)
+  - Retorna datos estructurados listos para formulario
+
+##### 5.3 Frontend - Integración en Registro
+- ✅ **handleImageUpload() mejorada** (`src/pages/Register.tsx:181-243`)
+  - Guardar preview de imagen para UI
+  - Llamada asíncrona a `documentScanService.scanDocument()`
+  - Autocompletado de TODOS los campos disponibles:
+    - Tipo de documento
+    - Número de documento
+    - Número de soporte (si DNI/NIE)
+    - Nombres y apellidos
+    - Fecha de nacimiento
+    - Sexo
+    - Nacionalidad (con búsqueda de nombre del país)
+    - Fechas de expedición y vencimiento
+
+  - Toast de confirmación: "Documento escaneado - Los datos se han cargado automáticamente"
+  - Manejo de errores con toast destructivo
+  - Redirección automática a formulario después de escaneo
+
+- ✅ **UI de loading durante escaneo** (`src/pages/Register.tsx:533-576`)
+  - Estado `scanningDocument` para mostrar progreso
+  - Animación con `animate-pulse` en icono de cámara
+  - Mensaje: "Escaneando documento... Extrayendo datos con IA. Por favor espera."
+  - Input deshabilitado durante procesamiento
+  - Diseño responsive con bordes animados
+
+##### 5.4 Corrección de Permisos
+- ✅ **Problema identificado y resuelto**
+  - Error: `Permission denied` al acceder a `document-scan.php`
+  - Archivo creado con permisos `600` y owner `root`
+  - Solución aplicada:
+    ```bash
+    chmod 644 document-scan.php
+    chown www-data:www-data document-scan.php
+    ```
+  - Apache ahora puede leer el archivo correctamente
+
+### 📁 Archivos Modificados
+
+#### Backend (4 archivos nuevos)
+- `api/endpoints/document-scan.php` - **CREADO** (7.2 KB)
+- `api/index.php` - **MODIFICADO** (ruta document-scan agregada)
+- `database/migrations/011_update_reservations_view_for_viajeros.sql` - **CREADO**
+- `database/run_migration_011.php` - **CREADO**
+- `api/models/Reservation.php` - **MODIFICADO** (método updateRegisteredGuests)
+- `api/models/Viajero.php` - **MODIFICADO** (conversión is_responsible)
+
+#### Frontend (2 archivos modificados)
+- `src/pages/Register.tsx` - **MODIFICADO**
+  - Estados de búsqueda separados (líneas 65-68)
+  - Dos useEffect para filtrado independiente (líneas 131-155)
+  - handleImageUpload con integración Klippa (líneas 181-243)
+  - UI de loading durante escaneo (líneas 533-576)
+  - Campos de nacionalidad y residencia completamente separados
+- `src/services/api.ts` - **MODIFICADO** (documentScanService agregado, líneas 225-243)
+
+### 🐛 Bugs Encontrados y Resueltos
+- ✅ **Nacionalidad autocompletaba país de residencia**
+  - Causa: Estados compartidos entre ambos campos
+  - Solución: Separación completa de estados y lógica de filtrado
+  - Estado: **RESUELTO**
+
+- ✅ **Dashboard mostraba huéspedes faltantes incorrectamente**
+  - Causa: Vista `v_reservations_full` usaba tabla `guests` antigua
+  - Solución: Migración 011 actualiza vista a usar `viajeros` + `checkin`
+  - Estado: **RESUELTO**
+
+- ✅ **Badge "Responsable" no se mostraba**
+  - Causa: Campo `is_responsible` no se convertía explícitamente a entero
+  - Solución: Conversión con `(int)` en modelo Viajero
+  - Estado: **RESUELTO**
+
+- ✅ **Error Permission denied en document-scan.php**
+  - Causa: Archivo creado con permisos 600 y owner root
+  - Solución: chmod 644 + chown www-data:www-data
+  - Estado: **RESUELTO**
+
+### 💡 Aprendizajes y Decisiones
+
+**Decisión 1: Separar completamente estados de búsqueda**
+- Razón: Evitar efectos secundarios entre campos independientes
+- Implementación: Estados y useEffect duplicados pero independientes
+- Beneficio: UX predecible, sin autocompleta dos no deseados
+
+**Decisión 2: Migrar vista en vez de cambiar endpoint**
+- Razón: Mantener compatibilidad con código existente
+- Implementación: Vista SQL que mapea nuevas tablas a estructura esperada
+- Beneficio: Cambio transparente, sin modificar lógica de endpoints
+
+**Decisión 3: Timeout de 30 segundos para Klippa**
+- Razón: Procesamiento de IA puede tardar 10-20 segundos
+- Implementación: Timeout personalizado solo para este servicio
+- Beneficio: Evita falsos errores por timeout prematuro
+
+**Decisión 4: Logging detallado en endpoint de escaneo**
+- Razón: Debugging de respuesta de API externa
+- Implementación: error_log() para cada paso del proceso
+- Beneficio: Fácil troubleshooting en caso de errores
+
+**Patrón útil: Autocompletado inteligente con búsqueda**
+```typescript
+if (data.nationality) {
+  setNationality(data.nationality);
+  // Buscar el nombre del país para mostrarlo
+  const country = countries.find(c => c.code === data.nationality);
+  if (country) setNationalitySearch(country.name);
+}
+```
+- Autocompleta tanto el valor como el texto visible
+- Mejora UX al mostrar nombre legible en vez de código
+
+**Patrón útil: Conversión de fechas Klippa**
+```php
+function convertDate($dateString) {
+    $parts = explode('.', $dateString);
+    if (count($parts) === 3) {
+        return $parts[2] . '-' . $parts[1] . '-' . $parts[0]; // DD.MM.YYYY → YYYY-MM-DD
+    }
+    return $dateString;
+}
+```
+- Maneja formato europeo de Klippa
+- Convierte a formato ISO estándar para MySQL
+
+### 📋 Próximos Pasos
+1. **Probar escaneo con diferentes tipos de documentos**
+   - DNI español
+   - NIE español
+   - Pasaporte extranjero
+   - Otros documentos de identidad
+
+2. **Optimizaciones del escaneo**
+   - Comprimir imagen antes de enviar (reducir payload)
+   - Mostrar preview de imagen antes de procesar
+   - Permitir rotar/ajustar imagen si es necesario
+   - Opción de cancelar escaneo en progreso
+
+3. **Mejoras de UX**
+   - Resaltar campos autocompletados en verde
+   - Permitir editar campos después de escaneo
+   - Guardar imagen del documento (opcional)
+   - Validar campos extraídos antes de continuar
+
+4. **Seguridad**
+   - Mover API key de Klippa a variable de entorno
+   - Agregar rate limiting al endpoint de escaneo
+   - Validar tipos MIME de archivos subidos
+   - Limitar tamaño máximo de imagen (10MB)
+
+5. **Testing**
+   - Test con documentos borrosos o mal iluminados
+   - Test con documentos parcialmente ocultos
+   - Test de timeout y manejo de errores
+   - Test de carga (múltiples usuarios escaneando)
+
+### ⚠️ Notas Importantes
+
+**API de Klippa:**
+- Endpoint: `https://dochorizon.klippa.com/api/services/document_capturing/v1/identity`
+- API Key: `SLEWuIbhYA04NbOTVKFn86jIODBQI4vP` (HARDCODEADA - mover a .env)
+- Timeout recomendado: 30 segundos
+- Formato de imagen: base64 encoded
+- Response: JSON con estructura `data.components.text_fields`
+
+**Estructura de respuesta de Klippa:**
+```json
+{
+  "data": {
+    "components": {
+      "text_fields": {
+        "given_names": "JUAN",
+        "surname": "GARCIA LOPEZ",
+        "date_of_birth": "01.01.1990",
+        "document_type": "I",
+        "document_number": "ABC123456",
+        "personal_number": "DNI12345678X",
+        ...
+      }
+    }
+  }
+}
+```
+
+**Mapeo de tipos de documento:**
+- `I` → DNI
+- `P` → PASSPORT
+- `place_of_birth = "RESIDENCIA"` → NIE
+
+**Campos DNI/NIE vs Pasaporte:**
+- **DNI/NIE**:
+  - `document_number` = Número de soporte (ABC123456)
+  - `personal_number` = DNI real (DNI12345678X)
+- **Pasaporte**:
+  - `document_number` = Número de pasaporte
+  - `personal_number` = ID secundario
+
+**Permisos de archivos:**
+- Todos los archivos en `/api/endpoints/` deben tener:
+  - Permisos: `644` (rw-r--r--)
+  - Owner: `www-data:www-data`
+- Verificar con: `ls -la /var/www/html/app_huesped/api/endpoints/`
+
+**Vista v_reservations_full actualizada:**
+- Ya NO usa tabla `guests`
+- Ahora usa: `viajeros` + `checkin`
+- JOIN por: `reserva_id` y `responsable = 1`
+- Campos devueltos siguen siendo los mismos (retrocompatibilidad)
+
+**Estados separados en Register.tsx:**
+- `nationalitySearch` - Solo para campo de nacionalidad
+- `residenceCountrySearch` - Solo para país de residencia
+- `filteredCountriesNationality` - Resultados de nacionalidad
+- `filteredCountriesResidence` - Resultados de residencia
+- Cada uno tiene su propio useEffect independiente
+
+**Logs de debugging:**
+- Frontend: Consola del navegador con prefijo 📄
+- Backend: Apache error log (`/var/log/apache2/error.log`)
+- Buscar: `=== KLIPPA SCAN DEBUG ===`
+
+---
+
 ## 🗓️ Sesión #013 - [2025-11-15 20:00]
 
 ### 🎯 Objetivos Iniciales
@@ -1139,10 +1467,197 @@ private function convertToInt($value) {
 
 ---
 
+## 🗓️ Sesión #015 - 2025-11-16
+
+### 🎯 Objetivos Iniciales
+- [x] Integrar nueva tabla `reserva` y `clientem` con el sistema existente
+- [x] Agregar soporte para literas (bunk_beds) en preferencias
+- [x] Implementar validación de disponibilidad de camas por alojamiento
+- [x] Corregir persistencia de datos al navegar entre formularios
+- [x] Mejorar UX del escaneo de documentos (Klippa)
+- [x] Implementar scroll automático a campos con error
+
+### ✅ Logros Completados
+
+#### **1. Migración a Nuevas Tablas (reserva y clientem)**
+- ✅ Creado modelo `Cliente.php` con formateo de datos para frontend
+- ✅ Creado endpoint `GET /api/clients/{id}`
+- ✅ Actualizado modelo `Reservation.php` para usar tabla `reserva`
+- ✅ Mapeo de campos: `localizador_canal` → `reservation_code`, `alojamiento_id` → `accommodation_id`
+- ✅ Validación: redirige a 404 si reserva no tiene `cliente_id` o cliente no existe
+- ✅ Agregado `cliente_id` a interfaz `ReservationData` en frontend
+- ✅ Autocompletado de datos de cliente al marcar "Soy el titular de la reserva"
+- ✅ Checkbox de responsable movido al inicio del formulario con mejor UX
+
+#### **2. Sistema de Literas (Bunk Beds)**
+- ✅ Creado modelo `BedAvailability.php` con métodos de validación
+- ✅ Creado endpoint `GET /api/accommodation/{id}/beds`
+- ✅ Migración 011: agregado campo `bunk_beds` a tabla `preferences`
+- ✅ Actualizado modelo `Preference.php` para soportar literas
+- ✅ Endpoint `/api/preferences` valida disponibilidad antes de guardar
+- ✅ Frontend: agregado estado y UI para literas en `RegisterPreferences.tsx`
+- ✅ Carga dinámica de disponibilidad desde API
+- ✅ Límites de selección según disponibilidad real del alojamiento
+- ✅ Contadores deshabilitados cuando disponibilidad es 0
+
+#### **3. Mejoras en Escaneo de Documentos**
+- ✅ Función `mapDocumentType()`: PASSPORT → PAS, DNI → DNI, NIE → NIE, otros → other
+- ✅ Botón "Seleccionar archivo" arreglado (ahora toda el área es clickeable)
+- ✅ Botón "Continuar" se bloquea durante el escaneo
+- ✅ Texto cambia a "Procesando..." mientras se escanea
+- ✅ Logging mejorado en consola para debugging
+
+#### **4. Persistencia de Datos del Formulario**
+- ✅ `Register.tsx`: useEffect restaura ~30 campos desde contexto
+- ✅ `RegisterPreferences.tsx`: useEffect restaura 9 campos de preferencias
+- ✅ Datos persisten al navegar atrás desde cualquier paso
+- ✅ Permite corregir errores sin perder información
+
+#### **5. Navegación y UX**
+- ✅ Scroll automático a campos con error (función `focusField()`)
+- ✅ Navegación condicional en `RegisterTerms`:
+  - Responsable: vuelve a `RegisterPreferences`
+  - No responsable: vuelve a `Register`
+- ✅ Validación visual mejorada con mensajes específicos
+
+### 📁 Archivos Modificados/Creados
+
+#### Backend (6 archivos)
+1. `api/models/Cliente.php` - **CREADO**
+   - Métodos: getById(), formatForFrontend(), exists()
+   - Mapeo de tipos de documento y códigos de país
+2. `api/models/BedAvailability.php` - **CREADO**
+   - Métodos: getByAccommodation(), hasAvailability(), validateRequest()
+3. `api/endpoints/clients.php` - **CREADO**
+   - Endpoint: GET /api/clients/{id}
+4. `api/endpoints/accommodation.php` - **MODIFICADO**
+   - Agregado endpoint: GET /api/accommodation/{id}/beds
+5. `api/endpoints/reservations.php` - **MODIFICADO**
+   - Validación de cliente_id
+   - Uso de tabla `reserva`
+6. `api/endpoints/preferences.php` - **MODIFICADO**
+   - Validación de disponibilidad de camas
+7. `api/models/Reservation.php` - **MODIFICADO**
+   - Query actualizado para tabla `reserva`
+   - Mapeo de campos nuevos
+8. `api/models/Preference.php` - **MODIFICADO**
+   - Soporte para bunk_beds
+9. `api/index.php` - **MODIFICADO**
+   - Agregada ruta /api/clients/{id}
+10. `database/migrations/011_add_bunk_beds_to_preferences.sql` - **CREADO**
+
+#### Frontend (6 archivos)
+1. `src/services/api.ts` - **MODIFICADO**
+   - Agregado `clientService.getById()`
+   - Agregado `accommodationService.getBeds()`
+   - Actualizado `preferenceService.save()` con bunk_beds
+2. `src/pages/Register.tsx` - **MODIFICADO**
+   - Función `mapDocumentType()`
+   - useEffect para restaurar datos (30+ campos)
+   - Botón escanear arreglado
+   - Botón continuar bloqueado durante escaneo
+   - Autocompletado de datos de cliente
+3. `src/pages/RegisterPreferences.tsx` - **MODIFICADO**
+   - Estado `bunkBeds` agregado
+   - UI contador para literas
+   - Carga de disponibilidad desde API
+   - Validación visual de disponibilidad
+   - useEffect para restaurar preferencias
+   - Contadores deshabilitados si disponibilidad = 0
+4. `src/pages/RegisterTerms.tsx` - **MODIFICADO**
+   - Navegación condicional en botón "Atrás"
+5. `src/hooks/useRegistrationFlow.tsx` - **MODIFICADO**
+   - Interfaz `PreferenceData` con bunk_beds
+6. `src/hooks/useReservation.tsx` - **MODIFICADO**
+   - Interfaz `ReservationData` con cliente_id
+
+### 🐛 Bugs Resueltos
+1. **Bug**: Permisos incorrectos en archivos PHP creados (600)
+   - **Solución**: chmod 644 en Cliente.php y clients.php
+2. **Bug**: Columnas SQL no coinciden (wifi_ssid, portal_code, door_code)
+   - **Solución**: Mapeo a columnas reales (wifi_name, building_code, NULL)
+3. **Bug**: Falta llamada a getConnection() en clients.php
+   - **Solución**: Agregada inicialización de Database
+4. **Bug**: Al volver atrás se borran datos del formulario
+   - **Solución**: useEffect restaura datos desde contexto
+5. **Bug**: Literas no se deshabilitan cuando disponibilidad es 0
+   - **Solución**: Parámetro `disabled` en componente Counter
+6. **Bug**: Botón "Atrás" en RegisterTerms siempre va a Preferencias
+   - **Solución**: Navegación condicional según is_responsible
+
+### 💡 Aprendizajes y Decisiones
+
+#### **Decisiones Arquitectónicas**
+1. **Tabla `reserva` vs `reservations`**: Usar tabla `reserva` de producción, mapear campos en modelo
+2. **Validación de disponibilidad**: Backend valida antes de guardar, frontend muestra límites
+3. **Persistencia de datos**: Usar contexto `useRegistrationFlow` para mantener estado entre navegación
+4. **Literas como tipo separado**: No agrupar con otros tipos de cama, manejar independientemente
+
+#### **Patrones Útiles**
+1. **Restauración de datos**: useEffect con dependencia en guestData/preferenceData
+2. **Validación visual**: Deshabilitar UI cuando no hay disponibilidad + mensaje explicativo
+3. **Mapeo de datos**: Función `formatForFrontend()` centraliza transformación de datos
+4. **Scroll a errores**: Función `focusField()` combina scroll + focus + toast
+
+#### **Mejoras de UX**
+1. Checkbox de responsable al inicio del formulario (más visible)
+2. Autocompletado de datos reduce fricción para titular
+3. Contadores muestran disponibilidad máxima en label
+4. Mensajes específicos cuando algo no está disponible
+5. Botones bloqueados durante operaciones async
+
+### 🔄 Trabajo en Progreso
+- 🚧 **Pendiente para mañana**: Actualizar modal de preferencias de camas en Dashboard
+
+### ⏭️ Próximos Pasos (Para Mañana)
+
+#### **Alta Prioridad**
+1. **Modal de preferencias en Dashboard**
+   - Actualizar con soporte para literas
+   - Validación de disponibilidad en tiempo real
+   - Actualización optimista de UI
+
+2. **Actualizar información del alojamiento**
+   - Migrar a nuevas tablas de información
+   - Videos de bienvenida
+   - Guía local
+   - Atención al cliente
+
+3. **Sistema de aperturas de puertas**
+   - Actualizar con nueva estructura de tablas
+   - Validación de permisos
+   - Logging de intentos
+
+#### **Media Prioridad**
+4. Testing de flujo completo con datos reales
+5. Verificar compatibilidad con alojamientos sin ciertas camas
+6. Optimizar queries de disponibilidad (caching?)
+
+### 📊 Métricas de la Sesión
+- **Archivos creados**: 4
+- **Archivos modificados**: 12
+- **Líneas de código agregadas**: ~800 líneas
+- **Bugs resueltos**: 6
+- **Features completadas**: 6 grandes features
+- **Migraciones de BD**: 1 (migración 011)
+- **Endpoints nuevos**: 2 (clients, beds)
+- **Duración estimada**: ~4 horas
+
+### 🎓 Conocimientos Técnicos Aplicados
+- React hooks avanzados (useEffect con múltiples dependencias)
+- TypeScript interfaces y tipos
+- PHP PDO y consultas SQL complejas
+- Validación de datos en múltiples capas
+- Manejo de estado global con Context API
+- Scroll programático y focus management
+- Mapeo de datos entre sistemas legacy y nuevos
+
+---
+
 ## 📊 ESTADÍSTICAS DEL PROYECTO
 
 ### Sesiones Totales
-**11 sesiones** de desarrollo activo
+**15 sesiones** de desarrollo activo
 
 ### Tiempo Aproximado
 - **Sesión promedio**: 1-2 horas

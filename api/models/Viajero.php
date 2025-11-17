@@ -166,7 +166,7 @@ class Viajero {
             'tipo' => $viajero['tipo'] ?? null,
             'estatus' => $viajero['estatus'] ?? null,
             'observacion' => $viajero['observacion'] ?? null,
-            'is_responsible' => $viajero['responsable'] ?? false,
+            'is_responsible' => isset($viajero['responsable']) ? (int)$viajero['responsable'] : 0,
             'signature_path' => $viajero['firma'] ?? null,
             'nationality' => $viajero['nacionalidad'] ?? null,
             'relationship' => $viajero['parentesco'] ?? null,
@@ -176,7 +176,7 @@ class Viajero {
             'residence_postal_code' => $viajero['c0d_p0st4l'] ?? null,
             'residence_address' => $viajero['d1r3cc10n'] ?? null,
             'support_number' => $viajero['n_soporte'] ?? null,
-            'is_registered' => $viajero['registrado_raixer'] ?? false,
+            'is_registered' => isset($viajero['registrado_raixer']) ? (int)$viajero['registrado_raixer'] : 0,
         ];
     }
 

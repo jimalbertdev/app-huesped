@@ -14,14 +14,14 @@ import { toast } from "@/hooks/use-toast";
 import vacanflyLogo from "@/assets/vacanfly-logo.png";
 import { DOCUMENT_TYPES, RELATIONSHIP_TYPES, SEX_OPTIONS, calculateAge, isMinor, requiresSecondSurname, requiresSupportNumber } from "@/lib/catalogs";
 import { validateDNI, validateNIE, validateDocument } from "@/lib/documentValidation";
-import { countryService, municipalityService } from "@/services/api";
+import { countryService, municipalityService, documentScanService, clientService } from "@/services/api";
 import type { Country, Municipality } from "@/schemas/guestSchema";
 
 const Register = () => {
   const navigate = useNavigate();
   const { reservationData, guests } = useReservation();
   const { buildPathWithReservation } = useReservationParams();
-  const { setGuestData } = useRegistrationFlow();
+  const { setGuestData, guestData } = useRegistrationFlow();
 
   // Verificar si ya hay un huésped responsable
   const hasResponsible = guests.some(guest => guest.is_responsible);
@@ -62,14 +62,17 @@ const Register = () => {
 
   // Estados para autocompletado y búsqueda
   const [countries, setCountries] = useState<Country[]>([]);
-  const [countrySearch, setCountrySearch] = useState("");
-  const [filteredCountries, setFilteredCountries] = useState<Country[]>([]);
+  const [nationalitySearch, setNationalitySearch] = useState("");
+  const [residenceCountrySearch, setResidenceCountrySearch] = useState("");
+  const [filteredCountriesNationality, setFilteredCountriesNationality] = useState<Country[]>([]);
+  const [filteredCountriesResidence, setFilteredCountriesResidence] = useState<Country[]>([]);
   const [municipalitySearch, setMunicipalitySearch] = useState("");
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
   const [loadingMunicipalities, setLoadingMunicipalities] = useState(false);
 
   // Estados para validación de documentos
   const [documentError, setDocumentError] = useState<string>("");
+  const [scanningDocument, setScanningDocument] = useState(false);
 
   // Cargar países al montar el componente
   useEffect(() => {
@@ -85,6 +88,54 @@ const Register = () => {
     };
     loadCountries();
   }, []);
+
+  // Restaurar datos del formulario desde el contexto (al volver atrás)
+  useEffect(() => {
+    if (guestData && countries.length > 0) {
+      // Datos de documento
+      if (guestData.document_type) setDocumentType(guestData.document_type);
+      if (guestData.document_number) setDocumentNumber(guestData.document_number);
+      if (guestData.support_number) setSupportNumber(guestData.support_number);
+      if (guestData.issue_date) setIssueDate(guestData.issue_date);
+      if (guestData.expiry_date) setExpiryDate(guestData.expiry_date);
+
+      // Datos personales
+      if (guestData.nationality) {
+        setNationality(guestData.nationality);
+        const country = countries.find(c => c.code === guestData.nationality);
+        if (country) setNationalitySearch(country.name);
+      }
+      if (guestData.first_name) setFirstName(guestData.first_name);
+      if (guestData.last_name) setLastName(guestData.last_name);
+      if (guestData.second_last_name) setSecondLastName(guestData.second_last_name);
+      if (guestData.birth_date) setBirthDate(guestData.birth_date);
+      if (guestData.sex) setSex(guestData.sex);
+      if (guestData.relationship) setRelationship(guestData.relationship);
+
+      // Datos de residencia
+      if (guestData.residence_country) {
+        setResidenceCountry(guestData.residence_country);
+        const country = countries.find(c => c.code === guestData.residence_country);
+        if (country) setResidenceCountrySearch(country.name);
+      }
+      if (guestData.residence_municipality_code) setResidenceMunicipalityCode(guestData.residence_municipality_code);
+      if (guestData.residence_municipality_name) setResidenceMunicipalityName(guestData.residence_municipality_name);
+      if (guestData.residence_postal_code) setResidencePostalCode(guestData.residence_postal_code);
+      if (guestData.residence_address) setResidenceAddress(guestData.residence_address);
+
+      // Datos de contacto
+      if (guestData.phone_country_code) setPhoneCountryCode(guestData.phone_country_code);
+      if (guestData.phone) setPhone(guestData.phone);
+      if (guestData.email) setEmail(guestData.email);
+      if (guestData.is_responsible !== undefined) setIsResponsible(guestData.is_responsible);
+
+      // Avanzar directamente al formulario si ya había datos
+      if (step === "method") {
+        setStep("form");
+        setCaptureMethod("manual");
+      }
+    }
+  }, [guestData, countries]);
 
   // Calcular edad automáticamente cuando cambia la fecha de nacimiento
   useEffect(() => {
@@ -126,18 +177,31 @@ const Register = () => {
     }
   }, [municipalitySearch, residenceCountry]);
 
-  // Filtrar países por búsqueda
+  // Filtrar países por búsqueda - Nacionalidad
   useEffect(() => {
-    if (countrySearch.length >= 2) {
+    if (nationalitySearch.length >= 2) {
       const filtered = countries.filter(country =>
-        country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
-        country.code.toLowerCase().includes(countrySearch.toLowerCase())
+        country.name.toLowerCase().includes(nationalitySearch.toLowerCase()) ||
+        country.code.toLowerCase().includes(nationalitySearch.toLowerCase())
       );
-      setFilteredCountries(filtered);
+      setFilteredCountriesNationality(filtered);
     } else {
-      setFilteredCountries([]);
+      setFilteredCountriesNationality([]);
     }
-  }, [countrySearch, countries]);
+  }, [nationalitySearch, countries]);
+
+  // Filtrar países por búsqueda - País de Residencia
+  useEffect(() => {
+    if (residenceCountrySearch.length >= 2) {
+      const filtered = countries.filter(country =>
+        country.name.toLowerCase().includes(residenceCountrySearch.toLowerCase()) ||
+        country.code.toLowerCase().includes(residenceCountrySearch.toLowerCase())
+      );
+      setFilteredCountriesResidence(filtered);
+    } else {
+      setFilteredCountriesResidence([]);
+    }
+  }, [residenceCountrySearch, countries]);
 
   // Validar formato de documento en tiempo real
   useEffect(() => {
@@ -162,15 +226,148 @@ const Register = () => {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  /**
+   * Mapear tipo de documento de Klippa al formato del formulario
+   */
+  const mapDocumentType = (klippaType: string): string => {
+    const type = klippaType?.toUpperCase() || '';
+
+    if (type === 'DNI' || type === 'SPANISH_ID') return 'DNI';
+    if (type === 'NIE' || type === 'FOREIGNER_ID') return 'NIE';
+    if (type === 'PASSPORT' || type === 'PASAPORTE') return 'PAS';
+
+    // Para cualquier otro tipo, usar "other"
+    return 'other';
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setUploadedImage(reader.result as string);
+    if (!file) return;
+
+    // Guardar imagen para mostrarla
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setUploadedImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Escanear documento con Klippa
+    setScanningDocument(true);
+    try {
+      const response = await documentScanService.scanDocument(file);
+
+      // Log completo para debugging
+      console.log('📄 Respuesta completa de Klippa:', response.data);
+      console.log('📄 Datos extraídos:', response.data.data);
+
+      if (response.data.success) {
+        const data = response.data.data;
+
+        // Autocompletar campos con datos extraídos - con mapeo de tipo
+        if (data.document_type) {
+          const mappedType = mapDocumentType(data.document_type);
+          setDocumentType(mappedType);
+          console.log(`🔄 Tipo de documento mapeado: ${data.document_type} → ${mappedType}`);
+        }
+        if (data.document_number) setDocumentNumber(data.document_number);
+        if (data.support_number) setSupportNumber(data.support_number);
+        if (data.first_name) setFirstName(data.first_name);
+        if (data.last_name) setLastName(data.last_name);
+        if (data.second_last_name) setSecondLastName(data.second_last_name);
+        if (data.birth_date) setBirthDate(data.birth_date);
+        if (data.sex) setSex(data.sex);
+        if (data.nationality) {
+          setNationality(data.nationality);
+          // Buscar el nombre del país para mostrarlo
+          const country = countries.find(c => c.code === data.nationality);
+          if (country) setNationalitySearch(country.name);
+        }
+        if (data.issue_date) setIssueDate(data.issue_date);
+        if (data.expiry_date) setExpiryDate(data.expiry_date);
+
+        toast({
+          title: "Documento escaneado",
+          description: "Los datos se han cargado automáticamente. Revisa y completa la información faltante.",
+        });
+
         setStep("form");
-      };
-      reader.readAsDataURL(file);
+      } else {
+        toast({
+          title: "Error en el escaneo",
+          description: "No se pudieron extraer los datos del documento. Por favor, intenta de nuevo o ingresa los datos manualmente.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error escaneando documento:", error);
+      toast({
+        title: "Error en el escaneo",
+        description: "Hubo un problema al procesar el documento. Por favor, intenta de nuevo o ingresa los datos manualmente.",
+        variant: "destructive",
+      });
+      // Aún así permitir continuar al formulario
+      setStep("form");
+    } finally {
+      setScanningDocument(false);
+    }
+  };
+
+  /**
+   * Manejar cambio del checkbox "Soy el responsable"
+   * Si se marca, cargar datos del cliente automáticamente
+   */
+  const handleResponsibleChange = async (checked: boolean) => {
+    setIsResponsible(checked);
+
+    // Si se marca como responsable y hay cliente_id en la reserva
+    if (checked && reservationData?.cliente_id) {
+      try {
+        const response = await clientService.getById(reservationData.cliente_id);
+
+        if (response.data.success) {
+          const clientData = response.data.data;
+
+          // Autocompletar campos con datos del cliente
+          if (clientData.document_type) setDocumentType(clientData.document_type);
+          if (clientData.document_number) setDocumentNumber(clientData.document_number);
+          if (clientData.first_name) setFirstName(clientData.first_name);
+          if (clientData.last_name) setLastName(clientData.last_name);
+          if (clientData.second_last_name) setSecondLastName(clientData.second_last_name);
+
+          // Nacionalidad
+          if (clientData.nationality) {
+            setNationality(clientData.nationality);
+            const country = countries.find(c => c.code === clientData.nationality);
+            if (country) setNationalitySearch(country.name);
+          }
+
+          // Residencia
+          if (clientData.residence_country) {
+            setResidenceCountry(clientData.residence_country);
+            const country = countries.find(c => c.code === clientData.residence_country);
+            if (country) setResidenceCountrySearch(country.name);
+          }
+          if (clientData.residence_postal_code) setResidencePostalCode(clientData.residence_postal_code);
+          if (clientData.residence_address) setResidenceAddress(clientData.residence_address);
+
+          // Contacto
+          if (clientData.phone_country_code) setPhoneCountryCode(clientData.phone_country_code);
+          if (clientData.phone) setPhone(clientData.phone);
+          if (clientData.email) setEmail(clientData.email);
+
+          toast({
+            title: "Datos cargados",
+            description: "Tus datos como titular de la reserva se han cargado automáticamente. Revisa y completa la información faltante.",
+          });
+        }
+      } catch (error) {
+        console.error('Error cargando datos del cliente:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar tus datos. Por favor, ingrésalos manualmente.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -462,31 +659,50 @@ const Register = () => {
 
               <Card className="p-8 shadow-elegant">
                 <div className="space-y-6">
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-xl p-12 text-center hover:border-primary/50 transition-colors">
-                    <input
-                      type="file"
-                      id="documentUpload"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageUpload}
-                    />
-                    <label htmlFor="documentUpload" className="cursor-pointer space-y-4 block">
-                      <div className="w-20 h-20 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center">
-                        <Camera className="w-10 h-10 text-primary" />
+                  {scanningDocument ? (
+                    <div className="border-2 border-dashed border-primary/50 rounded-xl p-12 text-center bg-primary/5">
+                      <div className="space-y-4">
+                        <div className="w-20 h-20 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center animate-pulse">
+                          <Camera className="w-10 h-10 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-lg font-semibold mb-2">
+                            Escaneando documento...
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Extrayendo datos con IA. Por favor espera.
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-lg font-semibold mb-2">
-                          Selecciona o toma una foto
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          PNG, JPG o JPEG (Máx. 10MB)
-                        </p>
-                      </div>
-                      <Button type="button" variant="outline" size="lg">
-                        Seleccionar archivo
-                      </Button>
-                    </label>
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-muted-foreground/25 rounded-xl p-12 text-center hover:border-primary/50 transition-colors">
+                      <input
+                        type="file"
+                        id="documentUpload"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageUpload}
+                        disabled={scanningDocument}
+                      />
+                      <label htmlFor="documentUpload" className="cursor-pointer space-y-4 block">
+                        <div className="w-20 h-20 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center">
+                          <Camera className="w-10 h-10 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-lg font-semibold mb-2">
+                            Selecciona o toma una foto
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            PNG, JPG o JPEG (Máx. 10MB)
+                          </p>
+                        </div>
+                        <div className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 px-8 gap-2">
+                          Seleccionar archivo
+                        </div>
+                      </label>
+                    </div>
+                  )}
 
                   {uploadedImage && (
                     <div className="space-y-4">
@@ -516,9 +732,10 @@ const Register = () => {
                         size="lg"
                         className="flex-1 gap-2 bg-gradient-primary hover:opacity-90"
                         onClick={() => setStep("form")}
+                        disabled={scanningDocument}
                       >
-                        Continuar
-                        <ArrowRight className="w-4 h-4" />
+                        {scanningDocument ? "Procesando..." : "Continuar"}
+                        {!scanningDocument && <ArrowRight className="w-4 h-4" />}
                       </Button>
                     )}
                   </div>
@@ -538,6 +755,34 @@ const Register = () => {
 
               <Card className="p-6 md:p-8 shadow-elegant">
                 <form onSubmit={handleSubmit} className="space-y-8">
+                  {/* Checkbox: ¿Eres el responsable? - PRIMERO */}
+                  {!hasResponsible && (
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-3 p-6 rounded-lg bg-blue-50 border-2 border-blue-200">
+                        <Checkbox
+                          id="isResponsible"
+                          checked={isResponsible}
+                          onCheckedChange={handleResponsibleChange}
+                        />
+                        <div className="flex-1">
+                          <Label htmlFor="isResponsible" className="cursor-pointer text-lg font-semibold text-blue-900">
+                            ✓ Soy el titular de la reserva
+                          </Label>
+                          <p className="text-sm text-blue-700 mt-1">
+                            Marca esta casilla si eres la persona que realizó la reserva. Tus datos se cargarán automáticamente.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {hasResponsible && (
+                    <div className="p-4 rounded-lg bg-muted/50 border border-muted">
+                      <p className="text-sm text-muted-foreground">
+                        ℹ️ Ya hay un huésped responsable registrado para esta reserva
+                      </p>
+                    </div>
+                  )}
+
                   {/* Sección: Documento de Identidad */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -658,25 +903,25 @@ const Register = () => {
                                 id="nationality"
                                 placeholder="Buscar país..."
                                 className="h-12 pl-10"
-                                value={countrySearch || countries.find(c => c.code === nationality)?.name || ""}
+                                value={nationalitySearch || countries.find(c => c.code === nationality)?.name || ""}
                                 onChange={(e) => {
-                                  setCountrySearch(e.target.value);
+                                  setNationalitySearch(e.target.value);
                                   if (!e.target.value) setNationality("");
                                 }}
                                 required
                               />
                             </div>
-                            {filteredCountries.length > 0 && (
+                            {filteredCountriesNationality.length > 0 && (
                               <div className="border rounded-lg max-h-48 overflow-y-auto">
-                                {filteredCountries.map((country) => (
+                                {filteredCountriesNationality.map((country) => (
                                   <button
                                     key={country.code}
                                     type="button"
                                     className="w-full text-left px-3 py-2 hover:bg-muted transition-colors text-sm"
                                     onClick={() => {
                                       setNationality(country.code);
-                                      setCountrySearch(country.name);
-                                      setFilteredCountries([]);
+                                      setNationalitySearch(country.name);
+                                      setFilteredCountriesNationality([]);
                                     }}
                                   >
                                     {country.name}
@@ -773,30 +1018,6 @@ const Register = () => {
                           </p>
                         </div>
                       )}
-                      {/* Mostrar checkbox de responsable solo si no hay uno ya */}
-                      {!hasResponsible && (
-                        <div className="space-y-2 md:col-span-2">
-                          <div className="flex items-center space-x-3 p-4 rounded-lg bg-primary/5 border border-primary/20">
-                            <Checkbox
-                              id="isResponsible"
-                              checked={isResponsible}
-                              onCheckedChange={(checked) => setIsResponsible(checked as boolean)}
-                            />
-                            <Label htmlFor="isResponsible" className="cursor-pointer font-medium">
-                              Soy el responsable de la reserva
-                            </Label>
-                          </div>
-                        </div>
-                      )}
-                      {hasResponsible && (
-                        <div className="space-y-2 md:col-span-2">
-                          <div className="p-3 rounded-lg bg-muted/50 border border-muted">
-                            <p className="text-sm text-muted-foreground">
-                              ℹ️ Ya hay un huésped responsable registrado para esta reserva
-                            </p>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
 
@@ -817,9 +1038,9 @@ const Register = () => {
                             id="residenceCountry"
                             placeholder="Buscar país..."
                             className="h-12 pl-10"
-                            value={countrySearch || countries.find(c => c.code === residenceCountry)?.name || ""}
+                            value={residenceCountrySearch || countries.find(c => c.code === residenceCountry)?.name || ""}
                             onChange={(e) => {
-                              setCountrySearch(e.target.value);
+                              setResidenceCountrySearch(e.target.value);
                               if (!e.target.value) {
                                 setResidenceCountry("");
                                 setResidenceMunicipalityCode("");
@@ -830,17 +1051,17 @@ const Register = () => {
                             required
                           />
                         </div>
-                        {filteredCountries.length > 0 && (
+                        {filteredCountriesResidence.length > 0 && (
                           <div className="border rounded-lg max-h-48 overflow-y-auto z-10 bg-background">
-                            {filteredCountries.map((country) => (
+                            {filteredCountriesResidence.map((country) => (
                               <button
                                 key={country.code}
                                 type="button"
                                 className="w-full text-left px-3 py-2 hover:bg-muted transition-colors text-sm"
                                 onClick={() => {
                                   setResidenceCountry(country.code);
-                                  setCountrySearch(country.name);
-                                  setFilteredCountries([]);
+                                  setResidenceCountrySearch(country.name);
+                                  setFilteredCountriesResidence([]);
                                   setResidenceMunicipalityCode("");
                                   setResidenceMunicipalityName("");
                                   setResidencePostalCode("");

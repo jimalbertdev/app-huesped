@@ -13,6 +13,7 @@ require_once __DIR__ . '/../models/Guest.php';
 require_once __DIR__ . '/../models/Viajero.php';
 require_once __DIR__ . '/../models/Preference.php';
 require_once __DIR__ . '/../models/LocalGuide.php';
+require_once __DIR__ . '/../models/Cliente.php';
 
 try {
     $database = new Database();
@@ -23,6 +24,7 @@ try {
     $viajeroModel = new Viajero($database);
     $preferenceModel = new Preference($database);
     $localGuideModel = new LocalGuide($database);
+    $clienteModel = new Cliente($database);
 
     $method = $_SERVER['REQUEST_METHOD'];
     $request_uri = $_SERVER['REQUEST_URI'];
@@ -41,6 +43,16 @@ try {
 
             if (!$reservation) {
                 Response::notFound("Reserva no encontrada");
+            }
+
+            // VALIDAR que la reserva tenga cliente_id
+            if (empty($reservation['cliente_id'])) {
+                Response::notFound("Reserva sin cliente asociado. Contacte al administrador.");
+            }
+
+            // VALIDAR que el cliente existe
+            if (!$clienteModel->exists($reservation['cliente_id'])) {
+                Response::notFound("Cliente no encontrado. Contacte al administrador.");
             }
 
             // Obtener huéspedes (viajeros)

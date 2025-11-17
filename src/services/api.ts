@@ -119,6 +119,7 @@ export const preferenceService = {
     double_beds?: number;
     single_beds?: number;
     sofa_beds?: number;
+    bunk_beds?: number;
     estimated_arrival_time?: string;
     additional_info?: string;
     allergies?: string;
@@ -189,6 +190,12 @@ export const accommodationService = {
    */
   getGuide: (accommodationId: number) =>
     api.get(`/accommodation/${accommodationId}/guide`),
+
+  /**
+   * Obtener disponibilidad de camas del alojamiento
+   */
+  getBeds: (accommodationId: number) =>
+    api.get(`/accommodation/${accommodationId}/beds`),
 };
 
 // Países
@@ -220,6 +227,36 @@ export const municipalityService = {
    * Obtener municipio por código INE
    */
   getByCode: (code: string) => api.get(`/municipalities/${code}`),
+};
+
+// Escaneo de Documentos con Klippa
+export const documentScanService = {
+  /**
+   * Escanear documento de identidad con Klippa
+   * @param file - Archivo de imagen del documento
+   * @returns Datos extraídos del documento
+   */
+  scanDocument: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return axios.post(`${API_BASE_URL}/document-scan`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 30000, // 30 segundos (escaneo puede tardar más)
+    });
+  },
+};
+
+// Clientes (Titulares de Reserva)
+export const clientService = {
+  /**
+   * Obtener datos de cliente por ID
+   * @param id - ID del cliente
+   * @returns Datos del cliente formateados
+   */
+  getById: (id: number) => api.get(`/clients/${id}`),
 };
 
 // Health Check

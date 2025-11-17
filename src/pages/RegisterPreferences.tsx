@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -9,21 +9,78 @@ import { ArrowRight, ArrowLeft, Plus, Minus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useReservationParams } from "@/hooks/useReservationParams";
 import { useRegistrationFlow } from "@/hooks/useRegistrationFlow";
+import { useReservation } from "@/hooks/useReservation";
+import { accommodationService } from "@/services/api";
+import { toast } from "@/hooks/use-toast";
 import vacanflyLogo from "@/assets/vacanfly-logo.png";
 
 const RegisterPreferences = () => {
   const navigate = useNavigate();
   const { buildPathWithReservation } = useReservationParams();
-  const { setPreferenceData, isGuestDataComplete } = useRegistrationFlow();
+  const { setPreferenceData, preferenceData, isGuestDataComplete } = useRegistrationFlow();
+  const { reservationData } = useReservation();
 
   const [needsCrib, setNeedsCrib] = useState(false);
   const [doubleBeds, setDoubleBeds] = useState(0);
   const [singleBeds, setSingleBeds] = useState(0);
   const [sofaBeds, setSofaBeds] = useState(0);
+  const [bunkBeds, setBunkBeds] = useState(0);
   const [estimatedArrivalTime, setEstimatedArrivalTime] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [allergies, setAllergies] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
+
+  // Estado para disponibilidad de camas
+  const [bedAvailability, setBedAvailability] = useState<{
+    double_beds: number;
+    single_beds: number;
+    sofa_beds: number;
+    bunk_beds: number;
+    crib: boolean;
+  } | null>(null);
+  const [loadingAvailability, setLoadingAvailability] = useState(true);
+
+  // Cargar disponibilidad de camas del alojamiento
+  useEffect(() => {
+    const loadBedAvailability = async () => {
+      if (!reservationData?.accommodation_id) return;
+
+      try {
+        setLoadingAvailability(true);
+        const response = await accommodationService.getBeds(reservationData.accommodation_id);
+
+        if (response.data.success) {
+          setBedAvailability(response.data.data);
+        }
+      } catch (error) {
+        console.error('Error cargando disponibilidad de camas:', error);
+        toast({
+          title: "Advertencia",
+          description: "No se pudo cargar la disponibilidad de camas. Podrás continuar pero puede haber limitaciones.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingAvailability(false);
+      }
+    };
+
+    loadBedAvailability();
+  }, [reservationData?.accommodation_id]);
+
+  // Restaurar datos de preferencias desde el contexto (al volver atrás)
+  useEffect(() => {
+    if (preferenceData) {
+      setNeedsCrib(preferenceData.needs_crib);
+      setDoubleBeds(preferenceData.double_beds);
+      setSingleBeds(preferenceData.single_beds);
+      setSofaBeds(preferenceData.sofa_beds);
+      setBunkBeds(preferenceData.bunk_beds);
+      setEstimatedArrivalTime(preferenceData.estimated_arrival_time || "");
+      setAdditionalInfo(preferenceData.additional_info || "");
+      setAllergies(preferenceData.allergies || "");
+      setSpecialRequests(preferenceData.special_requests || "");
+    }
+  }, [preferenceData]);
 
   // Esta página solo debe mostrarse al responsable de la reserva
   // En producción, verificar si el usuario actual es el responsable
@@ -43,6 +100,7 @@ const RegisterPreferences = () => {
       double_beds: doubleBeds,
       single_beds: singleBeds,
       sofa_beds: sofaBeds,
+      bunk_beds: bunkBeds,
       estimated_arrival_time: estimatedArrivalTime || undefined,
       additional_info: additionalInfo || undefined,
       allergies: allergies || undefined,
@@ -53,21 +111,23 @@ const RegisterPreferences = () => {
     navigate(buildPathWithReservation("/register/terms"));
   };
 
-  const Counter = ({ 
-    label, 
-    value, 
-    onChange, 
-    min = 0, 
-    max = 10 
-  }: { 
-    label: string; 
-    value: number; 
-    onChange: (val: number) => void; 
-    min?: number; 
+  const Counter = ({
+    label,
+    value,
+    onChange,
+    min = 0,
+    max = 10,
+    disabled = false
+  }: {
+    label: string;
+    value: number;
+    onChange: (val: number) => void;
+    min?: number;
     max?: number;
+    disabled?: boolean;
   }) => (
     <div className="space-y-2">
-      <Label>{label}</Label>
+      <Label className={disabled ? 'opacity-50' : ''}>{label}</Label>
       <div className="flex items-center gap-3">
         <Button
           type="button"
@@ -75,22 +135,25 @@ const RegisterPreferences = () => {
           size="icon"
           className="h-12 w-12"
           onClick={() => onChange(Math.max(min, value - 1))}
-          disabled={value <= min}
+          disabled={disabled || value <= min}
         >
           <Minus className="h-4 w-4" />
         </Button>
-        <div className="w-16 text-center text-xl font-semibold">{value}</div>
+        <div className={`w-16 text-center text-xl font-semibold ${disabled ? 'opacity-50' : ''}`}>{value}</div>
         <Button
           type="button"
           variant="outline"
           size="icon"
           className="h-12 w-12"
           onClick={() => onChange(Math.min(max, value + 1))}
-          disabled={value >= max}
+          disabled={disabled || value >= max}
         >
           <Plus className="h-4 w-4" />
         </Button>
       </div>
+      {disabled && (
+        <p className="text-xs text-muted-foreground">No disponible en este alojamiento</p>
+      )}
     </div>
   );
 
@@ -162,35 +225,50 @@ const RegisterPreferences = () => {
                   id="needsCrib"
                   checked={needsCrib}
                   onCheckedChange={(checked) => setNeedsCrib(checked as boolean)}
+                  disabled={bedAvailability !== null && !bedAvailability.crib}
                 />
-                <Label htmlFor="needsCrib" className="cursor-pointer">
-                  Necesita Cuna
+                <Label htmlFor="needsCrib" className={`cursor-pointer ${bedAvailability !== null && !bedAvailability.crib ? 'opacity-50' : ''}`}>
+                  Necesita Cuna {bedAvailability !== null && !bedAvailability.crib && <span className="text-xs text-muted-foreground">(No disponible)</span>}
                 </Label>
               </div>
 
               {/* Configuración de camas */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Configuración de Camas</h3>
-                <div className="grid md:grid-cols-3 gap-6">
-                  <Counter
-                    label="Camas Dobles"
-                    value={doubleBeds}
-                    onChange={setDoubleBeds}
-                    max={5}
-                  />
-                  <Counter
-                    label="Camas Individuales"
-                    value={singleBeds}
-                    onChange={setSingleBeds}
-                    max={10}
-                  />
-                  <Counter
-                    label="Sofá Cama"
-                    value={sofaBeds}
-                    onChange={setSofaBeds}
-                    max={3}
-                  />
-                </div>
+                {loadingAvailability ? (
+                  <p className="text-sm text-muted-foreground">Cargando disponibilidad...</p>
+                ) : (
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <Counter
+                      label={`Camas Dobles ${bedAvailability && bedAvailability.double_beds > 0 ? `(Máx: ${bedAvailability.double_beds})` : ''}`}
+                      value={doubleBeds}
+                      onChange={setDoubleBeds}
+                      max={bedAvailability?.double_beds || 5}
+                      disabled={bedAvailability !== null && bedAvailability.double_beds === 0}
+                    />
+                    <Counter
+                      label={`Camas Individuales ${bedAvailability && bedAvailability.single_beds > 0 ? `(Máx: ${bedAvailability.single_beds})` : ''}`}
+                      value={singleBeds}
+                      onChange={setSingleBeds}
+                      max={bedAvailability?.single_beds || 10}
+                      disabled={bedAvailability !== null && bedAvailability.single_beds === 0}
+                    />
+                    <Counter
+                      label={`Sofá Cama ${bedAvailability && bedAvailability.sofa_beds > 0 ? `(Máx: ${bedAvailability.sofa_beds})` : ''}`}
+                      value={sofaBeds}
+                      onChange={setSofaBeds}
+                      max={bedAvailability?.sofa_beds || 3}
+                      disabled={bedAvailability !== null && bedAvailability.sofa_beds === 0}
+                    />
+                    <Counter
+                      label={`Literas ${bedAvailability && bedAvailability.bunk_beds > 0 ? `(Máx: ${bedAvailability.bunk_beds})` : ''}`}
+                      value={bunkBeds}
+                      onChange={setBunkBeds}
+                      max={bedAvailability?.bunk_beds || 5}
+                      disabled={bedAvailability !== null && bedAvailability.bunk_beds === 0}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Información adicional */}

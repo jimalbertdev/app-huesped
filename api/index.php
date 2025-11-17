@@ -68,6 +68,14 @@ switch ($resource) {
         require_once __DIR__ . '/endpoints/municipalities.php';
         break;
 
+    case 'document-scan':
+        require_once __DIR__ . '/endpoints/document-scan.php';
+        break;
+
+    case 'clients':
+        require_once __DIR__ . '/endpoints/clients.php';
+        break;
+
     case 'health':
         // Endpoint de health check
         http_response_code(200);
@@ -105,7 +113,9 @@ switch ($resource) {
                 '/api/countries/search?q={query}',
                 '/api/countries/{code}',
                 '/api/municipalities/search?q={query}',
-                '/api/municipalities/{code}'
+                '/api/municipalities/{code}',
+                '/api/document-scan',
+                '/api/clients/{id}'
             ]
         ], JSON_UNESCAPED_UNICODE);
         break;

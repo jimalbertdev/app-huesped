@@ -29,9 +29,9 @@ class Preference {
      */
     private function create($reservation_id, $data) {
         $sql = "INSERT INTO preferences (
-            reservation_id, needs_crib, double_beds, single_beds, sofa_beds,
+            reservation_id, needs_crib, double_beds, single_beds, sofa_beds, bunk_beds,
             estimated_arrival_time, additional_info, allergies, special_requests
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         // Convertir needs_crib a int (0 o 1) de forma robusta
         $needsCrib = $this->convertToInt($data['needs_crib'] ?? false);
@@ -42,6 +42,7 @@ class Preference {
             $data['double_beds'] ?? 0,
             $data['single_beds'] ?? 0,
             $data['sofa_beds'] ?? 0,
+            $data['bunk_beds'] ?? 0,
             $data['estimated_arrival_time'] ?? null,
             $data['additional_info'] ?? null,
             $data['allergies'] ?? null,
@@ -58,6 +59,7 @@ class Preference {
             double_beds = ?,
             single_beds = ?,
             sofa_beds = ?,
+            bunk_beds = ?,
             estimated_arrival_time = ?,
             additional_info = ?,
             allergies = ?,
@@ -73,6 +75,7 @@ class Preference {
             $data['double_beds'] ?? 0,
             $data['single_beds'] ?? 0,
             $data['sofa_beds'] ?? 0,
+            $data['bunk_beds'] ?? 0,
             $data['estimated_arrival_time'] ?? null,
             $data['additional_info'] ?? null,
             $data['allergies'] ?? null,
