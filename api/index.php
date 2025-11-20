@@ -56,6 +56,10 @@ switch ($resource) {
         require_once __DIR__ . '/endpoints/incidents.php';
         break;
 
+    case 'suggestions':
+        require_once __DIR__ . '/suggestions.php';
+        break;
+
     case 'accommodation':
         require_once __DIR__ . '/endpoints/accommodation.php';
         break;
@@ -105,6 +109,9 @@ switch ($resource) {
                 '/api/doors/history/{reservation_id}',
                 '/api/incidents',
                 '/api/incidents/{reservation_id}',
+                '/api/suggestions',
+                '/api/suggestions/reservation/{reservation_id}',
+                '/api/suggestions/stats/{reservation_id}',
                 '/api/accommodation/{accommodation_id}',
                 '/api/accommodation/{accommodation_id}/info',
                 '/api/accommodation/{accommodation_id}/videos',

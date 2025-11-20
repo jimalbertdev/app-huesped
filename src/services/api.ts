@@ -130,6 +130,12 @@ export const preferenceService = {
 // Puertas / Cerraduras
 export const doorService = {
   /**
+   * Obtener información de cerraduras disponibles
+   */
+  getInfo: (reservationId: number) =>
+    api.get(`/doors/info/${reservationId}`),
+
+  /**
    * Intentar abrir puerta
    */
   unlock: (data: {
@@ -137,6 +143,12 @@ export const doorService = {
     guest_id?: number;
     door_type: 'portal' | 'accommodation';
   }) => api.post('/doors/unlock', data),
+
+  /**
+   * Confirmar entrada al alojamiento
+   */
+  confirmEntry: (reservationId: number) =>
+    api.post(`/doors/confirm-entry/${reservationId}`),
 
   /**
    * Obtener historial de aperturas
@@ -163,6 +175,32 @@ export const incidentService = {
    */
   getByReservation: (reservationId: number) =>
     api.get(`/incidents/${reservationId}`),
+};
+
+// Sugerencias y Quejas
+export const suggestionService = {
+  /**
+   * Crear nueva sugerencia o queja
+   */
+  create: (data: {
+    reservation_id: number;
+    guest_id?: number;
+    subject: string;
+    description: string;
+    type: 'Queja' | 'Sugerencia';
+  }) => api.post('/suggestions', data),
+
+  /**
+   * Obtener todas las sugerencias de una reserva
+   */
+  getByReservation: (reservationId: number) =>
+    api.get(`/suggestions/reservation/${reservationId}`),
+
+  /**
+   * Obtener estadísticas de sugerencias/quejas
+   */
+  getStats: (reservationId: number) =>
+    api.get(`/suggestions/stats/${reservationId}`),
 };
 
 // Alojamiento (Información, Videos, Guía Local)

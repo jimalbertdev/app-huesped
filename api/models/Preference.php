@@ -1,6 +1,7 @@
 <?php
 /**
  * Modelo de Preferencias
+ * NOTA: Ahora usa tabla 'reservas_detalles' con camas en formato JSON
  */
 
 class Preference {
@@ -28,25 +29,25 @@ class Preference {
      * Crear preferencias
      */
     private function create($reservation_id, $data) {
-        $sql = "INSERT INTO preferences (
-            reservation_id, needs_crib, double_beds, single_beds, sofa_beds, bunk_beds,
-            estimated_arrival_time, additional_info, allergies, special_requests
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO reservas_detalles (
+            reseva_id, hora_llegada, camas, cuna, informacion_anfitrion
+        ) VALUES (?, ?, ?, ?, ?)";
 
-        // Convertir needs_crib a int (0 o 1) de forma robusta
-        $needsCrib = $this->convertToInt($data['needs_crib'] ?? false);
+        // Construir JSON de camas
+        $camasJson = $this->buildBedsJson($data);
+
+        // Convertir cuna a "si"/"no"
+        $cuna = $this->convertToYesNo($data['needs_crib'] ?? false);
+
+        // Combinar información adicional
+        $infoAnfitrion = $this->buildAdditionalInfo($data);
 
         return $this->db->execute($sql, [
             $reservation_id,
-            $needsCrib,
-            $data['double_beds'] ?? 0,
-            $data['single_beds'] ?? 0,
-            $data['sofa_beds'] ?? 0,
-            $data['bunk_beds'] ?? 0,
             $data['estimated_arrival_time'] ?? null,
-            $data['additional_info'] ?? null,
-            $data['allergies'] ?? null,
-            $data['special_requests'] ?? null
+            $camasJson,
+            $cuna,
+            $infoAnfitrion
         ]);
     }
 
@@ -54,32 +55,27 @@ class Preference {
      * Actualizar preferencias
      */
     private function update($reservation_id, $data) {
-        $sql = "UPDATE preferences SET
-            needs_crib = ?,
-            double_beds = ?,
-            single_beds = ?,
-            sofa_beds = ?,
-            bunk_beds = ?,
-            estimated_arrival_time = ?,
-            additional_info = ?,
-            allergies = ?,
-            special_requests = ?,
-            updated_at = NOW()
-            WHERE reservation_id = ?";
+        $sql = "UPDATE reservas_detalles SET
+            hora_llegada = ?,
+            camas = ?,
+            cuna = ?,
+            informacion_anfitrion = ?
+            WHERE reseva_id = ?";
 
-        // Convertir needs_crib a int (0 o 1) de forma robusta
-        $needsCrib = $this->convertToInt($data['needs_crib'] ?? false);
+        // Construir JSON de camas
+        $camasJson = $this->buildBedsJson($data);
+
+        // Convertir cuna a "si"/"no"
+        $cuna = $this->convertToYesNo($data['needs_crib'] ?? false);
+
+        // Combinar información adicional
+        $infoAnfitrion = $this->buildAdditionalInfo($data);
 
         return $this->db->execute($sql, [
-            $needsCrib,
-            $data['double_beds'] ?? 0,
-            $data['single_beds'] ?? 0,
-            $data['sofa_beds'] ?? 0,
-            $data['bunk_beds'] ?? 0,
             $data['estimated_arrival_time'] ?? null,
-            $data['additional_info'] ?? null,
-            $data['allergies'] ?? null,
-            $data['special_requests'] ?? null,
+            $camasJson,
+            $cuna,
+            $infoAnfitrion,
             $reservation_id
         ]);
     }
@@ -88,28 +84,96 @@ class Preference {
      * Obtener preferencias de una reserva
      */
     public function getByReservation($reservation_id) {
-        $sql = "SELECT * FROM preferences WHERE reservation_id = ?";
-        return $this->db->queryOne($sql, [$reservation_id]);
+        $sql = "SELECT * FROM reservas_detalles WHERE reseva_id = ?";
+        $result = $this->db->queryOne($sql, [$reservation_id]);
+
+        if (!$result) {
+            return false;
+        }
+
+        // Parsear y transformar datos al formato esperado por el frontend
+        return $this->transformToFrontendFormat($result);
     }
 
     /**
-     * Convertir valor a int (0 o 1) de forma robusta
-     * Maneja: boolean, string ('true', 'false', '1', '0', ''), int, null
+     * Construir JSON de camas desde los datos del frontend
      */
-    private function convertToInt($value) {
-        // Si ya es int, retornar 0 o 1
-        if (is_int($value)) {
-            return $value ? 1 : 0;
+    private function buildBedsJson($data) {
+        $beds = [
+            'camas_dobles' => (string)($data['double_beds'] ?? 0),
+            'camas_individuales' => (string)($data['single_beds'] ?? 0),
+            'sofa_cama' => (string)($data['sofa_beds'] ?? 0),
+            'literas' => (string)($data['bunk_beds'] ?? 0)
+        ];
+
+        return json_encode($beds);
+    }
+
+    /**
+     * Combinar información adicional en un solo campo
+     */
+    private function buildAdditionalInfo($data) {
+        $parts = [];
+
+        if (!empty($data['additional_info'])) {
+            $parts[] = "Información adicional: " . $data['additional_info'];
         }
 
-        // Si es boolean, convertir directamente
+        if (!empty($data['allergies'])) {
+            $parts[] = "Alergias: " . $data['allergies'];
+        }
+
+        if (!empty($data['special_requests'])) {
+            $parts[] = "Peticiones especiales: " . $data['special_requests'];
+        }
+
+        return !empty($parts) ? implode("\n\n", $parts) : null;
+    }
+
+    /**
+     * Transformar datos de BD al formato esperado por el frontend
+     */
+    private function transformToFrontendFormat($dbData) {
+        // Decodificar JSON de camas
+        $camas = json_decode($dbData['camas'] ?? '{}', true);
+
+        return [
+            'id' => $dbData['id'],
+            'reservation_id' => $dbData['reseva_id'],
+            'needs_crib' => $dbData['cuna'] === 'si' || $dbData['cuna'] === '1',
+            'double_beds' => (int)($camas['camas_dobles'] ?? 0),
+            'single_beds' => (int)($camas['camas_individuales'] ?? 0),
+            'sofa_beds' => (int)($camas['sofa_cama'] ?? 0),
+            'bunk_beds' => (int)($camas['literas'] ?? 0),
+            'estimated_arrival_time' => $dbData['hora_llegada'],
+            'additional_info' => $dbData['informacion_anfitrion'],
+            // Mantener compatibilidad con campos antiguos
+            'allergies' => null,
+            'special_requests' => null,
+            'created_at' => null,
+            'updated_at' => null
+        ];
+    }
+
+    /**
+     * Convertir valor a "si"/"no"
+     */
+    private function convertToYesNo($value) {
+        // Si es boolean
         if (is_bool($value)) {
-            return $value ? 1 : 0;
+            return $value ? 'si' : 'no';
         }
 
-        // Si es string o cualquier otro tipo, usar filter_var
-        // filter_var retorna true para: 'true', '1', 'on', 'yes'
-        // filter_var retorna false para: 'false', '0', 'off', 'no', ''
-        return (filter_var($value, FILTER_VALIDATE_BOOLEAN) || $value === 1 || $value === '1') ? 1 : 0;
+        // Si es int
+        if (is_int($value)) {
+            return $value ? 'si' : 'no';
+        }
+
+        // Si es string
+        if (in_array(strtolower($value), ['true', '1', 'si', 'yes', 'on'])) {
+            return 'si';
+        }
+
+        return 'no';
     }
 }

@@ -443,7 +443,7 @@ const Register = () => {
     }
 
     // Validaciones condicionales - DNI/NIE requiere segundo apellido
-    if ((documentType === 'DNI' || documentType === 'NIE') && !secondLastName) {
+    if ((documentType === 'DNI') && !secondLastName) {
       focusField("secondLastName", "El segundo apellido es obligatorio para DNI/NIE");
       return;
     }

@@ -8,7 +8,7 @@
 // ============================================
 export const DOCUMENT_TYPES = [
   { value: 'DNI', label: 'DNI - DNI Español', requiresSecondSurname: true, requiresSupport: true },
-  { value: 'NIE', label: 'NIE - Número de identidad de extranjero Español', requiresSecondSurname: true, requiresSupport: true },
+  { value: 'NIE', label: 'NIE - Número de identidad de extranjero Español', requiresSecondSurname: false, requiresSupport: true },
   { value: 'PAS', label: 'Pasaporte', requiresSecondSurname: false, requiresSupport: false },
   { value: 'OTRO', label: 'Otro documento', requiresSecondSurname: false, requiresSupport: false }
 ] as const;

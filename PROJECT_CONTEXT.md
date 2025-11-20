@@ -1,6 +1,6 @@
 # 📚 VACANFLY GUEST APPLICATION - PROJECT CONTEXT
 
-> **Última actualización:** 2025-11-09
+> **Última actualización:** 2025-11-17
 > **Versión del proyecto:** 0.1.0
 > **Estado:** En desarrollo activo
 
@@ -244,6 +244,8 @@
 - [x] Vista SQL `v_reservations_with_host`
 - [x] 8 validaciones condicionales complejas (DNI/NIE, menor edad, residencia)
 - [x] Scripts de prueba y test
+- [x] Sistema de estados de reserva con mapeo automático (estado_reserva_id)
+- [x] Actualización automática de estado al registrar responsable (8→5)
 
 #### Frontend
 - [x] Configuración de Vite + React + TypeScript
@@ -272,9 +274,11 @@
   - [x] Contacto con anfitrión (modal)
   - [x] Apertura de puertas (simulado)
   - [x] Historial de aperturas
-  - [x] Guía local (accordion)
-  - [x] Videos de bienvenida
+  - [x] Guía local (accordion con iconos MapPin)
+  - [x] Videos de bienvenida (renderizado HTML)
   - [x] Descarga de contrato PDF
+  - [x] Información del alojamiento por categorías (1-7 dinámicas)
+  - [x] Renderizado de contenido HTML con Tailwind Typography
 - [x] Catálogos de datos (documentos, parentesco, sexo)
 - [x] Schemas Zod con 8 refinements condicionales
 - [x] Toast de éxito con color verde
@@ -335,7 +339,6 @@
 
 ### Menores
 - **Frontend**: Fast Refresh warning en algunos hooks custom (no afecta funcionalidad)
-- **API**: Mensajes de error de BD pueden exponer información sensible en desarrollo
 - **Dashboard**: Historial de apertura de puertas es simulado (no conectado a BD)
 
 ### Mejoras Pendientes
@@ -561,5 +564,5 @@ rm -rf dist/ node_modules/.vite/
 
 ---
 
-**Última revisión:** 2025-11-09
+**Última revisión:** 2025-11-17
 **Próxima revisión programada:** Después de cada sesión de desarrollo significativa

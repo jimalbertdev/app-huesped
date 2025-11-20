@@ -64,6 +64,34 @@ try {
         }
     }
 
+    // GET /api/doors/info/{reservation_id}
+    if ($method === 'GET' && isset($uri_parts[$api_index + 2]) && $uri_parts[$api_index + 2] === 'info') {
+        $reservation_id = $uri_parts[$api_index + 3];
+
+        // Validar reserva
+        $reservation = ValidateReservation::validate($reservationModel, $reservation_id, false);
+
+        // Get lock information
+        $lockInfo = $doorUnlockModel->getLockInfo($reservation_id);
+
+        // Check if reservation is active (within check-in/check-out dates)
+        $timezone = new DateTimeZone('Europe/Madrid');
+        $now = new DateTime('now', $timezone);
+        $checkin = new DateTime($reservation['check_in'] . ' ' . ($reservation['arrival_time'] ?? '15:00'), $timezone);
+        $checkout = new DateTime($reservation['check_out'] . ' ' . ($reservation['departure_time'] ?? '11:00'), $timezone);
+
+        $is_active = ($now >= $checkin && $now <= $checkout);
+
+        // Check if responsible guest has registered
+        $has_responsible = $reservationModel->areAllGuestsRegistered($reservation_id);
+
+        $lockInfo['is_active'] = $is_active;
+        $lockInfo['has_responsible'] = $has_responsible;
+        $lockInfo['can_unlock'] = $is_active && $has_responsible && $lockInfo['has_locks'];
+
+        Response::success($lockInfo);
+    }
+
     // GET /api/doors/history/{reservation_id}
     if ($method === 'GET' && isset($uri_parts[$api_index + 2]) && $uri_parts[$api_index + 2] === 'history') {
         $reservation_id = $uri_parts[$api_index + 3];
@@ -74,6 +102,33 @@ try {
         $history = $doorUnlockModel->getHistory($reservation_id);
 
         Response::success($history);
+    }
+
+    // POST /api/doors/confirm-entry/{reservation_id}
+    if ($method === 'POST' && isset($uri_parts[$api_index + 2]) && $uri_parts[$api_index + 2] === 'confirm-entry') {
+        $reservation_id = $uri_parts[$api_index + 3];
+
+        // Validar reserva
+        ValidateReservation::validate($reservationModel, $reservation_id, false);
+
+        // Update reservation status to "in-house" or "confirmed"
+        $sql = "UPDATE reserva SET estado_reserva_id = 5, updated_at = NOW() WHERE id = ?";
+        $result = $db->execute($sql, [$reservation_id]);
+
+        if ($result) {
+            // Log the entry confirmation
+            $doorUnlockModel->logUnlock(
+                $reservation_id,
+                null,
+                'accommodation',
+                true,
+                'Huésped ha confirmado ingreso al alojamiento'
+            );
+
+            Response::success(['message' => 'Entry confirmed successfully']);
+        } else {
+            Response::error('Failed to confirm entry');
+        }
     }
 
     Response::error("Ruta no encontrada", 404);

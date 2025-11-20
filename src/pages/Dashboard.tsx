@@ -31,7 +31,7 @@ import { Link } from "react-router-dom";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useReservation } from "@/hooks/useReservation";
 import { useReservationParams } from "@/hooks/useReservationParams";
-import { preferenceService, accommodationService, handleApiError } from "@/services/api";
+import { preferenceService, accommodationService, suggestionService, doorService, handleApiError } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import {
   Accordion,
@@ -47,6 +47,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import vacanflyLogo from "@/assets/vacanfly-logo.png";
+
+// Mapeo de categorías de información del alojamiento
+const ACCOMMODATION_INFO_CATEGORIES: { [key: string]: string } = {
+  '1': '🗺️ ¿Cómo llegar…?',
+  '2': '🏡 ¿Qué hay en el alojamiento?',
+  '3': '🔧 ¿Cómo funciona?',
+  '4': '🛠️ ¿Cómo hago?',
+  '5': '📞 ¿Cómo contacto?',
+  '6': '📋 Normas del alojamiento',
+  '7': '🔓 Apertura',
+};
 
 const Dashboard = () => {
   const { language, setLanguage, t, getLanguageName } = useLanguage();
@@ -77,35 +88,64 @@ const Dashboard = () => {
   const hasResponsibleGuest = guests.some(guest => guest.is_responsible);
   const [showIncidentDialog, setShowIncidentDialog] = useState(false);
   const [incidentType, setIncidentType] = useState<"complaint" | "suggestion">("complaint");
+  const [incidentSubject, setIncidentSubject] = useState("");
   const [incidentDescription, setIncidentDescription] = useState("");
-  const [showUnlockDialog, setShowUnlockDialog] = useState(false);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [showConfirmEntryDialog, setShowConfirmEntryDialog] = useState(false);
+  const [showUnlockHistoryDialog, setShowUnlockHistoryDialog] = useState(false);
   const [showPreferencesDialog, setShowPreferencesDialog] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedDoor, setSelectedDoor] = useState<"portal" | "accommodation" | null>(null);
   const [countdown, setCountdown] = useState(4);
-  
-  // Historial de aperturas simulado
-  const [unlockHistory, setUnlockHistory] = useState([
-    { time: "14:30", date: "2024-11-05", door: "Portal", success: true },
-    { time: "12:15", date: "2024-11-05", door: "Alojamiento", success: false },
-    { time: "18:45", date: "2024-11-04", door: "Portal", success: true },
-    { time: "16:20", date: "2024-11-04", door: "Portal", success: true },
-  ]);
+  const [unlockLoading, setUnlockLoading] = useState(false);
+
+  // Door info state
+  const [doorInfo, setDoorInfo] = useState<any>(null);
+  const [doorInfoLoaded, setDoorInfoLoaded] = useState(false);
+
+  // Historial de aperturas
+  const [unlockHistory, setUnlockHistory] = useState<any[]>([]);
   
   // Preferences state
   const [needsCrib, setNeedsCrib] = useState(false);
   const [doubleBeds, setDoubleBeds] = useState(0);
   const [singleBeds, setSingleBeds] = useState(0);
   const [sofaBeds, setSofaBeds] = useState(0);
+  const [bunkBeds, setBunkBeds] = useState(0);
   const [estimatedArrivalTime, setEstimatedArrivalTime] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
 
+  // Bed availability state
+  const [bedAvailability, setBedAvailability] = useState<{
+    double_beds: number;
+    single_beds: number;
+    sofa_beds: number;
+    bunk_beds: number;
+    crib: boolean;
+  } | null>(null);
+  const [loadingBedAvailability, setLoadingBedAvailability] = useState(false);
+
   // Accommodation info state
-  const [accommodationInfo, setAccommodationInfo] = useState<any>(null);
+  const [accommodationInfo, setAccommodationInfo] = useState<any[]>([]);
   const [accommodationVideos, setAccommodationVideos] = useState<any[]>([]);
   const [accommodationGuide, setAccommodationGuide] = useState<any[]>([]);
   const [accommodationLoaded, setAccommodationLoaded] = useState(false);
+
+  // Agrupar información del alojamiento por categoría
+  const groupedAccommodationInfo = () => {
+    if (!accommodationInfo || !Array.isArray(accommodationInfo)) return {};
+
+    const grouped: { [key: string]: any[] } = {};
+    accommodationInfo.forEach(item => {
+      const category = String(item.category);
+      if (!grouped[category]) {
+        grouped[category] = [];
+      }
+      grouped[category].push(item);
+    });
+    return grouped;
+  };
 
   // Cargar preferencias cuando se carga la reserva
   useEffect(() => {
@@ -121,6 +161,7 @@ const Dashboard = () => {
           setDoubleBeds(preferences.double_beds || 0);
           setSingleBeds(preferences.single_beds || 0);
           setSofaBeds(preferences.sofa_beds || 0);
+          setBunkBeds(preferences.bunk_beds || 0);
           setEstimatedArrivalTime(preferences.estimated_arrival_time || "");
           setAdditionalInfo(preferences.additional_info || "");
         }
@@ -134,6 +175,29 @@ const Dashboard = () => {
 
     loadPreferences();
   }, [reservationData?.id, preferencesLoaded]);
+
+  // Cargar disponibilidad de camas del alojamiento
+  useEffect(() => {
+    const loadBedAvailability = async () => {
+      if (!reservationData?.accommodation_id) return;
+
+      try {
+        setLoadingBedAvailability(true);
+        const response = await accommodationService.getBeds(reservationData.accommodation_id);
+
+        if (response.data.success) {
+          setBedAvailability(response.data.data);
+        }
+      } catch (error) {
+        console.error('Error cargando disponibilidad de camas:', error);
+        // No mostrar error, simplemente no tendremos límites
+      } finally {
+        setLoadingBedAvailability(false);
+      }
+    };
+
+    loadBedAvailability();
+  }, [reservationData?.accommodation_id]);
 
   // Cargar información del alojamiento cuando se carga la reserva
   useEffect(() => {
@@ -160,6 +224,36 @@ const Dashboard = () => {
     loadAccommodationInfo();
   }, [reservationData?.accommodation_id, accommodationLoaded]);
 
+  // Cargar sugerencias/quejas de la reserva
+  useEffect(() => {
+    loadSuggestions();
+  }, [reservationData?.id]);
+
+  // Cargar información de cerraduras
+  useEffect(() => {
+    const loadDoorInfo = async () => {
+      if (!reservationData?.id || doorInfoLoaded) return;
+
+      try {
+        const response = await doorService.getInfo(reservationData.id);
+        if (response.data.success) {
+          setDoorInfo(response.data.data);
+        }
+        setDoorInfoLoaded(true);
+      } catch (error) {
+        console.error("Error al cargar información de cerraduras:", error);
+        setDoorInfoLoaded(true);
+      }
+    };
+
+    loadDoorInfo();
+  }, [reservationData?.id, doorInfoLoaded]);
+
+  // Cargar historial de aperturas
+  useEffect(() => {
+    loadUnlockHistory();
+  }, [reservationData?.id]);
+
   // Contador para confirmación de apertura
   useEffect(() => {
     if (showConfirmDialog && countdown > 0) {
@@ -168,25 +262,92 @@ const Dashboard = () => {
     }
   }, [showConfirmDialog, countdown]);
 
+  // Helper para calcular total de camas solicitadas
+  const calculateTotalBeds = () => {
+    // Cada cama cuenta como 1 unidad, sin importar si es doble, individual, sofá o litera
+    return doubleBeds + singleBeds + sofaBeds + bunkBeds;
+  };
+
+  // Verificar si se está excediendo el número de huéspedes
+  const isExceedingGuests = () => {
+    const totalBeds = calculateTotalBeds();
+    return totalBeds > totalGuests && totalGuests > 0;
+  };
+
   const handleOpenDoorClick = (doorType: "portal" | "accommodation") => {
     setSelectedDoor(doorType);
     setCountdown(4);
     setShowConfirmDialog(true);
   };
 
-  const handleConfirmOpen = () => {
-    if (selectedDoor && countdown === 0) {
+  const loadUnlockHistory = async () => {
+    if (!reservationData?.id) return;
+
+    try {
+      const response = await doorService.getHistory(reservationData.id);
+      if (response.data.success) {
+        const history = response.data.data.map((entry: any) => ({
+          time: entry.time || new Date(entry.unlock_time).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+          date: entry.date || new Date(entry.unlock_time).toISOString().split('T')[0],
+          door: entry.door_type === 'portal' ? 'Portal' : 'Alojamiento',
+          success: entry.success === 1 || entry.status === 'success'
+        }));
+        setUnlockHistory(history);
+      }
+    } catch (error) {
+      console.error("Error al cargar historial de aperturas:", error);
+    }
+  };
+
+  const handleConfirmOpen = async () => {
+    if (!selectedDoor || countdown !== 0 || !reservationData?.id) return;
+
+    setUnlockLoading(true);
+
+    try {
+      const response = await doorService.unlock({
+        reservation_id: reservationData.id,
+        guest_id: reservationData.responsible_guest_id || undefined,
+        door_type: selectedDoor,
+      });
+
+      const success = response.data.success;
       const doorName = selectedDoor === "portal" ? "Portal" : "Alojamiento";
-      const success = Math.random() > 0.3; // 70% success rate simulation
-      const newEntry = {
-        time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-        date: new Date().toISOString().split('T')[0],
-        door: doorName,
-        success: success
-      };
-      setUnlockHistory([newEntry, ...unlockHistory]);
+
+      // Recargar historial
+      await loadUnlockHistory();
+
       setShowConfirmDialog(false);
-      setShowUnlockDialog(true);
+
+      if (success) {
+        toast({
+          title: "✅ ¡Puerta abierta!",
+          description: `La puerta del ${doorName.toLowerCase()} se ha abierto correctamente`,
+          className: "bg-green-500 text-white",
+        });
+
+        // Si es la puerta del alojamiento, preguntar si confirma entrada
+        if (selectedDoor === "accommodation") {
+          setTimeout(() => {
+            setShowConfirmEntryDialog(true);
+          }, 1000);
+        }
+      } else {
+        toast({
+          title: "❌ Error",
+          description: response.data.error_message || "No se pudo abrir la puerta. Inténtalo nuevamente.",
+          variant: "destructive",
+        });
+      }
+
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: handleApiError(error),
+        variant: "destructive",
+      });
+    } finally {
+      setUnlockLoading(false);
     }
   };
 
@@ -196,24 +357,100 @@ const Dashboard = () => {
     setCountdown(4);
   };
 
-  const handleOpenDoor = (doorType: "portal" | "accommodation") => {
-    const doorName = doorType === "portal" ? "Portal" : "Alojamiento";
-    const success = Math.random() > 0.3; // 70% success rate simulation
-    const newEntry = {
-      time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-      date: new Date().toISOString().split('T')[0],
-      door: doorName,
-      success: success
-    };
-    setUnlockHistory([newEntry, ...unlockHistory]);
-    setShowUnlockDialog(true);
+  const handleConfirmEntry = async () => {
+    if (!reservationData?.id) return;
+
+    try {
+      await doorService.confirmEntry(reservationData.id);
+
+      toast({
+        title: "✅ Entrada confirmada",
+        description: "Hemos registrado tu entrada al alojamiento",
+        className: "bg-green-500 text-white",
+      });
+
+      setShowConfirmEntryDialog(false);
+    } catch (error) {
+      console.error("Error confirmando entrada:", error);
+      setShowConfirmEntryDialog(false);
+    }
   };
 
-  const handleSubmitIncident = () => {
-    console.log("Incident submitted:", { type: incidentType, description: incidentDescription });
-    setShowIncidentDialog(false);
-    setIncidentDescription("");
-    setIncidentType("complaint");
+  const handleSubmitIncident = async () => {
+    if (!reservationData?.id) {
+      toast({
+        title: "Error",
+        description: "No se encontró información de la reserva",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validar campos
+    if (!incidentSubject.trim()) {
+      toast({
+        title: "Error",
+        description: "El asunto es obligatorio",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!incidentDescription.trim()) {
+      toast({
+        title: "Error",
+        description: "La descripción es obligatoria",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Mapear tipo de frontend a backend
+      const type = incidentType === "complaint" ? "Queja" : "Sugerencia";
+
+      await suggestionService.create({
+        reservation_id: reservationData.id,
+        guest_id: reservationData.responsible_guest_id || undefined,
+        subject: incidentSubject,
+        description: incidentDescription,
+        type: type,
+      });
+
+      toast({
+        title: "✅ " + (incidentType === "complaint" ? "Queja" : "Sugerencia") + " enviada",
+        description: "Tu mensaje ha sido registrado correctamente",
+        className: incidentType === "complaint" ? "bg-yellow-500 text-white" : "bg-green-500 text-white",
+      });
+
+      // Limpiar formulario y cerrar
+      setShowIncidentDialog(false);
+      setIncidentSubject("");
+      setIncidentDescription("");
+      setIncidentType("complaint");
+
+      // Recargar sugerencias
+      loadSuggestions();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: handleApiError(error),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const loadSuggestions = async () => {
+    if (!reservationData?.id) return;
+
+    try {
+      const response = await suggestionService.getByReservation(reservationData.id);
+      if (response.data.success) {
+        setSuggestions(response.data.data || []);
+      }
+    } catch (error) {
+      console.error("Error cargando sugerencias:", error);
+    }
   };
 
   const handleUpdatePreferences = async () => {
@@ -226,6 +463,8 @@ const Dashboard = () => {
       return;
     }
 
+    const exceedingGuests = isExceedingGuests();
+
     try {
       await preferenceService.save({
         reservation_id: reservationData.id,
@@ -233,15 +472,25 @@ const Dashboard = () => {
         double_beds: doubleBeds,
         single_beds: singleBeds,
         sofa_beds: sofaBeds,
+        bunk_beds: bunkBeds,
         estimated_arrival_time: estimatedArrivalTime || undefined,
         additional_info: additionalInfo || undefined,
       });
 
-      toast({
-        title: "¡Preferencias actualizadas!",
-        description: "Tus preferencias han sido guardadas correctamente.",
-        variant: "success",
-      });
+      // Si se están solicitando más camas que huéspedes, notificar
+      if (exceedingGuests) {
+        toast({
+          title: "¡Preferencias actualizadas!",
+          description: "Tus preferencias han sido guardadas. El anfitrión será notificado sobre tu solicitud de camas adicionales.",
+          variant: "success",
+        });
+      } else {
+        toast({
+          title: "¡Preferencias actualizadas!",
+          description: "Tus preferencias han sido guardadas correctamente.",
+          variant: "success",
+        });
+      }
 
       setShowPreferencesDialog(false);
     } catch (error) {
@@ -254,21 +503,23 @@ const Dashboard = () => {
     }
   };
 
-  const Counter = ({ 
-    label, 
-    value, 
-    onChange, 
-    min = 0, 
-    max = 10 
-  }: { 
-    label: string; 
-    value: number; 
-    onChange: (val: number) => void; 
-    min?: number; 
+  const Counter = ({
+    label,
+    value,
+    onChange,
+    min = 0,
+    max = 10,
+    disabled = false
+  }: {
+    label: string;
+    value: number;
+    onChange: (val: number) => void;
+    min?: number;
     max?: number;
+    disabled?: boolean;
   }) => (
     <div className="space-y-2">
-      <Label>{label}</Label>
+      <Label className={disabled ? 'opacity-50' : ''}>{label}</Label>
       <div className="flex items-center gap-3">
         <Button
           type="button"
@@ -276,22 +527,25 @@ const Dashboard = () => {
           size="icon"
           className="h-10 w-10"
           onClick={() => onChange(Math.max(min, value - 1))}
-          disabled={value <= min}
+          disabled={disabled || value <= min}
         >
           <Minus className="h-4 w-4" />
         </Button>
-        <div className="w-12 text-center font-semibold">{value}</div>
+        <div className={`w-12 text-center font-semibold ${disabled ? 'opacity-50' : ''}`}>{value}</div>
         <Button
           type="button"
           variant="outline"
           size="icon"
           className="h-10 w-10"
           onClick={() => onChange(Math.min(max, value + 1))}
-          disabled={value >= max}
+          disabled={disabled || value >= max}
         >
           <Plus className="h-4 w-4" />
         </Button>
       </div>
+      {disabled && (
+        <p className="text-xs text-muted-foreground">No disponible en este alojamiento</p>
+      )}
     </div>
   );
 
@@ -422,11 +676,11 @@ const Dashboard = () => {
                 </div>
                 
                 {/* Ver Historial de Aperturas */}
-                <Dialog open={showUnlockDialog} onOpenChange={setShowUnlockDialog}>
+                <Dialog open={showUnlockHistoryDialog} onOpenChange={setShowUnlockHistoryDialog}>
                   <Button
                     variant="outline"
                     className="w-full text-xs"
-                    onClick={() => setShowUnlockDialog(true)}
+                    onClick={() => setShowUnlockHistoryDialog(true)}
                   >
                     {t('dashboard.unlockHistory')}
                   </Button>
@@ -438,28 +692,34 @@ const Dashboard = () => {
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-2 max-h-96 overflow-y-auto">
-                      {unlockHistory.map((entry, index) => (
-                        <div
-                          key={index}
-                          className={`p-3 rounded-lg flex items-center justify-between ${
-                            entry.success
-                              ? 'bg-success/10 border border-success/20'
-                              : 'bg-destructive/10 border border-destructive/20'
-                          }`}
-                        >
-                          <div>
-                            <p className={`font-semibold ${entry.success ? 'text-success' : 'text-destructive'}`}>
-                              {entry.door}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {entry.date} a las {entry.time}
-                            </p>
+                      {unlockHistory.length === 0 ? (
+                        <p className="text-center text-muted-foreground py-8">
+                          No hay aperturas registradas
+                        </p>
+                      ) : (
+                        unlockHistory.map((entry, index) => (
+                          <div
+                            key={index}
+                            className={`p-3 rounded-lg flex items-center justify-between ${
+                              entry.success
+                                ? 'bg-success/10 border border-success/20'
+                                : 'bg-destructive/10 border border-destructive/20'
+                            }`}
+                          >
+                            <div>
+                              <p className={`font-semibold ${entry.success ? 'text-success' : 'text-destructive'}`}>
+                                {entry.door}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {entry.date} a las {entry.time}
+                              </p>
+                            </div>
+                            <span className={`text-2xl ${entry.success ? 'text-success' : 'text-destructive'}`}>
+                              {entry.success ? '✓' : '✗'}
+                            </span>
                           </div>
-                          <span className={`text-2xl ${entry.success ? 'text-success' : 'text-destructive'}`}>
-                            {entry.success ? '✓' : '✗'}
-                          </span>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -590,26 +850,60 @@ const Dashboard = () => {
                     {/* Configuración de camas */}
                     <div className="space-y-3">
                       <h4 className="font-semibold">Configuración de Camas</h4>
-                      <div className="grid grid-cols-3 gap-4">
-                        <Counter
-                          label="Camas Dobles"
-                          value={doubleBeds}
-                          onChange={setDoubleBeds}
-                          max={5}
-                        />
-                        <Counter
-                          label="Camas Individuales"
-                          value={singleBeds}
-                          onChange={setSingleBeds}
-                          max={10}
-                        />
-                        <Counter
-                          label="Sofá Cama"
-                          value={sofaBeds}
-                          onChange={setSofaBeds}
-                          max={3}
-                        />
-                      </div>
+                      {loadingBedAvailability ? (
+                        <p className="text-sm text-muted-foreground">Cargando disponibilidad...</p>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-2 gap-4">
+                            <Counter
+                              label={`Camas Dobles ${bedAvailability && bedAvailability.double_beds > 0 ? `(Máx: ${bedAvailability.double_beds})` : ''}`}
+                              value={doubleBeds}
+                              onChange={setDoubleBeds}
+                              max={bedAvailability?.double_beds || 5}
+                              disabled={bedAvailability !== null && bedAvailability.double_beds === 0}
+                            />
+                            <Counter
+                              label={`Camas Individuales ${bedAvailability && bedAvailability.single_beds > 0 ? `(Máx: ${bedAvailability.single_beds})` : ''}`}
+                              value={singleBeds}
+                              onChange={setSingleBeds}
+                              max={bedAvailability?.single_beds || 10}
+                              disabled={bedAvailability !== null && bedAvailability.single_beds === 0}
+                            />
+                            <Counter
+                              label={`Sofá Cama ${bedAvailability && bedAvailability.sofa_beds > 0 ? `(Máx: ${bedAvailability.sofa_beds})` : ''}`}
+                              value={sofaBeds}
+                              onChange={setSofaBeds}
+                              max={bedAvailability?.sofa_beds || 3}
+                              disabled={bedAvailability !== null && bedAvailability.sofa_beds === 0}
+                            />
+                            <Counter
+                              label={`Literas ${bedAvailability && bedAvailability.bunk_beds > 0 ? `(Máx: ${bedAvailability.bunk_beds})` : ''}`}
+                              value={bunkBeds}
+                              onChange={setBunkBeds}
+                              max={bedAvailability?.bunk_beds || 5}
+                              disabled={bedAvailability !== null && bedAvailability.bunk_beds === 0}
+                            />
+                          </div>
+
+                          {/* Alerta de exceso de camas */}
+                          {isExceedingGuests() && (
+                            <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-950/30 border-2 border-yellow-500/50 rounded-lg">
+                              <div className="flex items-start gap-3">
+                                <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                  <h5 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
+                                    Solicitud de camas adicionales
+                                  </h5>
+                                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                                    Estás solicitando <strong>{calculateTotalBeds()} camas</strong> para <strong>{totalGuests} huésped{totalGuests !== 1 ? 'es' : ''}</strong>.
+                                    El anfitrión será notificado sobre esta solicitud especial.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
 
                     {/* Información adicional */}
@@ -691,52 +985,32 @@ const Dashboard = () => {
                 </div>
                 <h2 className="text-xl font-bold">{t('dashboard.accommodationInfo')}</h2>
               </div>
-              {accommodationInfo ? (
+              {accommodationInfo && accommodationInfo.length > 0 ? (
                 <Accordion type="single" collapsible className="w-full">
-                  {(accommodationInfo.how_to_arrive_airport || accommodationInfo.how_to_arrive_car || accommodationInfo.building_access_code) && (
-                    <AccordionItem value="how-to-arrive">
-                      <AccordionTrigger className="text-sm">🗺️ ¿Cómo llegar?</AccordionTrigger>
-                      <AccordionContent className="space-y-2 text-sm">
-                        {accommodationInfo.how_to_arrive_airport && <p>{accommodationInfo.how_to_arrive_airport}</p>}
-                        {accommodationInfo.how_to_arrive_car && <p>{accommodationInfo.how_to_arrive_car}</p>}
-                        {accommodationInfo.building_access_code && <p>Código de acceso al edificio: {accommodationInfo.building_access_code}</p>}
-                      </AccordionContent>
-                    </AccordionItem>
-                  )}
-                  {accommodationInfo.amenities && (
-                    <AccordionItem value="amenities">
-                      <AccordionTrigger className="text-sm">🏡 ¿Qué hay aquí?</AccordionTrigger>
-                      <AccordionContent className="text-sm">
-                        {accommodationInfo.amenities}
-                      </AccordionContent>
-                    </AccordionItem>
-                  )}
-                  {(accommodationInfo.wifi_network || accommodationInfo.heating_info || accommodationInfo.tv_info || accommodationInfo.other_instructions) && (
-                    <AccordionItem value="how-it-works">
-                      <AccordionTrigger className="text-sm">🔧 ¿Cómo funciona?</AccordionTrigger>
-                      <AccordionContent className="space-y-2 text-sm">
-                        {accommodationInfo.wifi_network && (
-                          <p><strong>WiFi:</strong> Red: {accommodationInfo.wifi_network}{accommodationInfo.wifi_password && ` | Contraseña: ${accommodationInfo.wifi_password}`}</p>
-                        )}
-                        {accommodationInfo.heating_info && <p><strong>Calefacción:</strong> {accommodationInfo.heating_info}</p>}
-                        {accommodationInfo.tv_info && <p><strong>TV:</strong> {accommodationInfo.tv_info}</p>}
-                        {accommodationInfo.other_instructions && <p>{accommodationInfo.other_instructions}</p>}
-                      </AccordionContent>
-                    </AccordionItem>
-                  )}
-                  {(accommodationInfo.check_in_time || accommodationInfo.check_out_time || accommodationInfo.rules) && (
-                    <AccordionItem value="rules">
-                      <AccordionTrigger className="text-sm">📋 Normas</AccordionTrigger>
-                      <AccordionContent className="space-y-1 text-sm">
-                        {(accommodationInfo.check_in_time || accommodationInfo.check_out_time) && (
-                          <p>• Check-in: {accommodationInfo.check_in_time || '?'} - Check-out: {accommodationInfo.check_out_time || '?'}</p>
-                        )}
-                        {accommodationInfo.rules && Array.isArray(accommodationInfo.rules) && accommodationInfo.rules.map((rule: string, idx: number) => (
-                          <p key={idx}>• {rule}</p>
-                        ))}
-                      </AccordionContent>
-                    </AccordionItem>
-                  )}
+                  {Object.entries(groupedAccommodationInfo()).map(([categoryId, items]) => {
+                    // Solo mostrar categorías del 1 al 7 (8 es para videos)
+                    if (categoryId === '8' || !ACCOMMODATION_INFO_CATEGORIES[categoryId]) return null;
+
+                    return (
+                      <AccordionItem key={categoryId} value={categoryId}>
+                        <AccordionTrigger className="text-sm">
+                          {ACCOMMODATION_INFO_CATEGORIES[categoryId]}
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-3 text-sm prose prose-sm max-w-none">
+                          {items.map((item: any) => (
+                            <div key={item.id} className="space-y-1">
+                              {item.name && (
+                                <h4 className="font-semibold text-sm">{item.name}</h4>
+                              )}
+                              {item.description && (
+                                <div dangerouslySetInnerHTML={{ __html: item.description }} />
+                              )}
+                            </div>
+                          ))}
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
                 </Accordion>
               ) : (
                 <p className="text-sm text-muted-foreground">Cargando información...</p>
@@ -756,25 +1030,12 @@ const Dashboard = () => {
               {accommodationVideos.length > 0 ? (
                 <div className="space-y-3">
                   {accommodationVideos.map((video) => (
-                    <a
-                      key={video.id}
-                      href={video.video_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors group"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center flex-shrink-0">
-                        <Video className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm group-hover:text-primary transition-colors">
-                          {video.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {video.description || 'Ver en YouTube'}
-                        </p>
-                      </div>
-                    </a>
+                    <div key={video.id} className="prose prose-sm max-w-none">
+                      {video.title && (
+                        <h3 className="text-sm font-semibold mb-2">{video.title}</h3>
+                      )}
+                      <div dangerouslySetInnerHTML={{ __html: video.url || video.description }} />
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -830,24 +1091,27 @@ const Dashboard = () => {
                   {accommodationGuide.map((category) => (
                     <AccordionItem key={category.id} value={category.id}>
                       <AccordionTrigger className="text-sm">
-                        {category.title[language] || category.title.es}
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-red-600 flex-shrink-0" />
+                          <span>{category.title}</span>
+                        </div>
                       </AccordionTrigger>
                       <AccordionContent>
                         <div className="space-y-2">
-                          {category.items.map((item: any) => (
-                            <div key={item.id} className="p-2 bg-muted/50 rounded-lg space-y-1">
-                              <div className="flex items-start justify-between">
-                                <p className="font-medium text-xs">{item.name}</p>
-                                {item.rating && <span className="text-xs">{item.rating}</span>}
+                          {category.items && category.items.length > 0 ? (
+                            category.items.map((item: any) => (
+                              <div key={item.id} className="p-2 bg-muted/50 rounded-lg">
+                                {item.description && (
+                                  <div
+                                    className="text-xs text-muted-foreground prose prose-xs max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: item.description }}
+                                  />
+                                )}
                               </div>
-                              {item.description && (
-                                <p className="text-xs text-muted-foreground">{item.description}</p>
-                              )}
-                              {item.distance && (
-                                <p className="text-xs text-primary font-medium">📍 {item.distance}</p>
-                              )}
-                            </div>
-                          ))}
+                            ))
+                          ) : (
+                            <p className="text-xs text-muted-foreground">No hay información disponible</p>
+                          )}
                         </div>
                       </AccordionContent>
                     </AccordionItem>
@@ -918,6 +1182,17 @@ const Dashboard = () => {
               </Select>
             </div>
             <div>
+              <Label htmlFor="incident-subject-main">Asunto</Label>
+              <input
+                id="incident-subject-main"
+                type="text"
+                placeholder="¿De qué trata tu mensaje?"
+                value={incidentSubject}
+                onChange={(e) => setIncidentSubject(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+            </div>
+            <div>
               <Label htmlFor="incident-description-main">Descripción</Label>
               <Textarea
                 id="incident-description-main"
@@ -928,6 +1203,51 @@ const Dashboard = () => {
               />
             </div>
           </div>
+
+          {/* Historial de sugerencias y quejas */}
+          {suggestions.length > 0 && (
+            <div className="border-t pt-4 mt-4">
+              <h4 className="text-sm font-semibold mb-3">📋 Historial de mensajes</h4>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {suggestions.map((item: any) => (
+                  <div
+                    key={item.id}
+                    className={`p-3 rounded-lg border ${
+                      item.type === 'Queja'
+                        ? 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950 dark:border-yellow-800'
+                        : 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                            item.type === 'Queja'
+                              ? 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200'
+                              : 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200'
+                          }`}>
+                            {item.type === 'Queja' ? '⚠️ Queja' : '💡 Sugerencia'}
+                          </span>
+                        </div>
+                        <p className="font-semibold text-sm">{item.subject}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(item.created_at).toLocaleDateString('es-ES', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowIncidentDialog(false)}>
               Cancelar
@@ -967,9 +1287,49 @@ const Dashboard = () => {
               <Button
                 className="flex-1 bg-blue-500 hover:bg-blue-600"
                 onClick={handleConfirmOpen}
-                disabled={countdown > 0}
+                disabled={countdown > 0 || unlockLoading}
               >
-                {countdown > 0 ? `Confirmar en (${countdown})` : "Confirmar"}
+                {unlockLoading ? "Abriendo..." : (countdown > 0 ? `Confirmar en (${countdown})` : "Confirmar")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de confirmación de entrada al alojamiento */}
+      <Dialog open={showConfirmEntryDialog} onOpenChange={setShowConfirmEntryDialog}>
+        <DialogContent className="max-w-sm">
+          <div className="flex flex-col items-center space-y-6 py-4">
+            {/* Icono de casa */}
+            <div className="w-24 h-24 rounded-full bg-green-500/10 flex items-center justify-center">
+              <Home className="w-12 h-12 text-green-500" />
+            </div>
+
+            {/* Mensaje */}
+            <div className="text-center space-y-2">
+              <p className="text-xl font-semibold text-foreground">
+                ✅ ¡Puerta abierta!
+              </p>
+              <p className="text-sm text-muted-foreground">
+                ¿Ya has ingresado al alojamiento?
+              </p>
+            </div>
+
+            {/* Botones */}
+            <div className="flex gap-3 w-full">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowConfirmEntryDialog(false)}
+              >
+                Aún no
+              </Button>
+              <Button
+                className="flex-1 bg-green-500 hover:bg-green-600"
+                onClick={handleConfirmEntry}
+                disabled={unlockLoading}
+              >
+                Sí, confirmar
               </Button>
             </div>
           </div>

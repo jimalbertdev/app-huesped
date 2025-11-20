@@ -84,17 +84,24 @@ try {
             }
         }
 
-        // VALIDACIÓN 1: DNI/NIE requieren segundo apellido y número de soporte
-        if (in_array($data['document_type'], ['DNI', 'NIE'])) {
+        // VALIDACIÓN 1: DNI requiere segundo apellido obligatorio
+        if ($data['document_type'] === 'DNI') {
             if (empty($data['second_last_name']) || trim($data['second_last_name']) === '') {
-                Response::error("El segundo apellido es obligatorio para documentos DNI/NIE", 400);
+                Response::error("El segundo apellido es obligatorio para DNI", 400);
             }
             if (empty($data['support_number']) || trim($data['support_number']) === '') {
-                Response::error("El número de soporte es obligatorio para documentos DNI/NIE", 400);
+                Response::error("El número de soporte es obligatorio para DNI", 400);
             }
             // Auto-asignar nacionalidad española para DNI
-            if ($data['document_type'] === 'DNI' && (empty($data['nationality']) || $data['nationality'] === '')) {
+            if (empty($data['nationality']) || $data['nationality'] === '') {
                 $data['nationality'] = 'ES';
+            }
+        }
+
+        // VALIDACIÓN 1.1: NIE requiere número de soporte (segundo apellido opcional)
+        if ($data['document_type'] === 'NIE') {
+            if (empty($data['support_number']) || trim($data['support_number']) === '') {
+                Response::error("El número de soporte es obligatorio para NIE", 400);
             }
         }
 
@@ -221,12 +228,20 @@ try {
         // CREAR REGISTRO EN CHECKIN (enlazar reserva con viajero)
         $checkin_id = $checkinModel->create($data['reservation_id'], $viajero_id);
 
-        // Si es responsable, generar contrato PDF y actualizar
+        // Si es responsable, generar contrato PDF y actualizar estado de reserva
         if ($is_responsible) {
             // NOTA: No actualizamos responsible_guest_id en reservations porque
             // la FK apunta a la antigua tabla guests. El campo responsable en viajeros
             // ya indica quién es el responsable.
             // $reservationModel->setResponsibleGuest($data['reservation_id'], $viajero_id);
+
+            // Actualizar estado de la reserva de 8 (por confirmar) a 5 (confirmado)
+            // y estado_personalizado_id a 55
+            try {
+                $reservationModel->updateStatus($data['reservation_id'], 5, 55);
+            } catch (Exception $e) {
+                error_log("Error actualizando estado de reserva: " . $e->getMessage());
+            }
 
             // Generar contrato PDF
             try {

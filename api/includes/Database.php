@@ -83,7 +83,7 @@ class Database {
             return $stmt->execute($params);
         } catch(PDOException $e) {
             error_log("Error en execute: " . $e->getMessage());
-            throw new Exception("Error al ejecutar operación");
+            throw new Exception("Error al ejecutar operación" . $e->getMessage());
         }
     }
 

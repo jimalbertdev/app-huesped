@@ -189,3 +189,31 @@ All colors MUST be HSL.
     background: var(--gradient-hero);
   }
 }
+
+/* Estilos personalizados para enlaces en contenido HTML */
+.prose a,
+.prose-sm a,
+.prose-xs a {
+  color: #60a5fa !important; /* Azul pastel */
+  text-decoration: underline !important;
+  transition: color 0.2s ease-in-out !important;
+}
+
+.prose a:hover,
+.prose-sm a:hover,
+.prose-xs a:hover {
+  color: #3b82f6 !important; /* Azul más intenso al hover */
+}
+
+/* Modo oscuro */
+.dark .prose a,
+.dark .prose-sm a,
+.dark .prose-xs a {
+  color: #93c5fd !important; /* Azul más claro en dark mode */
+}
+
+.dark .prose a:hover,
+.dark .prose-sm a:hover,
+.dark .prose-xs a:hover {
+  color: #60a5fa !important;
+}

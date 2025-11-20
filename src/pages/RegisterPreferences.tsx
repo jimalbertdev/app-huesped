@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowRight, ArrowLeft, Plus, Minus } from "lucide-react";
+import { ArrowRight, ArrowLeft, Plus, Minus, AlertCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useReservationParams } from "@/hooks/useReservationParams";
 import { useRegistrationFlow } from "@/hooks/useRegistrationFlow";
@@ -85,6 +85,19 @@ const RegisterPreferences = () => {
   // Esta página solo debe mostrarse al responsable de la reserva
   // En producción, verificar si el usuario actual es el responsable
 
+  // Helper para calcular total de camas solicitadas
+  const calculateTotalBeds = () => {
+    // Cada cama cuenta como 1 unidad, sin importar si es doble, individual, sofá o litera
+    return doubleBeds + singleBeds + sofaBeds + bunkBeds;
+  };
+
+  // Verificar si se está excediendo el número de huéspedes
+  const isExceedingGuests = () => {
+    const totalBeds = calculateTotalBeds();
+    const totalGuests = reservationData?.total_guests || 0;
+    return totalBeds > totalGuests && totalGuests > 0;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -92,6 +105,15 @@ const RegisterPreferences = () => {
     if (!isGuestDataComplete) {
       navigate(buildPathWithReservation("/register"));
       return;
+    }
+
+    // Mostrar alerta si se excede el número de huéspedes
+    if (isExceedingGuests()) {
+      toast({
+        title: "Solicitud de camas adicionales",
+        description: "El anfitrión será notificado sobre tu solicitud de camas adicionales.",
+        variant: "default",
+      });
     }
 
     // GUARDAR TEMPORALMENTE EN CONTEXTO (NO en DB todavía)
@@ -238,36 +260,56 @@ const RegisterPreferences = () => {
                 {loadingAvailability ? (
                   <p className="text-sm text-muted-foreground">Cargando disponibilidad...</p>
                 ) : (
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <Counter
-                      label={`Camas Dobles ${bedAvailability && bedAvailability.double_beds > 0 ? `(Máx: ${bedAvailability.double_beds})` : ''}`}
-                      value={doubleBeds}
-                      onChange={setDoubleBeds}
-                      max={bedAvailability?.double_beds || 5}
-                      disabled={bedAvailability !== null && bedAvailability.double_beds === 0}
-                    />
-                    <Counter
-                      label={`Camas Individuales ${bedAvailability && bedAvailability.single_beds > 0 ? `(Máx: ${bedAvailability.single_beds})` : ''}`}
-                      value={singleBeds}
-                      onChange={setSingleBeds}
-                      max={bedAvailability?.single_beds || 10}
-                      disabled={bedAvailability !== null && bedAvailability.single_beds === 0}
-                    />
-                    <Counter
-                      label={`Sofá Cama ${bedAvailability && bedAvailability.sofa_beds > 0 ? `(Máx: ${bedAvailability.sofa_beds})` : ''}`}
-                      value={sofaBeds}
-                      onChange={setSofaBeds}
-                      max={bedAvailability?.sofa_beds || 3}
-                      disabled={bedAvailability !== null && bedAvailability.sofa_beds === 0}
-                    />
-                    <Counter
-                      label={`Literas ${bedAvailability && bedAvailability.bunk_beds > 0 ? `(Máx: ${bedAvailability.bunk_beds})` : ''}`}
-                      value={bunkBeds}
-                      onChange={setBunkBeds}
-                      max={bedAvailability?.bunk_beds || 5}
-                      disabled={bedAvailability !== null && bedAvailability.bunk_beds === 0}
-                    />
-                  </div>
+                  <>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <Counter
+                        label={`Camas Dobles ${bedAvailability && bedAvailability.double_beds > 0 ? `(Máx: ${bedAvailability.double_beds})` : ''}`}
+                        value={doubleBeds}
+                        onChange={setDoubleBeds}
+                        max={bedAvailability?.double_beds || 5}
+                        disabled={bedAvailability !== null && bedAvailability.double_beds === 0}
+                      />
+                      <Counter
+                        label={`Camas Individuales ${bedAvailability && bedAvailability.single_beds > 0 ? `(Máx: ${bedAvailability.single_beds})` : ''}`}
+                        value={singleBeds}
+                        onChange={setSingleBeds}
+                        max={bedAvailability?.single_beds || 10}
+                        disabled={bedAvailability !== null && bedAvailability.single_beds === 0}
+                      />
+                      <Counter
+                        label={`Sofá Cama ${bedAvailability && bedAvailability.sofa_beds > 0 ? `(Máx: ${bedAvailability.sofa_beds})` : ''}`}
+                        value={sofaBeds}
+                        onChange={setSofaBeds}
+                        max={bedAvailability?.sofa_beds || 3}
+                        disabled={bedAvailability !== null && bedAvailability.sofa_beds === 0}
+                      />
+                      <Counter
+                        label={`Literas ${bedAvailability && bedAvailability.bunk_beds > 0 ? `(Máx: ${bedAvailability.bunk_beds})` : ''}`}
+                        value={bunkBeds}
+                        onChange={setBunkBeds}
+                        max={bedAvailability?.bunk_beds || 5}
+                        disabled={bedAvailability !== null && bedAvailability.bunk_beds === 0}
+                      />
+                    </div>
+
+                    {/* Alerta de exceso de camas */}
+                    {isExceedingGuests() && (
+                      <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-950/30 border-2 border-yellow-500/50 rounded-lg">
+                        <div className="flex items-start gap-3">
+                          <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <h5 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
+                              Solicitud de camas adicionales
+                            </h5>
+                            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                              Estás solicitando <strong>{calculateTotalBeds()} camas</strong> para <strong>{reservationData?.total_guests || 0} huésped{(reservationData?.total_guests || 0) !== 1 ? 'es' : ''}</strong>.
+                              El anfitrión será notificado sobre esta solicitud especial.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 

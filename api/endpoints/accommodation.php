@@ -1,18 +1,22 @@
 <?php
 /**
  * API Endpoint para obtener información del alojamiento
+ * NOTA: Actualizado para usar nuevas tablas (alojamiento, informacion_externa_alojamiento, informacion_turistica_alojamiento)
  *
  * Endpoints:
  * - GET /api/accommodation/{accommodation_id} - Obtener toda la información del alojamiento
  * - GET /api/accommodation/{accommodation_id}/info - Solo información general
  * - GET /api/accommodation/{accommodation_id}/videos - Solo videos
  * - GET /api/accommodation/{accommodation_id}/guide - Solo guía local
+ * - GET /api/accommodation/{accommodation_id}/beds - Disponibilidad de camas
  */
 
 // Cargar las clases necesarias
 require_once __DIR__ . '/../includes/Database.php';
 require_once __DIR__ . '/../includes/Response.php';
 require_once __DIR__ . '/../models/BedAvailability.php';
+require_once __DIR__ . '/../models/AccommodationInfo.php';
+require_once __DIR__ . '/../models/LocalGuide.php';
 
 header('Content-Type: application/json');
 
@@ -23,6 +27,11 @@ try {
     $database = new Database();
     $db = $database->getConnection();
 
+    // Instanciar modelos
+    $bedAvailabilityModel = new BedAvailability($database);
+    $accommodationInfoModel = new AccommodationInfo($database);
+    $localGuideModel = new LocalGuide($database);
+
     // ============================================
     // GET - Obtener información del alojamiento
     // ============================================
@@ -32,18 +41,18 @@ try {
         $uri_parts = explode('/', trim(parse_url($request_uri, PHP_URL_PATH), '/'));
         $api_index = array_search('api', $uri_parts);
 
-        // accommodation/1 o accommodation/1/info
+        // accommodation/3 o accommodation/3/info
         $accommodationId = isset($uri_parts[$api_index + 2]) && is_numeric($uri_parts[$api_index + 2])
             ? (int)$uri_parts[$api_index + 2]
             : null;
-        $endpoint = $uri_parts[$api_index + 3] ?? 'all'; // all, info, videos, guide
+        $endpoint = $uri_parts[$api_index + 3] ?? 'all'; // all, info, videos, guide, beds
 
         if (!$accommodationId) {
             Response::error('Se requiere el ID del alojamiento', 400);
         }
 
-        // Verificar que el alojamiento existe
-        $stmt = $db->prepare("SELECT id, name FROM accommodations WHERE id = ?");
+        // Verificar que el alojamiento existe (usando nueva tabla 'alojamiento')
+        $stmt = $db->prepare("SELECT idalojamiento, nombre FROM alojamiento WHERE idalojamiento = ?");
         $stmt->execute([$accommodationId]);
         $accommodation = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -53,66 +62,30 @@ try {
 
         $result = [
             'accommodation_id' => $accommodationId,
-            'accommodation_name' => $accommodation['name']
+            'accommodation_name' => $accommodation['nombre']
         ];
 
+        // ============================================
         // Obtener información general del alojamiento
+        // (todo excepto videos)
+        // ============================================
         if ($endpoint === 'all' || $endpoint === 'info') {
-            $stmt = $db->prepare("
-                SELECT
-                    id,
-                    how_to_arrive_airport,
-                    how_to_arrive_car,
-                    building_access_code,
-                    amenities,
-                    wifi_network,
-                    wifi_password,
-                    heating_info,
-                    tv_info,
-                    other_instructions,
-                    check_in_time,
-                    check_out_time,
-                    rules
-                FROM accommodation_info
-                WHERE accommodation_id = ?
-            ");
-            $stmt->execute([$accommodationId]);
-            $info = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($info) {
-                // Parsear rules si es JSON
-                if (!empty($info['rules'])) {
-                    $info['rules'] = json_decode($info['rules'], true);
-                }
-                $result['info'] = $info;
-            } else {
-                $result['info'] = null;
-            }
+            $info = $accommodationInfoModel->getGeneralInfo($accommodationId);
+            $result['info'] = $info;
         }
 
-        // Obtener videos
+        // ============================================
+        // Obtener videos (categoria = 8)
+        // ============================================
         if ($endpoint === 'all' || $endpoint === 'videos') {
-            $stmt = $db->prepare("
-                SELECT
-                    id,
-                    title,
-                    description,
-                    video_url,
-                    video_type,
-                    display_order
-                FROM accommodation_videos
-                WHERE accommodation_id = ?
-                  AND is_active = 1
-                ORDER BY display_order ASC
-            ");
-            $stmt->execute([$accommodationId]);
-            $videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $videos = $accommodationInfoModel->getVideos($accommodationId);
             $result['videos'] = $videos;
         }
 
+        // ============================================
         // Obtener disponibilidad de camas
+        // ============================================
         if ($endpoint === 'beds') {
-            $bedAvailabilityModel = new BedAvailability($database);
             $beds = $bedAvailabilityModel->getByAccommodation($accommodationId);
 
             if (!$beds) {
@@ -122,64 +95,35 @@ try {
             Response::success($beds, 'Disponibilidad de camas obtenida correctamente');
         }
 
+        // ============================================
         // Obtener guía local
+        // ============================================
         if ($endpoint === 'all' || $endpoint === 'guide') {
-            // Obtener todas las categorías con sus items
-            $stmt = $db->prepare("
-                SELECT
-                    c.id as category_id,
-                    c.category_key,
-                    c.title_es,
-                    c.title_en,
-                    c.title_fr,
-                    c.icon,
-                    c.display_order as category_order
-                FROM accommodation_guide_categories c
-                WHERE c.is_active = 1
-                ORDER BY c.display_order ASC
-            ");
-            $stmt->execute();
-            $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            // Obtener items de guía local (agrupados por categoría = nombre)
+            $guideItems = $localGuideModel->getByAccommodation($accommodationId);
 
-            // Para cada categoría, obtener sus items
-            $guide = [];
-            foreach ($categories as $category) {
-                $stmt = $db->prepare("
-                    SELECT
-                        id,
-                        name,
-                        description,
-                        distance,
-                        rating,
-                        address,
-                        phone,
-                        website,
-                        display_order
-                    FROM accommodation_guide_items
-                    WHERE accommodation_id = ?
-                      AND category_id = ?
-                      AND is_active = 1
-                    ORDER BY display_order ASC
-                ");
-                $stmt->execute([$accommodationId, $category['category_id']]);
-                $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-                // Solo incluir la categoría si tiene items
-                if (!empty($items)) {
-                    $guide[] = [
-                        'id' => $category['category_key'],
-                        'category_id' => $category['category_id'],
-                        'title' => [
-                            'es' => $category['title_es'],
-                            'en' => $category['title_en'],
-                            'fr' => $category['title_fr']
-                        ],
-                        'icon' => $category['icon'],
-                        'items' => $items
+            // Agrupar por nombre (categoría)
+            $guideGrouped = [];
+            foreach ($guideItems as $item) {
+                $category = $item['category'];
+                if (!isset($guideGrouped[$category])) {
+                    $guideGrouped[$category] = [
+                        'id' => $category,
+                        'title' => $category, // nombre es la categoría
+                        'items' => []
                     ];
                 }
+
+                $guideGrouped[$category]['items'][] = [
+                    'id' => $item['id'],
+                    'name' => $item['name'],
+                    'description' => $item['description'],
+                    'icon' => $item['icon']
+                ];
             }
-            $result['guide'] = $guide;
+
+            // Convertir a array indexado
+            $result['guide'] = array_values($guideGrouped);
         }
 
         Response::success($result, 'Información del alojamiento obtenida correctamente');
