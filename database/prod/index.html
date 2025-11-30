@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Migraciones de Base de Datos - Producción</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .migration-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-left: 5px solid #667eea;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .migration-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .migration-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.4em;
+        }
+
+        .migration-card p {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-right: 8px;
+            margin-bottom: 15px;
+        }
+
+        .badge-required {
+            background: #dc3545;
+            color: white;
+        }
+
+        .badge-optional {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95em;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .alert {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+        }
+
+        .alert h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .alert p {
+            color: #856404;
+            line-height: 1.6;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 30px;
+        }
+
+        .info-box h4 {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+            color: #0c5460;
+        }
+
+        .info-box li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Migraciones de Base de Datos</h1>
+            <p>Panel de Control - Producción</p>
+        </div>
+
+        <div class="content">
+            <div class="alert">
+                <h4>⚠️ Importante: Backup de Base de Datos</h4>
+                <p>Antes de ejecutar cualquier migración, asegúrate de tener un backup completo de tu base de datos. Las
+                    migraciones de datos (videos y guía local) son irreversibles sin un backup.</p>
+            </div>
+
+            <!-- Migración 016 -->
+            <div class="migration-card">
+                <h3>🔄 Migración 016: Vistas de Aplicación</h3>
+                <span class="badge badge-required">OBLIGATORIO</span>
+                <p>
+                    Crea las vistas necesarias para la aplicación:
+                    <strong>v_reservations_full</strong>,
+                    <strong>v_reservations_with_host</strong>,
+                    <strong>v_guests_with_reservation</strong>
+                </p>
+                <p><strong>Impacto:</strong> Crea vistas SQL (no modifica datos)</p>
+                <div class="btn-group">
+                    <a href="run_migration_016.php" class="btn btn-primary" target="_blank">▶️ Ejecutar Migración</a>
+                </div>
+            </div>
+
+            <!-- Migración 017 -->
+            <div class="migration-card">
+                <h3>👤 Migración 017: Actualizar Info de Anfitrión en Vistas</h3>
+                <span class="badge badge-required">RECOMENDADO</span>
+                <p>
+                    Actualiza las vistas para obtener información del anfitrión desde las nuevas tablas:
+                    <code>personal_interno</code> (foto) y <code>personal_interno_anfitrion</code> (email, teléfono)
+                </p>
+                <p><strong>Impacto:</strong> Actualiza vistas SQL (no modifica datos)</p>
+                <p><strong>Nota:</strong> Ejecutar después de la Migración 016</p>
+                <div class="btn-group">
+                    <a href="run_migration_017.php" class="btn btn-primary" target="_blank">▶️ Ejecutar Migración</a>
+                </div>
+            </div>
+
+            <!-- Migración Guía Local -->
+            <div class="migration-card">
+                <h3>📍 Migración: Separar Registros de Guía Local</h3>
+                <span class="badge badge-optional">OPCIONAL</span>
+                <p>
+                    Separa registros HTML concatenados en <code>informacion_turistica_alojamiento</code>.
+                    Divide registros que contienen múltiples bloques <code>&lt;p align=center&gt;</code> en registros
+                    individuales.
+                </p>
+                <p><strong>Impacto:</strong> Modifica datos existentes (66 registros → 306 registros)</p>
+                <div class="btn-group">
+                    <a href="run_local_guide_migration.php?dry_run=1" class="btn btn-warning" target="_blank">🔍 Dry-Run
+                        (Vista Previa)</a>
+                    <a href="run_local_guide_migration.php" class="btn btn-primary" target="_blank"
+                        onclick="return confirm('¿Estás seguro? Esta migración modificará datos.')">▶️ Ejecutar
+                        Migración</a>
+                </div>
+            </div>
+
+            <!-- Migración Videos -->
+            <div class="migration-card">
+                <h3>🎬 Migración: Convertir Videos a Embeds</h3>
+                <span class="badge badge-optional">OPCIONAL</span>
+                <p>
+                    Convierte enlaces de YouTube y Google Drive en <code>informacion_externa_alojamiento</code>
+                    (categoría 8)
+                    a iframes embebidos para mostrar videos directamente.
+                </p>
+                <p><strong>Impacto:</strong> Modifica datos existentes (46 de 76 registros)</p>
+                <div class="btn-group">
+                    <a href="run_video_migration.php?dry_run=1" class="btn btn-warning" target="_blank">🔍 Dry-Run
+                        (Vista Previa)</a>
+                    <a href="run_video_migration.php" class="btn btn-primary" target="_blank"
+                        onclick="return confirm('¿Estás seguro? Esta migración modificará datos.')">▶️ Ejecutar
+                        Migración</a>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <h4>📋 Orden de Ejecución Recomendado</h4>
+                <ul>
+                    <li><strong>Paso 1:</strong> Ejecutar Migración 016 (Vistas) - OBLIGATORIO</li>
+                    <li><strong>Paso 2:</strong> Ejecutar Migración 017 (Actualizar Info Anfitrión) - RECOMENDADO</li>
+                    <li><strong>Paso 3:</strong> Ejecutar Migración de Guía Local (si tienes registros concatenados)
+                    </li>
+                    <li><strong>Paso 4:</strong> Ejecutar Migración de Videos (si quieres embeds de videos)</li>
+                </ul>
+                <p style="margin-top: 15px;"><strong>Nota:</strong> Usa siempre el botón "Dry-Run" primero para ver qué
+                    cambios se realizarán antes de ejecutar la migración real.</p>
+            </div>
+        </div>
+    </div>
+</body>

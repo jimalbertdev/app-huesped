@@ -40,7 +40,7 @@ class Database {
 
         } catch(PDOException $e) {
             error_log("Error de conexión: " . $e->getMessage());
-            throw new Exception("Error de conexión a la base de datos");
+            throw new Exception("Error de conexión a la base de datos". $e->getMessage());
         }
 
         return $this->conn;

@@ -35,11 +35,30 @@ function calcularLetraNie(primeraLetra: string, numero: string): string {
 }
 
 /**
+ * Ejemplos de documentos que NO deben permitirse como valores reales
+ */
+const EJEMPLOS_PROHIBIDOS = [
+  '12345678Z',  // Ejemplo de DNI
+  'X1234567L',  // Ejemplo de NIE
+  'Y1234567X',  // Ejemplo de NIE
+  'Z1234567R',  // Ejemplo de NIE
+  '00000000T',  // DNI inválido común
+];
+
+/**
  * Validación específica para DNI español
  * Formato: 8 dígitos + 1 letra (ejemplo: 12345678Z)
  */
 export function validateDNI(dni: string): { valid: boolean; error?: string } {
   const dniClean = dni.toUpperCase().trim();
+
+  // 0. Validar que no sea un ejemplo prohibido
+  if (EJEMPLOS_PROHIBIDOS.includes(dniClean)) {
+    return {
+      valid: false,
+      error: 'No puedes usar el número de ejemplo. Por favor, introduce tu DNI real'
+    };
+  }
 
   // 1. Validar formato básico: 8 dígitos + 1 letra
   if (!/^[0-9]{8}[A-Z]$/.test(dniClean)) {
@@ -88,6 +107,14 @@ export function validateDNI(dni: string): { valid: boolean; error?: string } {
  */
 export function validateNIE(nie: string): { valid: boolean; error?: string } {
   const nieClean = nie.toUpperCase().trim();
+
+  // 0. Validar que no sea un ejemplo prohibido
+  if (EJEMPLOS_PROHIBIDOS.includes(nieClean)) {
+    return {
+      valid: false,
+      error: 'No puedes usar el número de ejemplo. Por favor, introduce tu NIE real'
+    };
+  }
 
   // 1. Validar formato básico: X/Y/Z + 7 dígitos + 1 letra
   if (!/^[XYZ][0-9]{7}[A-Z]$/.test(nieClean)) {

@@ -80,6 +80,10 @@ switch ($resource) {
         require_once __DIR__ . '/endpoints/clients.php';
         break;
 
+    case 'postal-codes':
+        require_once __DIR__ . '/endpoints/postal-codes.php';
+        break;
+
     case 'health':
         // Endpoint de health check
         http_response_code(200);
@@ -121,6 +125,8 @@ switch ($resource) {
                 '/api/countries/{code}',
                 '/api/municipalities/search?q={query}',
                 '/api/municipalities/{code}',
+                '/api/postal-codes?municipio_id={id}',
+                '/api/postal-codes/validate?municipio_id={id}&codigo_postal={cp}',
                 '/api/document-scan',
                 '/api/clients/{id}'
             ]

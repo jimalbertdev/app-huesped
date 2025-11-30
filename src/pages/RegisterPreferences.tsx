@@ -12,6 +12,8 @@ import { useRegistrationFlow } from "@/hooks/useRegistrationFlow";
 import { useReservation } from "@/hooks/useReservation";
 import { accommodationService } from "@/services/api";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/useLanguage";
+import FloatingActionBar from "@/components/FloatingActionBar";
 import vacanflyLogo from "@/assets/vacanfly-logo.png";
 
 const RegisterPreferences = () => {
@@ -19,6 +21,7 @@ const RegisterPreferences = () => {
   const { buildPathWithReservation } = useReservationParams();
   const { setPreferenceData, preferenceData, isGuestDataComplete } = useRegistrationFlow();
   const { reservationData } = useReservation();
+  const { t } = useLanguage();
 
   const [needsCrib, setNeedsCrib] = useState(false);
   const [doubleBeds, setDoubleBeds] = useState(0);
@@ -55,8 +58,8 @@ const RegisterPreferences = () => {
       } catch (error) {
         console.error('Error cargando disponibilidad de camas:', error);
         toast({
-          title: "Advertencia",
-          description: "No se pudo cargar la disponibilidad de camas. Podrás continuar pero puede haber limitaciones.",
+          title: t('preferences.warning'),
+          description: t('preferences.bedLoadError'),
           variant: "destructive",
         });
       } finally {
@@ -81,6 +84,17 @@ const RegisterPreferences = () => {
       setSpecialRequests(preferenceData.special_requests || "");
     }
   }, [preferenceData]);
+
+  // Redirección automática al dashboard si todos los huéspedes están registrados
+  const totalGuests = reservationData?.total_guests || 0;
+  const registeredGuests = reservationData?.registered_guests || 0;
+  const allGuestsRegistered = totalGuests > 0 && registeredGuests >= totalGuests;
+
+  useEffect(() => {
+    if (allGuestsRegistered && totalGuests > 0) {
+      navigate(buildPathWithReservation('/dashboard'));
+    }
+  }, [allGuestsRegistered, totalGuests, navigate, buildPathWithReservation]);
 
   // Esta página solo debe mostrarse al responsable de la reserva
   // En producción, verificar si el usuario actual es el responsable
@@ -186,7 +200,7 @@ const RegisterPreferences = () => {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={vacanflyLogo} alt="Vacanfly" className="w-20" />
-            
+
           </div>
           <div className="flex items-center gap-2">
             <div className="hidden sm:flex items-center gap-2 text-sm">
@@ -203,7 +217,7 @@ const RegisterPreferences = () => {
               </div>
             </div>
             <span className="text-sm font-medium text-muted-foreground">
-              Paso <span className="text-foreground">2</span> de 3
+              {t('preferences.step')} <span className="text-foreground">2</span> {t('preferences.of')} 3
             </span>
           </div>
         </div>
@@ -212,12 +226,12 @@ const RegisterPreferences = () => {
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-6 animate-slide-up">
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold">Preferencias de Estancia</h1>
+            <h1 className="text-3xl font-bold">{t('preferences.title')}</h1>
             <p className="text-muted-foreground">
-              Como responsable de la reserva, personaliza los detalles del alojamiento
+              {t('preferences.subtitle')}
             </p>
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium">
-              👤 Responsable de la Reserva
+              👤 {t('preferences.responsible')}
             </div>
           </div>
 
@@ -226,7 +240,7 @@ const RegisterPreferences = () => {
               {/* Hora de llegada */}
               <div className="space-y-2">
                 <Label htmlFor="arrivalTime">
-                  Hora de Llegada Estimada
+                  {t('preferences.arrivalTime')}
                 </Label>
                 <Input
                   id="arrivalTime"
@@ -237,7 +251,7 @@ const RegisterPreferences = () => {
                   placeholder="15:00"
                 />
                 <p className="text-sm text-muted-foreground">
-                  Nos ayuda a preparar tu alojamiento
+                  {t('preferences.arrivalHelp')}
                 </p>
               </div>
 
@@ -250,41 +264,41 @@ const RegisterPreferences = () => {
                   disabled={bedAvailability !== null && !bedAvailability.crib}
                 />
                 <Label htmlFor="needsCrib" className={`cursor-pointer ${bedAvailability !== null && !bedAvailability.crib ? 'opacity-50' : ''}`}>
-                  Necesita Cuna {bedAvailability !== null && !bedAvailability.crib && <span className="text-xs text-muted-foreground">(No disponible)</span>}
+                  {t('preferences.needsCrib')} {bedAvailability !== null && !bedAvailability.crib && <span className="text-xs text-muted-foreground">({t('preferences.notAvailable')})</span>}
                 </Label>
               </div>
 
               {/* Configuración de camas */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Configuración de Camas</h3>
+                <h3 className="text-lg font-semibold">{t('preferences.bedConfiguration')}</h3>
                 {loadingAvailability ? (
-                  <p className="text-sm text-muted-foreground">Cargando disponibilidad...</p>
+                  <p className="text-sm text-muted-foreground">{t('preferences.loadingAvailability')}</p>
                 ) : (
                   <>
                     <div className="grid md:grid-cols-2 gap-6">
                       <Counter
-                        label={`Camas Dobles ${bedAvailability && bedAvailability.double_beds > 0 ? `(Máx: ${bedAvailability.double_beds})` : ''}`}
+                        label={`${t('preferences.doubleBeds')} ${bedAvailability && bedAvailability.double_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.double_beds})` : ''}`}
                         value={doubleBeds}
                         onChange={setDoubleBeds}
                         max={bedAvailability?.double_beds || 5}
                         disabled={bedAvailability !== null && bedAvailability.double_beds === 0}
                       />
                       <Counter
-                        label={`Camas Individuales ${bedAvailability && bedAvailability.single_beds > 0 ? `(Máx: ${bedAvailability.single_beds})` : ''}`}
+                        label={`${t('preferences.singleBeds')} ${bedAvailability && bedAvailability.single_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.single_beds})` : ''}`}
                         value={singleBeds}
                         onChange={setSingleBeds}
                         max={bedAvailability?.single_beds || 10}
                         disabled={bedAvailability !== null && bedAvailability.single_beds === 0}
                       />
                       <Counter
-                        label={`Sofá Cama ${bedAvailability && bedAvailability.sofa_beds > 0 ? `(Máx: ${bedAvailability.sofa_beds})` : ''}`}
+                        label={`${t('preferences.sofaBeds')} ${bedAvailability && bedAvailability.sofa_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.sofa_beds})` : ''}`}
                         value={sofaBeds}
                         onChange={setSofaBeds}
                         max={bedAvailability?.sofa_beds || 3}
                         disabled={bedAvailability !== null && bedAvailability.sofa_beds === 0}
                       />
                       <Counter
-                        label={`Literas ${bedAvailability && bedAvailability.bunk_beds > 0 ? `(Máx: ${bedAvailability.bunk_beds})` : ''}`}
+                        label={`${t('preferences.bunkBeds')} ${bedAvailability && bedAvailability.bunk_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.bunk_beds})` : ''}`}
                         value={bunkBeds}
                         onChange={setBunkBeds}
                         max={bedAvailability?.bunk_beds || 5}
@@ -299,11 +313,10 @@ const RegisterPreferences = () => {
                           <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
                           <div className="flex-1">
                             <h5 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
-                              Solicitud de camas adicionales
+                              {t('preferences.additionalBedsRequest')}
                             </h5>
                             <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                              Estás solicitando <strong>{calculateTotalBeds()} camas</strong> para <strong>{reservationData?.total_guests || 0} huésped{(reservationData?.total_guests || 0) !== 1 ? 'es' : ''}</strong>.
-                              El anfitrión será notificado sobre esta solicitud especial.
+                              {t('preferences.bedsRequestMessage1')} <strong>{calculateTotalBeds()} {t('preferences.beds')}</strong> {t('preferences.bedsRequestMessage2')} <strong>{reservationData?.total_guests || 0} {t('preferences.guest')}{(reservationData?.total_guests || 0) !== 1 ? t('preferences.guestPlural') : ''}</strong>. {t('preferences.bedsRequestMessage3')}
                             </p>
                           </div>
                         </div>
@@ -316,18 +329,18 @@ const RegisterPreferences = () => {
               {/* Información adicional */}
               <div className="space-y-2">
                 <Label htmlFor="additionalInfo">
-                  Información Adicional (Opcional)
+                  {t('preferences.additionalInfo')}
                 </Label>
                 <Textarea
                   id="additionalInfo"
-                  placeholder="Alergias, peticiones especiales, comentarios..."
+                  placeholder={t('preferences.additionalInfoPlaceholder')}
                   className="min-h-[120px] resize-none"
                   maxLength={500}
                   value={additionalInfo}
                   onChange={(e) => setAdditionalInfo(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground text-right">
-                  {additionalInfo.length}/500 caracteres
+                  {additionalInfo.length}/500 {t('preferences.characters')}
                 </p>
               </div>
 
@@ -341,7 +354,7 @@ const RegisterPreferences = () => {
                     className="w-full gap-2"
                   >
                     <ArrowLeft className="w-4 h-4" />
-                    Atrás
+                    {t('preferences.back')}
                   </Button>
                 </Link>
                 <Button
@@ -349,7 +362,7 @@ const RegisterPreferences = () => {
                   size="lg"
                   className="flex-1 gap-2 bg-gradient-primary hover:opacity-90"
                 >
-                  Continuar
+                  {t('preferences.continue')}
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -358,10 +371,13 @@ const RegisterPreferences = () => {
 
           {/* Info de guardado automático */}
           <div className="text-center text-sm text-muted-foreground">
-            💾 Tu progreso se guarda automáticamente
+            {t('preferences.autoSave')}
           </div>
         </div>
       </main>
+
+      {/* Barra flotante con idioma y contacto */}
+      <FloatingActionBar />
     </div>
   );
 };

@@ -16,7 +16,6 @@ import {
   MapPin,
   AlertCircle,
   Lock,
-  Globe,
   Menu,
   Unlock,
   Bed,
@@ -31,7 +30,7 @@ import { Link } from "react-router-dom";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useReservation } from "@/hooks/useReservation";
 import { useReservationParams } from "@/hooks/useReservationParams";
-import { preferenceService, accommodationService, suggestionService, doorService, handleApiError } from "@/services/api";
+import { doorService, preferenceService, incidentService, accommodationService, suggestionService, handleApiError } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import {
   Accordion,
@@ -47,6 +46,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import vacanflyLogo from "@/assets/vacanfly-logo.png";
+import { ShareDialog } from "@/components/ShareDialog";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 // Mapeo de categorías de información del alojamiento
 const ACCOMMODATION_INFO_CATEGORIES: { [key: string]: string } = {
@@ -65,11 +66,13 @@ const Dashboard = () => {
   const { buildPathWithReservation } = useReservationParams();
   const { toast } = useToast();
   const [showContactDialog, setShowContactDialog] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
 
   // Obtener contrato del huésped responsable
-  const responsibleGuest = guests.find(g => g.is_responsible === 1 || g.is_responsible === true);
-  const contractPath = responsibleGuest?.contract_path;
-
+  // Obtener contrato del huésped responsable
+  const responsibleGuest = guests.find(g => g.is_responsible);
+  // const contractPath = responsibleGuest?.contract_path; // Ya no se usa, usamos reservationData.contract_path
+  //console.log(reservationData);
   // Obtener datos de la reserva - Sin valores por defecto, mostrar '?' si no hay datos
   const totalGuests = reservationData?.total_guests || 0;
   const registeredGuests = reservationData?.registered_guests || 0;
@@ -81,6 +84,7 @@ const Dashboard = () => {
   const hostName = reservationData?.host_name || '?';
   const hostPhone = reservationData?.host_phone || '?';
   const hostEmail = reservationData?.host_email || '?';
+  const hostPhotoUrl = reservationData?.host_photo_url;
   const accommodationName = reservationData?.accommodation_name || '?';
 
   const [isRegistered] = useState(true);
@@ -105,7 +109,7 @@ const Dashboard = () => {
 
   // Historial de aperturas
   const [unlockHistory, setUnlockHistory] = useState<any[]>([]);
-  
+
   // Preferences state
   const [needsCrib, setNeedsCrib] = useState(false);
   const [doubleBeds, setDoubleBeds] = useState(0);
@@ -264,7 +268,7 @@ const Dashboard = () => {
 
   // Helper para calcular total de camas solicitadas
   const calculateTotalBeds = () => {
-    // Cada cama cuenta como 1 unidad, sin importar si es doble, individual, sofá o litera
+    // Cada cama cuenta como 1 unidad, sin importar si es doble, individual, sofá o {t('dashboard.bunkBed')}
     return doubleBeds + singleBeds + sofaBeds + bunkBeds;
   };
 
@@ -285,11 +289,13 @@ const Dashboard = () => {
 
     try {
       const response = await doorService.getHistory(reservationData.id);
+      console.log(response);
       if (response.data.success) {
         const history = response.data.data.map((entry: any) => ({
           time: entry.time || new Date(entry.unlock_time).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
           date: entry.date || new Date(entry.unlock_time).toISOString().split('T')[0],
           door: entry.door_type === 'portal' ? 'Portal' : 'Alojamiento',
+          description: entry.description,
           success: entry.success === 1 || entry.status === 'success'
         }));
         setUnlockHistory(history);
@@ -307,12 +313,12 @@ const Dashboard = () => {
     try {
       const response = await doorService.unlock({
         reservation_id: reservationData.id,
-        guest_id: reservationData.responsible_guest_id || undefined,
+        guest_id: responsibleGuest?.id || undefined,
         door_type: selectedDoor,
       });
 
       const success = response.data.success;
-      const doorName = selectedDoor === "portal" ? "Portal" : "Alojamiento";
+      const doorName = selectedDoor === "portal" ? t('dashboard.portal') : "Alojamiento";
 
       // Recargar historial
       await loadUnlockHistory();
@@ -411,7 +417,7 @@ const Dashboard = () => {
 
       await suggestionService.create({
         reservation_id: reservationData.id,
-        guest_id: reservationData.responsible_guest_id || undefined,
+        guest_id: responsibleGuest?.id || undefined,
         subject: incidentSubject,
         description: incidentDescription,
         type: type,
@@ -544,7 +550,7 @@ const Dashboard = () => {
         </Button>
       </div>
       {disabled && (
-        <p className="text-xs text-muted-foreground">No disponible en este alojamiento</p>
+        <p className="text-xs text-muted-foreground">{t('preferences.notAvailableAccommodation')}</p>
       )}
     </div>
   );
@@ -556,25 +562,12 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to={buildPathWithReservation("/")}>
-            <img src={vacanflyLogo} alt="Vacanfly" className="w-20" />
+              <img src={vacanflyLogo} alt="Vacanfly" className="w-20" />
             </Link>
 
           </div>
           <div className="flex items-center gap-2">
-            <Globe className="w-5 h-5 text-muted-foreground" />
-            <Select value={language} onValueChange={(value) => setLanguage(value as any)}>
-              <SelectTrigger className="w-[140px] border-none bg-transparent">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="es">{getLanguageName('es')}</SelectItem>
-                <SelectItem value="en">{getLanguageName('en')}</SelectItem>
-                <SelectItem value="ca">{getLanguageName('ca')}</SelectItem>
-                <SelectItem value="fr">{getLanguageName('fr')}</SelectItem>
-                <SelectItem value="de">{getLanguageName('de')}</SelectItem>
-                <SelectItem value="nl">{getLanguageName('nl')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <LanguageSelector />
             <Button
               variant="ghost"
               size="sm"
@@ -602,15 +595,15 @@ const Dashboard = () => {
                       : t('dashboard.completeToUnlock')}
                   </h3>
                   <p className="text-xs text-muted-foreground mb-3">
-                    {isRegistered
-                      ? t('dashboard.someFeaturesLimited')
-                      : "Necesitas completar tu registro para acceder a todas las funcionalidades"}
+                    {t('dashboard.someFeaturesLimited')}
                   </p>
-                  <Link to={buildPathWithReservation(isRegistered ? "/" : "/register")}>
-                    <Button size="sm" className="bg-gradient-primary hover:opacity-90">
-                      {isRegistered ? t('welcome.share') : t('welcome.completeRegistration')}
-                    </Button>
-                  </Link>
+                  <Button
+                    size="sm"
+                    className="bg-gradient-primary hover:opacity-90"
+                    onClick={() => setShowShareDialog(true)}
+                  >
+                    {t('welcome.share')}
+                  </Button>
                 </div>
               </div>
             </Card>
@@ -621,9 +614,8 @@ const Dashboard = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Card 1: Mi Reserva */}
           <Card
-            className={`p-6 shadow-card hover-lift ${
-              !hasResponsibleGuest ? "relative overflow-hidden" : ""
-            }`}
+            className={`p-6 shadow-card hover-lift ${!hasResponsibleGuest ? "relative overflow-hidden" : ""
+              }`}
           >
             {!hasResponsibleGuest && (
               <div className="absolute inset-0 bg-muted/80 backdrop-blur-sm z-10 flex items-center justify-center">
@@ -641,17 +633,25 @@ const Dashboard = () => {
                 <h2 className="text-xl font-bold">{t('dashboard.myReservation')}</h2>
               </div>
               <div className="space-y-3 text-sm">
-                <div>
-                  <span className="text-muted-foreground">ID:</span>{" "}
-                  <span className="font-mono font-semibold">{reservationCode}</span>
+                <div className="space-y-2">
+                  <div className="text-sm text-muted-foreground">{t('dashboard.accommodation')}</div>
+                  <div className="font-medium">{accommodationName}</div>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">Check-in:</span>{" "}
-                  <span className="font-semibold">{checkInDate}, {checkInTime}</span>
+                <div className="space-y-2">
+                  <div className="text-sm text-muted-foreground">{t('dashboard.reservationId')}</div>
+                  <div className="font-medium">{reservationCode}</div>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">Check-out:</span>{" "}
-                  <span className="font-semibold">{checkOutDate}, {checkOutTime}</span>
+                <div className="space-y-2">
+                  <div className="text-sm text-muted-foreground">{t('dashboard.checkIn')}</div>
+                  <div className="font-medium">
+                    {checkInDate} {checkInTime}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-sm text-muted-foreground">{t('dashboard.checkOut')}</div>
+                  <div className="font-medium">
+                    {checkOutDate} {checkOutTime}
+                  </div>
                 </div>
               </div>
               <div className="space-y-3">
@@ -662,7 +662,7 @@ const Dashboard = () => {
                     onClick={() => handleOpenDoorClick("portal")}
                   >
                     <Unlock className="w-4 h-4" />
-                    Abrir Portal
+                    {t('dashboard.openPortal')}
                   </Button>
                   <Button
                     variant="secondary"
@@ -671,10 +671,10 @@ const Dashboard = () => {
                     onClick={() => handleOpenDoorClick("accommodation")}
                   >
                     <Unlock className="w-4 h-4" />
-                    Abrir Alojamiento
+                    {t('dashboard.openAccommodation')}
                   </Button>
                 </div>
-                
+
                 {/* Ver Historial de Aperturas */}
                 <Dialog open={showUnlockHistoryDialog} onOpenChange={setShowUnlockHistoryDialog}>
                   <Button
@@ -700,21 +700,20 @@ const Dashboard = () => {
                         unlockHistory.map((entry, index) => (
                           <div
                             key={index}
-                            className={`p-3 rounded-lg flex items-center justify-between ${
-                              entry.success
-                                ? 'bg-success/10 border border-success/20'
-                                : 'bg-destructive/10 border border-destructive/20'
-                            }`}
+                            className={`p-3 rounded-lg flex items-center justify-between ${entry.success
+                              ? 'bg-success/10 border border-success/20'
+                              : 'bg-destructive/10 border border-destructive/20'
+                              }`}
                           >
-                            <div>
-                              <p className={`font-semibold ${entry.success ? 'text-success' : 'text-destructive'}`}>
-                                {entry.door}
+                            <div className="flex-1">
+                              <p className={`font-semibold text-sm ${entry.success ? 'text-success' : 'text-destructive'}`}>
+                                {entry.description || entry.door}
                               </p>
-                              <p className="text-xs text-muted-foreground">
+                              <p className="text-xs text-muted-foreground mt-1">
                                 {entry.date} a las {entry.time}
                               </p>
                             </div>
-                            <span className={`text-2xl ${entry.success ? 'text-success' : 'text-destructive'}`}>
+                            <span className={`text-2xl ml-3 ${entry.success ? 'text-success' : 'text-destructive'}`}>
                               {entry.success ? '✓' : '✗'}
                             </span>
                           </div>
@@ -725,9 +724,11 @@ const Dashboard = () => {
                 </Dialog>
 
                 {/* Descargar Contrato */}
-                {contractPath && (
+                {reservationData?.contract_path && (
                   <a
-                    href={`${import.meta.env.VITE_API_URL || 'http://localhost.local'}${contractPath}`}
+                    href={reservationData.contract_path.startsWith('http')
+                      ? reservationData.contract_path
+                      : `${import.meta.env.VITE_API_URL || 'http://localhost.local'}${reservationData.contract_path}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     download
@@ -737,7 +738,7 @@ const Dashboard = () => {
                       className="w-full text-xs gap-2"
                     >
                       <FileText className="w-4 h-4" />
-                      Descargar Contrato PDF
+                      {t('dashboard.downloadContract')}
                     </Button>
                   </a>
                 )}
@@ -747,9 +748,8 @@ const Dashboard = () => {
 
           {/* Card 2: Preferencias de Estancia */}
           <Card
-            className={`p-6 shadow-card hover-lift ${
-              !hasResponsibleGuest ? "relative overflow-hidden" : ""
-            }`}
+            className={`p-6 shadow-card hover-lift ${!hasResponsibleGuest ? "relative overflow-hidden" : ""
+              }`}
           >
             {!hasResponsibleGuest && (
               <div className="absolute inset-0 bg-muted/80 backdrop-blur-sm z-10 flex items-center justify-center">
@@ -770,16 +770,16 @@ const Dashboard = () => {
                 {estimatedArrivalTime && (
                   <div className="flex items-center gap-2 text-sm">
                     <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span>Llegada: {estimatedArrivalTime}</span>
+                    <span>{t('dashboard.arrival')}: {estimatedArrivalTime}</span>
                   </div>
                 )}
                 {(doubleBeds > 0 || singleBeds > 0 || sofaBeds > 0) && (
                   <div className="flex items-center gap-2 text-sm">
                     <Bed className="w-4 h-4 text-muted-foreground" />
                     <span>
-                      {doubleBeds > 0 && `${doubleBeds} ${doubleBeds === 1 ? 'cama doble' : 'camas dobles'}`}
+                      {doubleBeds > 0 && `${doubleBeds} ${doubleBeds === 1 ? t('dashboard.doubleBed') : t('dashboard.doubleBeds')}`}
                       {doubleBeds > 0 && (singleBeds > 0 || sofaBeds > 0) && ', '}
-                      {singleBeds > 0 && `${singleBeds} ${singleBeds === 1 ? 'cama individual' : 'camas individuales'}`}
+                      {singleBeds > 0 && `${singleBeds} ${singleBeds === 1 ? t('dashboard.singleBed') : t('dashboard.singleBeds')}`}
                       {singleBeds > 0 && sofaBeds > 0 && ', '}
                       {sofaBeds > 0 && `${sofaBeds} sofá${sofaBeds === 1 ? '' : 's'} cama`}
                     </span>
@@ -788,7 +788,7 @@ const Dashboard = () => {
                 {needsCrib && (
                   <div className="flex items-center gap-2 text-sm">
                     <span>🛏️</span>
-                    <span>Cuna solicitada</span>
+                    <span>{t('dashboard.cribRequested')}</span>
                   </div>
                 )}
                 {additionalInfo && (
@@ -804,25 +804,25 @@ const Dashboard = () => {
                 )}
               </div>
               <Dialog open={showPreferencesDialog} onOpenChange={setShowPreferencesDialog}>
-                <Button 
-                  variant="outline" 
-                  className="w-full" 
+                <Button
+                  variant="outline"
+                  className="w-full"
                   disabled={!hasResponsibleGuest}
                   onClick={() => setShowPreferencesDialog(true)}
                 >
-                  Editar Preferencias
+                  {t('dashboard.editPreferences')}
                 </Button>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Actualizar Preferencias de Estancia</DialogTitle>
+                    <DialogTitle>{t('preferences.updateTitle')}</DialogTitle>
                     <DialogDescription>
-                      Modifica los detalles de tu alojamiento
+                      {t('preferences.updateSubtitle')}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-6 py-4">
                     {/* Hora de llegada */}
                     <div className="space-y-2">
-                      <Label htmlFor="arrivalTime">Hora de Llegada Estimada</Label>
+                      <Label htmlFor="arrivalTime">{t('preferences.arrivalTime')}</Label>
                       <Input
                         id="arrivalTime"
                         type="time"
@@ -831,7 +831,7 @@ const Dashboard = () => {
                         className="h-12 text-base"
                       />
                       <p className="text-sm text-muted-foreground">
-                        Nos ayuda a preparar tu alojamiento
+                        {t('preferences.arrivalHelp')}
                       </p>
                     </div>
 
@@ -843,41 +843,41 @@ const Dashboard = () => {
                         onCheckedChange={(checked) => setNeedsCrib(checked === true)}
                       />
                       <Label htmlFor="needsCrib" className="cursor-pointer">
-                        Necesita Cuna
+                        {t('preferences.needsCrib')}
                       </Label>
                     </div>
 
                     {/* Configuración de camas */}
                     <div className="space-y-3">
-                      <h4 className="font-semibold">Configuración de Camas</h4>
+                      <h4 className="font-semibold">{t('preferences.bedConfiguration')}</h4>
                       {loadingBedAvailability ? (
-                        <p className="text-sm text-muted-foreground">Cargando disponibilidad...</p>
+                        <p className="text-sm text-muted-foreground">{t('preferences.loadingAvailability')}</p>
                       ) : (
                         <>
                           <div className="grid grid-cols-2 gap-4">
                             <Counter
-                              label={`Camas Dobles ${bedAvailability && bedAvailability.double_beds > 0 ? `(Máx: ${bedAvailability.double_beds})` : ''}`}
+                              label={`${t('preferences.doubleBeds')} ${bedAvailability && bedAvailability.double_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.double_beds})` : ''}`}
                               value={doubleBeds}
                               onChange={setDoubleBeds}
                               max={bedAvailability?.double_beds || 5}
                               disabled={bedAvailability !== null && bedAvailability.double_beds === 0}
                             />
                             <Counter
-                              label={`Camas Individuales ${bedAvailability && bedAvailability.single_beds > 0 ? `(Máx: ${bedAvailability.single_beds})` : ''}`}
+                              label={`${t('preferences.singleBeds')} ${bedAvailability && bedAvailability.single_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.single_beds})` : ''}`}
                               value={singleBeds}
                               onChange={setSingleBeds}
                               max={bedAvailability?.single_beds || 10}
                               disabled={bedAvailability !== null && bedAvailability.single_beds === 0}
                             />
                             <Counter
-                              label={`Sofá Cama ${bedAvailability && bedAvailability.sofa_beds > 0 ? `(Máx: ${bedAvailability.sofa_beds})` : ''}`}
+                              label={`${t('preferences.sofaBeds')} ${bedAvailability && bedAvailability.sofa_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.sofa_beds})` : ''}`}
                               value={sofaBeds}
                               onChange={setSofaBeds}
                               max={bedAvailability?.sofa_beds || 3}
                               disabled={bedAvailability !== null && bedAvailability.sofa_beds === 0}
                             />
                             <Counter
-                              label={`Literas ${bedAvailability && bedAvailability.bunk_beds > 0 ? `(Máx: ${bedAvailability.bunk_beds})` : ''}`}
+                              label={`${t('preferences.bunkBeds')} ${bedAvailability && bedAvailability.bunk_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.bunk_beds})` : ''}`}
                               value={bunkBeds}
                               onChange={setBunkBeds}
                               max={bedAvailability?.bunk_beds || 5}
@@ -892,11 +892,11 @@ const Dashboard = () => {
                                 <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
                                 <div className="flex-1">
                                   <h5 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
-                                    Solicitud de camas adicionales
+                                    {t('preferences.extraBedsTitle')}
                                   </h5>
                                   <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                                    Estás solicitando <strong>{calculateTotalBeds()} camas</strong> para <strong>{totalGuests} huésped{totalGuests !== 1 ? 'es' : ''}</strong>.
-                                    El anfitrión será notificado sobre esta solicitud especial.
+                                    {t('preferences.bedsRequestMessage1')} <strong>{calculateTotalBeds()} {t('preferences.beds')}</strong> {t('preferences.bedsRequestMessage2')} <strong>{totalGuests} {totalGuests !== 1 ? t('preferences.guests') : t('preferences.guest')}</strong>.
+                                    {' '}{t('preferences.bedsRequestMessage3')}
                                   </p>
                                 </div>
                               </div>
@@ -908,26 +908,26 @@ const Dashboard = () => {
 
                     {/* Información adicional */}
                     <div className="space-y-2">
-                      <Label htmlFor="additionalInfo">Información Adicional (Opcional)</Label>
+                      <Label htmlFor="additionalInfo">{t('preferences.additionalInfo')}</Label>
                       <Textarea
                         id="additionalInfo"
-                        placeholder="Alergias, peticiones especiales, comentarios..."
+                        placeholder={t('preferences.additionalInfoPlaceholder')}
                         value={additionalInfo}
                         onChange={(e) => setAdditionalInfo(e.target.value)}
                         className="min-h-[100px] resize-none"
                         maxLength={500}
                       />
                       <p className="text-xs text-muted-foreground text-right">
-                        {additionalInfo.length}/500 caracteres
+                        {additionalInfo.length}/500 {t('preferences.characters')}
                       </p>
                     </div>
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setShowPreferencesDialog(false)}>
-                      Cancelar
+                      {t('dashboard.cancel')}
                     </Button>
                     <Button onClick={handleUpdatePreferences} className="bg-gradient-primary hover:opacity-90">
-                      Guardar Cambios
+                      {t('dashboard.saveChanges')}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -945,9 +945,17 @@ const Dashboard = () => {
                 <h2 className="text-xl font-bold">{t('dashboard.yourHost')}</h2>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-full bg-gradient-secondary flex items-center justify-center text-2xl">
-                  👤
-                </div>
+                {hostPhotoUrl ? (
+                  <img
+                    src={`${import.meta.env.VITE_API_URL || 'http://localhost.local'}${hostPhotoUrl}`}
+                    alt={hostName}
+                    className="w-14 h-14 rounded-full object-cover border-2 border-secondary"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-full bg-gradient-secondary flex items-center justify-center text-2xl">
+                    👤
+                  </div>
+                )}
                 <div>
                   <p className="font-semibold">{hostName}</p>
                   <p className="text-sm text-muted-foreground">{t('contact.available')}</p>
@@ -976,48 +984,6 @@ const Dashboard = () => {
             </div>
           </Card>
 
-          {/* Card 4: Información del Alojamiento */}
-          <Card className="p-6 shadow-card hover-lift md:col-span-2 lg:col-span-1">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <BookOpen className="w-6 h-6 text-primary" />
-                </div>
-                <h2 className="text-xl font-bold">{t('dashboard.accommodationInfo')}</h2>
-              </div>
-              {accommodationInfo && accommodationInfo.length > 0 ? (
-                <Accordion type="single" collapsible className="w-full">
-                  {Object.entries(groupedAccommodationInfo()).map(([categoryId, items]) => {
-                    // Solo mostrar categorías del 1 al 7 (8 es para videos)
-                    if (categoryId === '8' || !ACCOMMODATION_INFO_CATEGORIES[categoryId]) return null;
-
-                    return (
-                      <AccordionItem key={categoryId} value={categoryId}>
-                        <AccordionTrigger className="text-sm">
-                          {ACCOMMODATION_INFO_CATEGORIES[categoryId]}
-                        </AccordionTrigger>
-                        <AccordionContent className="space-y-3 text-sm prose prose-sm max-w-none">
-                          {items.map((item: any) => (
-                            <div key={item.id} className="space-y-1">
-                              {item.name && (
-                                <h4 className="font-semibold text-sm">{item.name}</h4>
-                              )}
-                              {item.description && (
-                                <div dangerouslySetInnerHTML={{ __html: item.description }} />
-                              )}
-                            </div>
-                          ))}
-                        </AccordionContent>
-                      </AccordionItem>
-                    );
-                  })}
-                </Accordion>
-              ) : (
-                <p className="text-sm text-muted-foreground">Cargando información...</p>
-              )}
-            </div>
-          </Card>
-
           {/* Card 5: Video de Bienvenida */}
           <Card className="p-6 shadow-card hover-lift">
             <div className="space-y-4">
@@ -1043,6 +1009,53 @@ const Dashboard = () => {
               )}
             </div>
           </Card>
+
+          {/* Card 4: Información del Alojamiento */}
+          <Card className="p-6 shadow-card hover-lift md:col-span-2 lg:col-span-1">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <BookOpen className="w-6 h-6 text-primary" />
+                </div>
+                <h2 className="text-xl font-bold">{t('dashboard.accommodationInfo')}</h2>
+              </div>
+              {accommodationInfo && accommodationInfo.length > 0 ? (
+                <Accordion type="single" collapsible className="w-full">
+                  {Object.entries(groupedAccommodationInfo()).map(([categoryId, items]) => {
+                    // Solo mostrar categorías del 1 al 7 (8 es para videos)
+                    if (categoryId === '8' || !ACCOMMODATION_INFO_CATEGORIES[categoryId]) return null;
+
+                    return (
+                      <AccordionItem key={categoryId} value={categoryId}>
+                        <AccordionTrigger className="text-sm">
+                          {ACCOMMODATION_INFO_CATEGORIES[categoryId]}
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-3 text-sm prose prose-sm max-w-none">
+                          {items.map((item: any) => (
+                            <div key={item.id} className="p-2 bg-muted/50 rounded-lg space-y-1">
+                              {item.name && (
+                                <h4 className="font-semibold text-sm">{item.name}</h4>
+                              )}
+                              {item.description && (
+                                <div
+                                  className="[&_h2]:font-semibold [&_h3]:font-semibold [&_h4]:font-semibold"
+                                  dangerouslySetInnerHTML={{ __html: item.description }}
+                                />
+                              )}
+                            </div>
+                          ))}
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
+                </Accordion>
+              ) : (
+                <p className="text-sm text-muted-foreground">Cargando información...</p>
+              )}
+            </div>
+          </Card>
+
+
 
           {/* Card Nueva: Servicios Premium (Bloqueada) }
           <Card className="p-6 shadow-card hover-lift relative overflow-hidden">
@@ -1103,7 +1116,7 @@ const Dashboard = () => {
                               <div key={item.id} className="p-2 bg-muted/50 rounded-lg">
                                 {item.description && (
                                   <div
-                                    className="text-xs text-muted-foreground prose prose-xs max-w-none"
+                                    className="text-xs text-muted-foreground prose prose-xs max-w-none [&_h2]:font-semibold [&_h3]:font-semibold [&_h4]:font-semibold"
                                     dangerouslySetInnerHTML={{ __html: item.description }}
                                   />
                                 )}
@@ -1133,25 +1146,44 @@ const Dashboard = () => {
                 <h2 className="text-xl font-bold">{t('dashboard.customerSupport')}</h2>
               </div>
               <div className="grid md:grid-cols-3 gap-4">
-                <Button variant="outline" className="gap-2">
-                  <Phone className="w-4 h-4" />
-                  Emergencias: 112
-                </Button>
+                {/* Botón 1: Anfitrión - Teléfono y Correo */}
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={() => window.location.href = `tel:${hostPhone}`}
+                  >
+                    <Phone className="w-4 h-4" />
+                    {hostPhone}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={() => window.location.href = `mailto:${hostEmail}`}
+                  >
+                    <Mail className="w-4 h-4" />
+                    {hostEmail}
+                  </Button>
+                </div>
+
+                {/* Botón 2: Sugerencias o Quejas */}
                 <Button
                   variant="outline"
                   className="gap-2"
                   onClick={() => setShowIncidentDialog(true)}
                 >
                   <MessageSquare className="w-4 h-4" />
-                  Sugerencias o Quejas
+                  {t('dashboard.suggestionsComplaints')}
                 </Button>
+
+                {/* Botón 3: Enlace a vacanfly.com */}
                 <Button
                   variant="outline"
                   className="gap-2"
-                  onClick={() => window.location.href = `tel:${hostPhone}`}
+                  onClick={() => window.open('https://vacanfly.com', '_blank')}
                 >
-                  <Mail className="w-4 h-4" />
-                  {hostPhone}
+                  <Home className="w-4 h-4" />
+                  {t('dashboard.visitVacanfly')}
                 </Button>
               </div>
             </div>
@@ -1163,40 +1195,40 @@ const Dashboard = () => {
       <Dialog open={showIncidentDialog} onOpenChange={setShowIncidentDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Sugerencias o Quejas</DialogTitle>
+            <DialogTitle>{t('dashboard.suggestionsComplaints')}</DialogTitle>
             <DialogDescription>
-              Tu opinión nos ayuda a mejorar
+              {t('dashboard.yourOpinionHelps')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="incident-type-main">Tipo</Label>
+              <Label htmlFor="incident-type-main">{t('dashboard.type')}</Label>
               <Select value={incidentType} onValueChange={(value) => setIncidentType(value as "complaint" | "suggestion")}>
                 <SelectTrigger id="incident-type-main">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="complaint">Queja</SelectItem>
-                  <SelectItem value="suggestion">Sugerencia</SelectItem>
+                  <SelectItem value="complaint">{t('dashboard.complaint')}</SelectItem>
+                  <SelectItem value="suggestion">{t('dashboard.suggestion')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="incident-subject-main">Asunto</Label>
+              <Label htmlFor="incident-subject-main">{t('dashboard.incidentSubject')}</Label>
               <input
                 id="incident-subject-main"
                 type="text"
-                placeholder="¿De qué trata tu mensaje?"
+                placeholder={t('dashboard.subjectPlaceholder')}
                 value={incidentSubject}
                 onChange={(e) => setIncidentSubject(e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
             </div>
             <div>
-              <Label htmlFor="incident-description-main">Descripción</Label>
+              <Label htmlFor="incident-description-main">{t('dashboard.incidentDescription')}</Label>
               <Textarea
                 id="incident-description-main"
-                placeholder="Describe tu sugerencia o queja..."
+                placeholder={t('dashboard.descriptionPlaceholder')}
                 value={incidentDescription}
                 onChange={(e) => setIncidentDescription(e.target.value)}
                 className="min-h-[120px]"
@@ -1207,25 +1239,23 @@ const Dashboard = () => {
           {/* Historial de sugerencias y quejas */}
           {suggestions.length > 0 && (
             <div className="border-t pt-4 mt-4">
-              <h4 className="text-sm font-semibold mb-3">📋 Historial de mensajes</h4>
+              <h4 className="text-sm font-semibold mb-3">📋 {t('dashboard.messageHistory')}</h4>
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {suggestions.map((item: any) => (
                   <div
                     key={item.id}
-                    className={`p-3 rounded-lg border ${
-                      item.type === 'Queja'
-                        ? 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950 dark:border-yellow-800'
-                        : 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800'
-                    }`}
+                    className={`p-3 rounded-lg border ${item.type === 'Queja'
+                      ? 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950 dark:border-yellow-800'
+                      : 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800'
+                      }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
-                            item.type === 'Queja'
-                              ? 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200'
-                              : 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200'
-                          }`}>
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded ${item.type === 'Queja'
+                            ? 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200'
+                            : 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200'
+                            }`}>
                             {item.type === 'Queja' ? '⚠️ Queja' : '💡 Sugerencia'}
                           </span>
                         </div>
@@ -1250,10 +1280,10 @@ const Dashboard = () => {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowIncidentDialog(false)}>
-              Cancelar
+              {t('dashboard.cancel')}
             </Button>
             <Button onClick={handleSubmitIncident} className="bg-gradient-primary hover:opacity-90">
-              Enviar
+              {t('dashboard.send')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1262,6 +1292,9 @@ const Dashboard = () => {
       {/* Dialog de confirmación de apertura */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="sr-only">Confirmar apertura de puerta</DialogTitle>
+          </DialogHeader>
           <div className="flex flex-col items-center space-y-6 py-4">
             {/* Icono de interrogación */}
             <div className="w-24 h-24 rounded-full border-4 border-orange-500 flex items-center justify-center">
@@ -1299,6 +1332,9 @@ const Dashboard = () => {
       {/* Dialog de confirmación de entrada al alojamiento */}
       <Dialog open={showConfirmEntryDialog} onOpenChange={setShowConfirmEntryDialog}>
         <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="sr-only">Confirmar entrada al alojamiento</DialogTitle>
+          </DialogHeader>
           <div className="flex flex-col items-center space-y-6 py-4">
             {/* Icono de casa */}
             <div className="w-24 h-24 rounded-full bg-green-500/10 flex items-center justify-center">
@@ -1344,9 +1380,17 @@ const Dashboard = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl">
-                👤
-              </div>
+              {hostPhotoUrl ? (
+                <img
+                  src={`${import.meta.env.VITE_API_URL || 'http://localhost.local'}${hostPhotoUrl}`}
+                  alt={hostName}
+                  className="w-16 h-16 rounded-full object-cover border-2 border-primary/20"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl">
+                  👤
+                </div>
+              )}
               <div>
                 <p className="font-semibold">{hostName}</p>
                 <p className="text-sm text-muted-foreground">{t('contact.available')}</p>
@@ -1372,6 +1416,9 @@ const Dashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Share Dialog */}
+      <ShareDialog open={showShareDialog} onOpenChange={setShowShareDialog} />
     </div>
   );
 };

@@ -3,11 +3,13 @@ import { useEffect } from "react";
 import { Home, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useReservationParams } from "@/hooks/useReservationParams";
+import { useLanguage } from "@/hooks/useLanguage";
 import vacanflyLogo from "@/assets/vacanfly-logo.png";
 
 const NotFound = () => {
   const location = useLocation();
   const { buildPathWithReservation } = useReservationParams();
+  const { t } = useLanguage();
 
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
@@ -20,7 +22,7 @@ const NotFound = () => {
         <div className="container mx-auto px-4 h-16 flex items-center">
           <div className="flex items-center gap-3">
             <img src={vacanflyLogo} alt="Vacanfly" className="w-20" />
-            
+
           </div>
         </div>
       </header>
@@ -44,10 +46,10 @@ const NotFound = () => {
               404
             </h1>
             <h2 className="text-3xl font-bold text-foreground">
-              Reserva No Encontrada
+              {t('notFound.title')}
             </h2>
             <p className="text-muted-foreground text-lg">
-              Lo sentimos, la reserva que buscas no existe o ha sido movida.
+              {t('notFound.message')}
             </p>
           </div>
 
@@ -56,7 +58,7 @@ const NotFound = () => {
             <Link to={buildPathWithReservation("/")}>
               <Button size="lg" className="gap-2 w-full sm:w-auto bg-gradient-primary hover:opacity-90">
                 <Home className="w-4 h-4" />
-                Volver al Inicio
+                {t('notFound.goHome')}
               </Button>
             </Link>
             <Link to={buildPathWithReservation("/dashboard")}>

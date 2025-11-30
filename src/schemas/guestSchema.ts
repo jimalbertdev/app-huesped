@@ -4,6 +4,7 @@
  */
 
 import { z } from 'zod';
+import { validatePhoneNumber, COUNTRY_CODES } from '@/lib/phoneValidation';
 
 // ============================================
 // SCHEMA BASE
@@ -160,6 +161,28 @@ export const extendedGuestSchema = baseGuestSchema
   }, {
     message: "La fecha de nacimiento no es válida",
     path: ["birth_date"]
+  })
+
+  // VALIDACIÓN 9: Teléfono válido para el país seleccionado
+  .refine((data) => {
+    if (!data.phone || data.phone.trim() === '') {
+      return true; // Campo opcional
+    }
+
+    // Mapear código de teléfono a código ISO del país
+    const countryISO = COUNTRY_CODES.find(c => c.code === data.phone_country_code)?.country;
+
+    if (!countryISO) {
+      return false; // Código de país no válido
+    }
+
+    // Validar el número con libphonenumber-js
+    const validation = validatePhoneNumber(data.phone, countryISO);
+
+    return validation.valid;
+  }, {
+    message: "El número de teléfono no es válido para el país seleccionado",
+    path: ["phone"]
   });
 
 // ============================================

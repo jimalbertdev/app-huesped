@@ -18,8 +18,8 @@ class DoorDevice {
                     a.id_cerradura_raixer,
                     a.informacion_portal,
                     a.informacion_casa
-                FROM alojamientos a
-                WHERE a.id = :accommodation_id
+                FROM alojamiento a
+                WHERE a.idalojamiento = :accommodation_id
             ";
 
             $stmt = $this->db->prepare($query);

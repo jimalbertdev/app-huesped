@@ -11,6 +11,8 @@
 require_once __DIR__ . '/../includes/Database.php';
 require_once __DIR__ . '/../includes/Response.php';
 require_once __DIR__ . '/../includes/DocumentValidator.php';
+require_once __DIR__ . '/../includes/PhoneValidator.php';
+require_once __DIR__ . '/../includes/PhoneCountryMap.php';
 require_once __DIR__ . '/../models/Guest.php';
 require_once __DIR__ . '/../models/Viajero.php';
 require_once __DIR__ . '/../models/Checkin.php';
@@ -176,6 +178,28 @@ try {
             Response::error("El formato del email no es válido", 400);
         }
 
+        // VALIDACIÓN 6: Teléfono válido con libphonenumber
+        if (!empty($data['phone'])) {
+            $phoneValidator = new PhoneValidator();
+
+            // Extraer código de país ISO del phone_country_code (ej: +34 → ES)
+            $countryISO = null;
+            if (!empty($data['phone_country_code'])) {
+                $countryISO = PhoneCountryMap::getCountryISO($data['phone_country_code']);
+            }
+
+            // Combinar código de país + número para validación
+            $fullPhone = $data['phone_country_code'] . $data['phone'];
+            $validation = $phoneValidator->validate($fullPhone, $countryISO);
+
+            if (!$validation['valid']) {
+                Response::error($validation['error'], 400);
+            }
+
+            // Guardar el número formateado en formato E.164
+            $data['phone'] = $validation['formatted'];
+        }
+
         // ============================================
         // SANITIZACIÓN DE DATOS
         // ============================================
@@ -245,22 +269,29 @@ try {
 
             // Generar contrato PDF
             try {
+                error_log("GUEST REGISTRATION: Iniciando generación de contrato para reserva ID: " . $data['reservation_id']);
+                error_log("GUEST REGISTRATION: Viajero ID: " . $viajero_id);
+                error_log("GUEST REGISTRATION: Signature path: " . ($signature_path ?? 'NULL'));
+                
                 $contractService = new ContractService($database);
-                $contract_path = $contractService->generateContract(
+                $contractResult = $contractService->generateContract(
                     $data['reservation_id'],
                     $viajero_id,
-                    $signature_path
+                    $signature_path,
+                    $reservationModel  // Pasar el modelo de Reservation para guardar en tabla reserva
                 );
 
-                // Actualizar el viajero con la ruta del contrato
-                if ($contract_path) {
-                    $viajeroModel->update($viajero_id, [
-                        'contract_path' => $contract_path
-                    ]);
-                }
+                error_log("GUEST REGISTRATION: Contrato generado. Resultado: " . json_encode($contractResult));
+
+                error_log("GUEST REGISTRATION: Contrato generado. Resultado: " . json_encode($contractResult));
+
+                // El contrato ya se guardó automáticamente en la tabla reserva dentro de generateContract
+                // No intentamos guardar en viajeros porque la columna contract_path no existe allí
+                
             } catch (Exception $e) {
                 // Log del error pero no fallar el registro
-                error_log("Error generando contrato PDF: " . $e->getMessage());
+                error_log("GUEST REGISTRATION ERROR: Error generando contrato PDF: " . $e->getMessage());
+                error_log("GUEST REGISTRATION ERROR: Stack trace: " . $e->getTraceAsString());
             }
         }
 

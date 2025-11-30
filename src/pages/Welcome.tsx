@@ -1,21 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Users, Globe, Phone, Share2, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { Users, Phone, Share2, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useReservation } from "@/hooks/useReservation";
 import { useReservationParams } from "@/hooks/useReservationParams";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { toast } from "@/hooks/use-toast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import vacanflyLogo from "@/assets/vacanfly-logo.png";
+import { ShareDialog } from "@/components/ShareDialog";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 const Welcome = () => {
   const { language, setLanguage, t, getLanguageName } = useLanguage();
@@ -35,30 +29,14 @@ const Welcome = () => {
   const hasResponsibleGuest = guests.some(guest => guest.is_responsible);
   const allGuestsRegistered = totalGuests > 0 && registeredGuests >= totalGuests;
 
-  const handleCopyLink = () => {
-    const basename = import.meta.env.PROD ? '/web/site' : '';
-    const url = window.location.origin + basename + buildPathWithReservation("/register");
-    navigator.clipboard.writeText(url);
-    toast({
-      title: t('share.copied'),
-      duration: 2000,
-    });
-  };
+  // Funciones de compartir movidas a ShareDialog component
 
-  const handleWhatsApp = () => {
-    const basename = import.meta.env.PROD ? '/web/site' : '';
-    const url = window.location.origin + basename + buildPathWithReservation("/register");
-    const message = encodeURIComponent(`${t('share.message')}: ${url}`);
-    window.open(`https://wa.me/?text=${message}`, '_blank');
-  };
-
-  const handleEmail = () => {
-    const basename = import.meta.env.PROD ? '/web/site' : '';
-    const url = window.location.origin + basename + buildPathWithReservation("/register");
-    const subject = encodeURIComponent(t('share.message'));
-    const body = encodeURIComponent(`${t('share.message')}: ${url}`);
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
-  };
+  // Redirección automática al dashboard si todos los huéspedes están registrados
+  useEffect(() => {
+    if (allGuestsRegistered && totalGuests > 0) {
+      navigate(buildPathWithReservation('/dashboard'));
+    }
+  }, [allGuestsRegistered, totalGuests, navigate, buildPathWithReservation]);
 
   // Si está cargando, mostrar loader
   if (loading) {
@@ -84,20 +62,7 @@ const Welcome = () => {
 
           </div>
           <div className="flex items-center gap-2">
-            <Globe className="w-5 h-5 text-muted-foreground" />
-            <Select value={language} onValueChange={(value) => setLanguage(value as any)}>
-              <SelectTrigger className="w-[140px] border-none bg-transparent">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="es">{getLanguageName('es')}</SelectItem>
-                <SelectItem value="en">{getLanguageName('en')}</SelectItem>
-                <SelectItem value="ca">{getLanguageName('ca')}</SelectItem>
-                <SelectItem value="fr">{getLanguageName('fr')}</SelectItem>
-                <SelectItem value="de">{getLanguageName('de')}</SelectItem>
-                <SelectItem value="nl">{getLanguageName('nl')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <LanguageSelector />
             <Button
               variant="ghost"
               size="sm"
@@ -254,7 +219,7 @@ const Welcome = () => {
             {/* Solo mostrar "Ver Alojamiento" si hay un huésped responsable registrado pero NO todos */}
             {hasResponsibleGuest && !allGuestsRegistered && (
               <Link to={buildPathWithReservation("/dashboard")}>
-                <Button variant="ghost" className="w-full sm:w-auto mt-4">
+                <Button variant="ghost" className="bg-gradient-primary hover:opacity-90 animate-breathing gap-2 w-full sm:w-auto mt-4">
                   {t('welcome.viewAccommodation')}
                 </Button>
               </Link>
@@ -307,36 +272,7 @@ const Welcome = () => {
       </Dialog>
 
       {/* Share Dialog */}
-      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('share.title')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <Button 
-              variant="outline" 
-              className="w-full justify-start gap-2"
-              onClick={handleCopyLink}
-            >
-              📋 {t('share.copy')}
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full justify-start gap-2"
-              onClick={handleWhatsApp}
-            >
-              💬 {t('share.whatsapp')}
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full justify-start gap-2"
-              onClick={handleEmail}
-            >
-              📧 {t('share.email')}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ShareDialog open={showShareDialog} onOpenChange={setShowShareDialog} />
     </div>
   );
 };

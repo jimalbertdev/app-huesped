@@ -25,6 +25,8 @@ class Reservation {
                     r.total_huespedes as total_guests,
                     r.cliente_id,
                     r.estado_reserva_id as status,
+                    r.contrato as contract_path,
+                    r.fecha_contrato as contract_date,
                     r.created_at,
                     r.updated_at,
                     a.nombre as accommodation_name,
@@ -34,12 +36,16 @@ class Reservation {
                     ac.clavewifi as wifi_password,
                     NULL as portal_code,
                     NULL as door_code,
-                    ac.nombre_anfitrion as host_name,
-                    ac.email_anfitrion as host_email,
-                    ac.tel_anfitrion as host_phone
+                    pi.identificador as host_document,
+                    COALESCE(CONCAT(pi.nombres, ' ', pi.apellidos), ac.nombre_anfitrion) as host_name,
+                    COALESCE(pia.correo, ac.email_anfitrion) as host_email,
+                    COALESCE(pia.telefono, ac.tel_anfitrion) as host_phone,
+                    pi.foto as host_photo
                 FROM reserva r
                 LEFT JOIN alojamiento a ON r.alojamiento_id = a.idalojamiento
                 LEFT JOIN alojamiento_caracteristica ac ON a.idalojamiento = ac.idalojamiento
+                LEFT JOIN personal_interno pi ON ac.id_personal_interno_anfitrion = pi.id
+                LEFT JOIN personal_interno_anfitrion pia ON pi.id = pia.personal_interno_id
                 WHERE r.localizador_canal = ?";
 
         $result = $this->db->queryOne($sql, [$code]);
@@ -55,6 +61,26 @@ class Reservation {
         $registeredCount = $this->getRegisteredGuestsCount($result['id']);
         $result['registered_guests'] = $registeredCount;
         $result['all_guests_registered'] = $registeredCount >= $result['total_guests'];
+
+        // Construir URL de la foto del anfitrión
+        if (!empty($result['host_photo']) && !empty($result['host_document'])) {
+            $result['host_photo_url'] = '/app_huesped/public/anfitrion/' . $result['host_document'] . '/' . $result['host_photo'];
+        } else {
+            $result['host_photo_url'] = null;
+        }
+
+        // Construir URL completa del contrato
+        if (!empty($result['contract_path'])) {
+            $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            // Asegurar que contract_path empiece con /
+            $path = '/' . ltrim($result['contract_path'], '/');
+            // Agregar prefijo del proyecto si no está presente
+            if (strpos($path, '/app_huesped') !== 0) {
+                $path = '/app_huesped' . $path;
+            }
+            $result['contract_path'] = $protocol . "://" . $host . $path;
+        }
 
         return $result;
     }
@@ -73,6 +99,8 @@ class Reservation {
                     r.total_huespedes as total_guests,
                     r.cliente_id,
                     r.estado_reserva_id as status,
+                    r.contrato as contract_path,
+                    r.fecha_contrato as contract_date,
                     r.created_at,
                     r.updated_at,
                     a.nombre as accommodation_name
@@ -159,13 +187,32 @@ class Reservation {
      * Obtener información del alojamiento de la reserva
      */
     public function getAccommodationInfo($reservation_id) {
-        $sql = "SELECT a.*, h.name as host_name, h.email as host_email, h.phone as host_phone, h.available_24_7
+        $sql = "SELECT 
+                    a.*,
+                    pi.identificador as host_document,
+                    COALESCE(CONCAT(pi.nombres, ' ', pi.apellidos), ac.nombre_anfitrion) as host_name,
+                    COALESCE(pia.correo, ac.email_anfitrion) as host_email,
+                    COALESCE(pia.telefono, ac.tel_anfitrion) as host_phone,
+                    pi.foto as host_photo
                 FROM reserva r
-                JOIN accommodations a ON r.alojamiento_id = a.id
-                JOIN hosts h ON a.host_id = h.id
+                JOIN alojamiento a ON r.alojamiento_id = a.idalojamiento
+                JOIN alojamiento_caracteristica ac ON a.idalojamiento = ac.idalojamiento
+                LEFT JOIN personal_interno pi ON ac.id_personal_interno_anfitrion = pi.id
+                LEFT JOIN personal_interno_anfitrion pia ON pi.id = pia.personal_interno_id
                 WHERE r.id = ?";
 
         return $this->db->queryOne($sql, [$reservation_id]);
+    }
+
+    /**
+     * Helper para procesar info del anfitrión (si se necesita en otros lugares)
+     */
+    public function processHostInfo(&$data) {
+        if (!empty($data['host_photo']) && !empty($data['host_document'])) {
+            $data['host_photo_url'] = '/app_huesped/public/anfitrion/' . $data['host_document'] . '/' . $data['host_photo'];
+        } else {
+            $data['host_photo_url'] = null;
+        }
     }
 
     /**
@@ -207,5 +254,38 @@ class Reservation {
         ];
 
         return $statusMap[$status_id] ?? 'confirmed'; // Por defecto, permitir acceso
+    }
+
+    /**
+     * Actualizar contrato de la reserva
+     * @param int $reservation_id ID de la reserva
+     * @param string $contract_path Ruta del contrato PDF
+     * @param string|null $contract_date Fecha de generación del contrato (opcional, usa NOW() si no se proporciona)
+     */
+    public function updateContract($reservation_id, $contract_path, $contract_date = null) {
+        error_log("RESERVATION MODEL: updateContract called with reservation_id=" . $reservation_id . ", contract_path=" . $contract_path . ", contract_date=" . ($contract_date ?? 'NULL'));
+        
+        if ($contract_date === null) {
+            $sql = "UPDATE reserva SET contrato = ?, fecha_contrato = NOW() WHERE id = ?";
+            error_log("RESERVATION MODEL: Executing SQL (with NOW()): " . $sql);
+            $result = $this->db->execute($sql, [$contract_path, $reservation_id]);
+        } else {
+            $sql = "UPDATE reserva SET contrato = ?, fecha_contrato = ? WHERE id = ?";
+            error_log("RESERVATION MODEL: Executing SQL (with date): " . $sql);
+            $result = $this->db->execute($sql, [$contract_path, $contract_date, $reservation_id]);
+        }
+        
+        error_log("RESERVATION MODEL: Update result: " . ($result ? "SUCCESS" : "FAILED"));
+        return $result;
+    }
+
+    /**
+     * Obtener información del contrato de la reserva
+     * @param int $reservation_id ID de la reserva
+     * @return array|null Array con 'contrato' y 'fecha_contrato' o null si no existe
+     */
+    public function getContract($reservation_id) {
+        $sql = "SELECT contrato, fecha_contrato FROM reserva WHERE id = ?";
+        return $this->db->queryOne($sql, [$reservation_id]);
     }
 }

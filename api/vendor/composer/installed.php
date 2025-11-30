@@ -3,13 +3,37 @@
         'name' => 'vacanfly/api',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '18f441c25e3f0d729e55ba5c1b3cb2ddf317c123',
+        'reference' => '8ebb0a7cba05e14a68f696f0c4029e5a261609eb',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
         'dev' => true,
     ),
     'versions' => array(
+        'giggsey/libphonenumber-for-php' => array(
+            'pretty_version' => '8.13.55',
+            'version' => '8.13.55.0',
+            'reference' => '6e28b3d53cf96d7f41c83d9b80b6021ecbd00537',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../giggsey/libphonenumber-for-php',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'giggsey/libphonenumber-for-php-lite' => array(
+            'dev_requirement' => false,
+            'replaced' => array(
+                0 => '8.13.55',
+            ),
+        ),
+        'giggsey/locale' => array(
+            'pretty_version' => '2.7.0',
+            'version' => '2.7.0.0',
+            'reference' => 'a5c65ea3c2630f27ccb78977990eefbee6dd8f97',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../giggsey/locale',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'graham-campbell/result-type' => array(
             'pretty_version' => 'v1.1.3',
             'version' => '1.1.3.0',
@@ -130,7 +154,7 @@
         'vacanfly/api' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '18f441c25e3f0d729e55ba5c1b3cb2ddf317c123',
+            'reference' => '8ebb0a7cba05e14a68f696f0c4029e5a261609eb',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

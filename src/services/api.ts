@@ -267,6 +267,22 @@ export const municipalityService = {
   getByCode: (code: string) => api.get(`/municipalities/${code}`),
 };
 
+// Códigos Postales
+export const postalCodeService = {
+  /**
+   * Obtener códigos postales por municipio
+   */
+  getByMunicipality: (municipioId: string) =>
+    api.get(`/postal-codes?municipio_id=${encodeURIComponent(municipioId)}`),
+
+  /**
+   * Validar que un código postal pertenece a un municipio
+   */
+  validate: (municipioId: string, codigoPostal: string) =>
+    api.get(`/postal-codes/validate?municipio_id=${encodeURIComponent(municipioId)}&codigo_postal=${encodeURIComponent(codigoPostal)}`),
+};
+
+
 // Escaneo de Documentos con Klippa
 export const documentScanService = {
   /**

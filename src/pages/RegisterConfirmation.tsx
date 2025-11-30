@@ -16,6 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import vacanflyLogo from "@/assets/vacanfly-logo.png";
+import { ShareDialog } from "@/components/ShareDialog";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 const RegisterConfirmation = () => {
   const { toast } = useToast();
@@ -90,22 +92,10 @@ const RegisterConfirmation = () => {
             <Link to={buildPathWithReservation("/")}>
               <img src={vacanflyLogo} alt="Vacanfly" className="w-20" />
             </Link>
+
           </div>
           <div className="flex items-center gap-2">
-            <Globe className="w-5 h-5 text-muted-foreground" />
-            <Select value={language} onValueChange={(value) => setLanguage(value as any)}>
-              <SelectTrigger className="w-[140px] border-none bg-transparent">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="es">{getLanguageName('es')}</SelectItem>
-                <SelectItem value="en">{getLanguageName('en')}</SelectItem>
-                <SelectItem value="ca">{getLanguageName('ca')}</SelectItem>
-                <SelectItem value="fr">{getLanguageName('fr')}</SelectItem>
-                <SelectItem value="de">{getLanguageName('de')}</SelectItem>
-                <SelectItem value="nl">{getLanguageName('nl')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <LanguageSelector />
             <Button
               variant="ghost"
               size="sm"

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -11,9 +11,12 @@ import { useRegistrationFlow } from "@/hooks/useRegistrationFlow";
 import { useReservation } from "@/hooks/useReservation";
 import { guestService, preferenceService, handleApiError } from "@/services/api";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/useLanguage";
+import FloatingActionBar from "@/components/FloatingActionBar";
 import vacanflyLogo from "@/assets/vacanfly-logo.png";
 
 const RegisterTerms = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { buildPathWithReservation } = useReservationParams();
   const { guestData, preferenceData, signatureData, setSignatureData, clearRegistrationData, isGuestDataComplete } = useRegistrationFlow();
@@ -25,7 +28,18 @@ const RegisterTerms = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasSignature, setHasSignature] = useState(false);
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+  // Redirección automática al dashboard si todos los huéspedes están registrados
+  const totalGuests = reservationData?.total_guests || 0;
+  const registeredGuests = reservationData?.registered_guests || 0;
+  const allGuestsRegistered = totalGuests > 0 && registeredGuests >= totalGuests;
+
+  useEffect(() => {
+    if (allGuestsRegistered && totalGuests > 0) {
+      navigate(buildPathWithReservation('/dashboard'));
+    }
+  }, [allGuestsRegistered, totalGuests, navigate, buildPathWithReservation]);
+
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement> | TouchEvent) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -38,16 +52,22 @@ const RegisterTerms = () => {
     ctx.strokeStyle = 'hsl(var(--foreground))';
 
     const rect = canvas.getBoundingClientRect();
-    const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-    const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
+
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
 
     ctx.beginPath();
     ctx.moveTo(x, y);
   };
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement> | TouchEvent) => {
     if (!isSigning) return;
-    
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -55,8 +75,14 @@ const RegisterTerms = () => {
     if (!ctx) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-    const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
+
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
 
     ctx.lineTo(x, y);
     ctx.stroke();
@@ -66,6 +92,38 @@ const RegisterTerms = () => {
   const stopDrawing = () => {
     setIsSigning(false);
   };
+
+  // Agregar event listeners para touch con {passive: false}
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      startDrawing(e);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      draw(e);
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      e.preventDefault();
+      stopDrawing();
+    };
+
+    // Agregar listeners con passive: false para poder usar preventDefault
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+    return () => {
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isSigning]); // Agregar isSigning como dependencia
 
   const clearSignature = () => {
     const canvas = canvasRef.current;
@@ -228,7 +286,7 @@ const RegisterTerms = () => {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={vacanflyLogo} alt="Vacanfly" className="w-20" />
-            
+
           </div>
           <div className="flex items-center gap-2">
             <div className="hidden sm:flex items-center gap-2 text-sm">
@@ -245,7 +303,7 @@ const RegisterTerms = () => {
               </div>
             </div>
             <span className="text-sm font-medium text-muted-foreground">
-              Paso <span className="text-foreground">3</span> de 3
+              {t('terms.step')} <span className="text-foreground">3</span> {t('terms.of')} 3
             </span>
           </div>
         </div>
@@ -254,9 +312,9 @@ const RegisterTerms = () => {
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-6 animate-slide-up">
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold">📄 Contrato de Hospedaje</h1>
+            <h1 className="text-3xl font-bold">📄 {t('terms.title')}</h1>
             <p className="text-muted-foreground">
-              Lee y acepta los términos para completar tu registro
+              {t('terms.subtitle')}
             </p>
           </div>
 
@@ -264,50 +322,61 @@ const RegisterTerms = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Contrato scrollable */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Términos y Condiciones</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">{t('terms.termsAndConditions')}</h3>
+                  {/* Enlace al modelo de contrato */}
+                  <a
+                    href={`${import.meta.env.VITE_API_URL || 'http://localhost.local'}/uploads/contracts/modelo/modelo_contrato_vacanfly.pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                  >
+                    📄 {t('dashboard.downloadContractModel')}
+                  </a>
+                </div>
                 <ScrollArea className="h-[300px] w-full rounded-lg border p-4">
                   <div className="space-y-4 text-sm">
                     <div>
-                      <h4 className="font-semibold mb-2">Resumen de Puntos Clave</h4>
+                      <h4 className="font-semibold mb-2">{t('terms.keySummary')}</h4>
                       <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                        <li>Horario de check-in: 15:00 - 20:00</li>
-                        <li>Horario de check-out: hasta las 11:00</li>
-                        <li>Prohibido fumar en el interior</li>
-                        <li>No se permiten mascotas</li>
-                        <li>Capacidad máxima: según reserva</li>
+                        <li>{t('terms.checkInTime')}</li>
+                        <li>{t('terms.checkOutTime')}</li>
+                        <li>{t('terms.noSmoking')}</li>
+                        <li>{t('terms.noPets')}</li>
+                        <li>{t('terms.maxCapacity')}</li>
                       </ul>
                     </div>
 
                     <div>
-                      <h4 className="font-semibold mb-2">1. Normas del Alojamiento</h4>
+                      <h4 className="font-semibold mb-2">1. {t('terms.accommodationRules')}</h4>
                       <p className="text-muted-foreground">
                         El huésped se compromete a mantener el alojamiento en buen estado y hacer un uso responsable de las instalaciones. Está prohibido fumar en el interior del alojamiento. No se permiten fiestas ni eventos sin autorización previa. El ruido debe mantenerse a un nivel razonable, especialmente entre las 22:00 y las 08:00 horas.
                       </p>
                     </div>
 
                     <div>
-                      <h4 className="font-semibold mb-2">2. Política de Cancelación</h4>
+                      <h4 className="font-semibold mb-2">2. {t('terms.cancellationPolicy')}</h4>
                       <p className="text-muted-foreground">
                         Las cancelaciones realizadas con más de 7 días de antelación tendrán reembolso completo. Cancelaciones entre 3 y 7 días: 50% de reembolso. Cancelaciones con menos de 3 días: sin reembolso. En caso de no presentarse sin cancelación previa, no habrá reembolso.
                       </p>
                     </div>
 
                     <div>
-                      <h4 className="font-semibold mb-2">3. Responsabilidades</h4>
+                      <h4 className="font-semibold mb-2">3. {t('terms.responsibilities')}</h4>
                       <p className="text-muted-foreground">
                         El huésped es responsable de cualquier daño causado al alojamiento durante su estancia. Se realizará inspección al check-out. Los daños serán cargados a la tarjeta de crédito proporcionada. El anfitrión no se hace responsable de pérdidas o robos de pertenencias personales.
                       </p>
                     </div>
 
                     <div>
-                      <h4 className="font-semibold mb-2">4. Protección de Datos</h4>
+                      <h4 className="font-semibold mb-2">4. {t('terms.dataProtection')}</h4>
                       <p className="text-muted-foreground">
                         Los datos personales proporcionados serán tratados conforme al RGPD y la legislación española de protección de datos. La información será utilizada exclusivamente para la gestión de la reserva y el cumplimiento de obligaciones legales, incluyendo el registro de viajeros obligatorio.
                       </p>
                     </div>
 
                     <div>
-                      <h4 className="font-semibold mb-2">5. Términos Legales</h4>
+                      <h4 className="font-semibold mb-2">5. {t('terms.legalTerms')}</h4>
                       <p className="text-muted-foreground">
                         Este contrato se rige por la legislación española. El huésped acepta cumplir con todas las leyes locales durante su estancia. El anfitrión se reserva el derecho de cancelar la reserva en caso de incumplimiento de las normas.
                       </p>
@@ -324,14 +393,14 @@ const RegisterTerms = () => {
                   onCheckedChange={(checked) => setAccepted(checked as boolean)}
                 />
                 <Label htmlFor="acceptTerms" className="cursor-pointer leading-relaxed">
-                  He leído y acepto el contrato de hospedaje y los términos y condiciones
+                  {t('terms.acceptCheckbox')}
                 </Label>
               </div>
 
               {/* Área de firma */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">✍️ Firma aquí:</h3>
+                  <h3 className="text-lg font-semibold">✍️ {t('terms.signHere')}</h3>
                   <Button
                     type="button"
                     variant="outline"
@@ -340,7 +409,7 @@ const RegisterTerms = () => {
                     className="gap-2"
                   >
                     <Trash2 className="w-4 h-4" />
-                    Limpiar
+                    {t('terms.clear')}
                   </Button>
                 </div>
                 <div className="border-2 border-dashed rounded-lg overflow-hidden">
@@ -353,13 +422,10 @@ const RegisterTerms = () => {
                     onMouseMove={draw}
                     onMouseUp={stopDrawing}
                     onMouseLeave={stopDrawing}
-                    onTouchStart={startDrawing}
-                    onTouchMove={draw}
-                    onTouchEnd={stopDrawing}
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Dibuja tu firma usando el ratón o tu dedo en pantallas táctiles
+                  {t('terms.signatureHelp')}
                 </p>
               </div>
 
@@ -378,7 +444,7 @@ const RegisterTerms = () => {
                     className="w-full gap-2"
                   >
                     <ArrowLeft className="w-4 h-4" />
-                    Atrás
+                    {t('terms.back')}
                   </Button>
                 </Link>
                 <Button
@@ -387,7 +453,7 @@ const RegisterTerms = () => {
                   className="flex-1 gap-2 bg-gradient-primary hover:opacity-90"
                   disabled={!isFormValid || loading}
                 >
-                  {loading ? "Guardando..." : "✓ Completar Registro"}
+                  {loading ? t('terms.saving') : t('terms.complete')}
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -395,6 +461,9 @@ const RegisterTerms = () => {
           </Card>
         </div>
       </main>
+
+      {/* Barra flotante con idioma y contacto */}
+      <FloatingActionBar />
     </div>
   );
 };

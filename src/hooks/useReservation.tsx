@@ -10,6 +10,7 @@ interface ReservationData {
   check_in_date: string;
   check_out_date: string;
   check_in_time: string;
+  check_out_time?: string;
   total_guests: number;
   registered_guests: number;
   all_guests_registered: boolean;
@@ -19,6 +20,8 @@ interface ReservationData {
   host_name?: string;
   host_email?: string;
   host_phone?: string;
+  host_photo_url?: string;
+  contract_path?: string;
 }
 
 interface GuestData {

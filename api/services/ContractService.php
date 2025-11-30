@@ -25,9 +25,10 @@ class ContractService
      * @param int $reservation_id ID de la reserva
      * @param int $responsible_guest_id ID del huésped responsable
      * @param string $signature_path Ruta a la imagen de la firma
-     * @return string Ruta del archivo PDF generado
+     * @param object $reservationModel Modelo de Reservation para actualizar la tabla reserva
+     * @return array Array con 'contract_path' y 'contract_date'
      */
-    public function generateContract($reservation_id, $responsible_guest_id, $signature_path = null)
+    public function generateContract($reservation_id, $responsible_guest_id, $signature_path = null, $reservationModel = null)
     {
         // 1. OBTENER DATOS DE LA RESERVA
         $reservation = $this->getReservationData($reservation_id);
@@ -77,8 +78,36 @@ class ContractService
         $file_path = $contracts_dir . '/' . $filename;
         $mpdf->Output($file_path, \Mpdf\Output\Destination::FILE);
 
-        // 7. RETORNAR RUTA RELATIVA
-        return '/uploads/contracts/RES' . $reservation_id . '/' . $filename;
+        error_log("CONTRACT: PDF generado en: " . $file_path);
+
+        // 7. RUTA RELATIVA Y FECHA
+        $contract_path = '/uploads/contracts/RES' . $reservation_id . '/' . $filename;
+        $contract_date = date('Y-m-d H:i:s');
+
+        error_log("CONTRACT: Ruta relativa: " . $contract_path);
+        error_log("CONTRACT: Fecha: " . $contract_date);
+        error_log("CONTRACT: ReservationModel is " . ($reservationModel !== null ? "NOT NULL" : "NULL"));
+
+        // 8. GUARDAR EN LA TABLA RESERVA
+        if ($reservationModel !== null) {
+            try {
+                error_log("CONTRACT: Intentando actualizar reserva ID: " . $reservation_id);
+                $result = $reservationModel->updateContract($reservation_id, $contract_path, $contract_date);
+                error_log("CONTRACT: Resultado de updateContract: " . ($result ? "SUCCESS" : "FAILED"));
+            } catch (Exception $e) {
+                error_log("CONTRACT ERROR: Error guardando contrato en tabla reserva: " . $e->getMessage());
+                error_log("CONTRACT ERROR: Stack trace: " . $e->getTraceAsString());
+                // No lanzar excepción, solo registrar el error
+            }
+        } else {
+            error_log("CONTRACT WARNING: ReservationModel es NULL, no se puede actualizar la tabla reserva");
+        }
+
+        // 9. RETORNAR RUTA Y FECHA
+        return [
+            'contract_path' => $contract_path,
+            'contract_date' => $contract_date
+        ];
     }
 
     /**
@@ -86,7 +115,16 @@ class ContractService
      */
     private function getReservationData($reservation_id)
     {
-        $sql = "SELECT * FROM v_reservations_with_host WHERE id = ?";
+        $sql = "SELECT 
+                    r.*,
+                    r.localizador_canal as reservation_code,
+                    a.nombre as accommodation_name,
+                    a.direccion as address,
+                    ac.nombre_anfitrion as host_name
+                FROM reserva r
+                LEFT JOIN alojamiento a ON r.alojamiento_id = a.idalojamiento
+                LEFT JOIN alojamiento_caracteristica ac ON a.idalojamiento = ac.idalojamiento
+                WHERE r.id = ?";
         return $this->database->queryOne($sql, [$reservation_id]);
     }
 
@@ -95,7 +133,7 @@ class ContractService
      */
     private function getGuestData($guest_id)
     {
-        $sql = "SELECT * FROM guests WHERE id = ?";
+        $sql = "SELECT * FROM viajeros WHERE id = ?";
         return $this->database->queryOne($sql, [$guest_id]);
     }
 
@@ -104,7 +142,8 @@ class ContractService
      */
     private function getPreferencesData($reservation_id)
     {
-        $sql = "SELECT * FROM preferences WHERE reservation_id = ?";
+        // NOTA: La tabla es 'reservas_detalles' y la columna tiene un typo 'reseva_id'
+        $sql = "SELECT * FROM reservas_detalles WHERE reseva_id = ?";
         return $this->database->queryOne($sql, [$reservation_id]);
     }
 
@@ -140,9 +179,33 @@ class ContractService
 
         // Ruta absoluta de la firma
         $signature_img = '';
-        if ($signature_path && file_exists(__DIR__ . '/../../' . $signature_path)) {
-            $signature_img = '<img src="' . __DIR__ . '/../../' . $signature_path . '" style="max-width: 300px; max-height: 100px; border: 1px solid #ddd; padding: 5px;">';
+        // Asegurar que la ruta no tenga slash inicial para concatenar correctamente
+        $clean_path = ltrim($signature_path, '/');
+        $full_signature_path = __DIR__ . '/../../' . $clean_path;
+        
+        error_log("CONTRACT: Verificando firma en: " . $full_signature_path);
+        
+        if ($signature_path && file_exists($full_signature_path)) {
+            // Usar ruta absoluta limpia y atributos HTML simples para mPDF
+            // object-fit no es soportado por mPDF
+            $clean_full_path = realpath($full_signature_path);
+            
+            $signature_img = '
+            <table width="100%">
+                <tr>
+                    <td width="50%">
+                        <img src="' . $clean_full_path . '" width="200" height="100" style="border: 0;" />
+                    </td>
+                </tr>
+            </table>';
+            error_log("CONTRACT: Firma incrustada con ruta absoluta limpia: " . $clean_full_path);
+        } else {
+            error_log("CONTRACT WARNING: No se encontró el archivo de firma o path vacío. Path original: " . $signature_path);
         }
+
+        // DEBUG: Mostrar ruta en el PDF
+        $signature_img .= '<div style="color: red; font-size: 10px; margin-top: 5px;">Firma Temporal (Debug): ' . ($signature_path ?? 'NULL') . '</div>';
+        $signature_img .= '<div style="color: red; font-size: 10px;">Full Path (Debug): ' . ($full_signature_path ?? 'NULL') . '</div>';
 
         return <<<HTML
 <!DOCTYPE html>

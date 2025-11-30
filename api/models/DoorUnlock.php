@@ -14,19 +14,26 @@ class DoorUnlock {
      * Registrar intento de apertura de puerta
      */
     public function logUnlock($reservation_id, $guest_id, $door_type, $success, $error_message = null) {
-        $sql = "INSERT INTO door_unlocks (
-            reservation_id, guest_id, door_type, success,
-            ip_address, device_info, error_message
+        $sql = "INSERT INTO reserva_auditoria (
+            reserva_id, id_usuario, descripcion, tipo_movimiento, accion, tipo, fecha
         ) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        $doorName = ($door_type === 'portal') ? 'Portal' : 'Casa';
+        $statusText = $success ? 'abierta correctamente' : 'falló al abrir';
+        $description = "Puerta de {$doorName} {$statusText} usando el sistema de Raixer";
+        
+        if ($error_message) {
+            $description .= ". Error: " . $error_message;
+        }
 
         return $this->db->execute($sql, [
             $reservation_id,
-            $guest_id,
-            $door_type,
-            $success ? 1 : 0,
-            $_SERVER['REMOTE_ADDR'] ?? null,
-            $_SERVER['HTTP_USER_AGENT'] ?? null,
-            $error_message
+            'huesped', // Usuario fijo como 'huesped'
+            $description,
+            'Raixer',
+            'Apertura de puerta usando Raixer',
+            $success ? 'true' : 'false',
+            date('Y-m-d H:i:s')
         ]);
     }
 
@@ -35,18 +42,40 @@ class DoorUnlock {
      */
     public function getHistory($reservation_id, $limit = 20) {
         $sql = "SELECT
-                    d.*,
-                    g.first_name,
-                    g.last_name,
-                    DATE_FORMAT(d.unlock_time, '%H:%i') as time,
-                    DATE_FORMAT(d.unlock_time, '%Y-%m-%d') as date
-                FROM door_unlocks d
-                LEFT JOIN guests g ON d.guest_id = g.id
-                WHERE d.reservation_id = ?
-                ORDER BY d.unlock_time DESC
+                    idreserva_auditoria as id,
+                    fecha as unlock_time,
+                    tipo as success_status,
+                    descripcion,
+                    DATE_FORMAT(fecha, '%H:%i') as time,
+                    DATE_FORMAT(fecha, '%Y-%m-%d') as date
+                FROM reserva_auditoria
+                WHERE reserva_id = ? 
+                AND id_usuario = 'huesped'
+                ORDER BY fecha DESC
                 LIMIT ?";
 
-        return $this->db->query($sql, [$reservation_id, $limit]);
+        $results = $this->db->query($sql, [$reservation_id, $limit]);
+        
+        // Procesar resultados para mantener compatibilidad con frontend
+        return array_map(function($row) {
+            // Determinar tipo de puerta basado en descripción
+            $door_type = 'unknown';
+            if (stripos($row['descripcion'], 'Portal') !== false) {
+                $door_type = 'portal';
+            } elseif (stripos($row['descripcion'], 'Casa') !== false) {
+                $door_type = 'accommodation';
+            }
+
+            return [
+                'id' => $row['id'],
+                'unlock_time' => $row['unlock_time'],
+                'door_type' => $door_type,
+                'success' => $row['success_status'] === 'true' ? 1 : 0,
+                'time' => $row['time'],
+                'date' => $row['date'],
+                'description' => $row['descripcion']
+            ];
+        }, $results);
     }
 
     /**
@@ -58,7 +87,7 @@ class DoorUnlock {
                     a.informacion_portal,
                     a.informacion_casa
                 FROM reserva r
-                INNER JOIN alojamientos a ON r.alojamiento_id = a.id
+                INNER JOIN alojamiento a ON r.alojamiento_id = a.idalojamiento
                 WHERE r.id = ?";
 
         $accommodation = $this->db->queryOne($sql, [$reservation_id]);

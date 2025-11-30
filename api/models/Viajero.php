@@ -65,6 +65,8 @@ class Viajero {
             ?, ?, ?, ?, ?
         )";
 
+        error_log("VIAJERO CREATE: Intentando crear viajero. Firma: " . ($data['signature_path'] ?? 'NULL'));
+
         try {
             $this->db->execute($sql, [
                 // Documento
@@ -166,7 +168,7 @@ class Viajero {
             'tipo' => $viajero['tipo'] ?? null,
             'estatus' => $viajero['estatus'] ?? null,
             'observacion' => $viajero['observacion'] ?? null,
-            'is_responsible' => isset($viajero['responsable']) ? (int)$viajero['responsable'] : 0,
+            'is_responsible' => isset($viajero['responsable']) ? ($viajero['responsable'] === 'Si' || $viajero['responsable'] === 1 || $viajero['responsable'] === '1' ? 1 : 0) : 0,
             'signature_path' => $viajero['firma'] ?? null,
             'nationality' => $viajero['nacionalidad'] ?? null,
             'relationship' => $viajero['parentesco'] ?? null,

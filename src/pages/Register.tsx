@@ -11,17 +11,22 @@ import { useReservation } from "@/hooks/useReservation";
 import { useReservationParams } from "@/hooks/useReservationParams";
 import { useRegistrationFlow } from "@/hooks/useRegistrationFlow";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/useLanguage";
 import vacanflyLogo from "@/assets/vacanfly-logo.png";
 import { DOCUMENT_TYPES, RELATIONSHIP_TYPES, SEX_OPTIONS, calculateAge, isMinor, requiresSecondSurname, requiresSupportNumber } from "@/lib/catalogs";
 import { validateDNI, validateNIE, validateDocument } from "@/lib/documentValidation";
-import { countryService, municipalityService, documentScanService, clientService } from "@/services/api";
+import { validatePhoneNumber, COUNTRY_CODES } from "@/lib/phoneValidation";
+import { countryService, municipalityService, postalCodeService, documentScanService, clientService } from "@/services/api";
 import type { Country, Municipality } from "@/schemas/guestSchema";
+import { PhoneCountryCodeSelect } from "@/components/PhoneCountryCodeSelect";
+import FloatingActionBar from "@/components/FloatingActionBar";
 
 const Register = () => {
   const navigate = useNavigate();
   const { reservationData, guests } = useReservation();
   const { buildPathWithReservation } = useReservationParams();
   const { setGuestData, guestData } = useRegistrationFlow();
+  const { t } = useLanguage();
 
   // Verificar si ya hay un huésped responsable
   const hasResponsible = guests.some(guest => guest.is_responsible);
@@ -69,9 +74,14 @@ const Register = () => {
   const [municipalitySearch, setMunicipalitySearch] = useState("");
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
   const [loadingMunicipalities, setLoadingMunicipalities] = useState(false);
+  const [postalCodes, setPostalCodes] = useState<{ value: string; label: string }[]>([]);
+  const [loadingPostalCodes, setLoadingPostalCodes] = useState(false);
+  const [postalCodeSearch, setPostalCodeSearch] = useState("");
+  const [filteredPostalCodes, setFilteredPostalCodes] = useState<{ value: string; label: string }[]>([]);
 
   // Estados para validación de documentos
   const [documentError, setDocumentError] = useState<string>("");
+  const [phoneError, setPhoneError] = useState<string>("");
   const [scanningDocument, setScanningDocument] = useState(false);
 
   // Cargar países al montar el componente
@@ -88,6 +98,17 @@ const Register = () => {
     };
     loadCountries();
   }, []);
+
+  // Redirección automática al dashboard si todos los huéspedes están registrados
+  const totalGuests = reservationData?.total_guests || 0;
+  const registeredGuests = reservationData?.registered_guests || 0;
+  const allGuestsRegistered = totalGuests > 0 && registeredGuests >= totalGuests;
+
+  useEffect(() => {
+    if (allGuestsRegistered && totalGuests > 0) {
+      navigate(buildPathWithReservation('/dashboard'));
+    }
+  }, [allGuestsRegistered, totalGuests, navigate, buildPathWithReservation]);
 
   // Restaurar datos del formulario desde el contexto (al volver atrás)
   useEffect(() => {
@@ -147,12 +168,13 @@ const Register = () => {
     }
   }, [birthDate]);
 
-  // Auto-seleccionar nacionalidad española para DNI/NIE
-  useEffect(() => {
-    if (documentType === 'DNI' || documentType === 'NIE') {
-      setNationality('ES');
-    }
-  }, [documentType]);
+  // Auto-seleccionar nacionalidad española para DNI/NIE - DESHABILITADO
+  // El usuario debe seleccionar su nacionalidad manualmente
+  // useEffect(() => {
+  //   if (documentType === 'DNI' || documentType === 'NIE') {
+  //     setNationality('ES');
+  //   }
+  // }, [documentType]);
 
   // Buscar municipios con debounce
   useEffect(() => {
@@ -176,6 +198,47 @@ const Register = () => {
       setMunicipalities([]);
     }
   }, [municipalitySearch, residenceCountry]);
+
+  // Cargar códigos postales cuando se selecciona un municipio español
+  useEffect(() => {
+    const loadPostalCodes = async () => {
+      if (residenceCountry === 'ES' && residenceMunicipalityCode) {
+        setLoadingPostalCodes(true);
+        try {
+          const response = await postalCodeService.getByMunicipality(residenceMunicipalityCode);
+          if (response.data.success) {
+            setPostalCodes(response.data.data.postal_codes);
+            setFilteredPostalCodes(response.data.data.postal_codes);
+          }
+        } catch (error) {
+          console.error('Error cargando códigos postales:', error);
+          toast({
+            title: "Error",
+            description: "No se pudieron cargar los códigos postales del municipio",
+            variant: "destructive",
+          });
+        } finally {
+          setLoadingPostalCodes(false);
+        }
+      } else {
+        setPostalCodes([]);
+        setFilteredPostalCodes([]);
+      }
+    };
+    loadPostalCodes();
+  }, [residenceMunicipalityCode, residenceCountry]);
+
+  // Filtrar códigos postales por búsqueda
+  useEffect(() => {
+    if (postalCodeSearch) {
+      const filtered = postalCodes.filter(pc =>
+        pc.value.includes(postalCodeSearch)
+      );
+      setFilteredPostalCodes(filtered);
+    } else {
+      setFilteredPostalCodes(postalCodes);
+    }
+  }, [postalCodeSearch, postalCodes]);
 
   // Filtrar países por búsqueda - Nacionalidad
   useEffect(() => {
@@ -216,6 +279,24 @@ const Register = () => {
       setDocumentError("");
     }
   }, [documentNumber, documentType]);
+
+  // Validar formato de teléfono en tiempo real
+  useEffect(() => {
+    if (phone && phone.length > 3) {
+      // Mapear código de país a ISO (ej: +34 → ES)
+      const countryISO = COUNTRY_CODES.find(c => c.code === phoneCountryCode)?.country;
+
+      const result = validatePhoneNumber(phone, countryISO);
+
+      if (!result.valid) {
+        setPhoneError(result.error || "Número de teléfono inválido");
+      } else {
+        setPhoneError("");
+      }
+    } else {
+      setPhoneError("");
+    }
+  }, [phone, phoneCountryCode]);
 
   const handleMethodSelect = (method: "scan" | "manual") => {
     setCaptureMethod(method);
@@ -442,9 +523,9 @@ const Register = () => {
       return;
     }
 
-    // Validaciones condicionales - DNI/NIE requiere segundo apellido
-    if ((documentType === 'DNI') && !secondLastName) {
-      focusField("secondLastName", "El segundo apellido es obligatorio para DNI/NIE");
+    // Validaciones condicionales - Solo DNI requiere segundo apellido
+    if (documentType === 'DNI' && !secondLastName) {
+      focusField("secondLastName", "El segundo apellido es obligatorio para DNI español");
       return;
     }
 
@@ -496,6 +577,22 @@ const Register = () => {
     if (!phone) {
       focusField("phone", "Debes ingresar el número de teléfono");
       return;
+    }
+
+    // Validación - Teléfono válido para el país seleccionado
+    if (phoneError) {
+      focusField("phone", phoneError);
+      return;
+    }
+
+    // Validación adicional con libphonenumber-js
+    const countryISO = COUNTRY_CODES.find(c => c.code === phoneCountryCode)?.country;
+    if (countryISO) {
+      const phoneValidation = validatePhoneNumber(phone, countryISO);
+      if (!phoneValidation.valid) {
+        focusField("phone", phoneValidation.error || "Número de teléfono inválido para el país seleccionado");
+        return;
+      }
     }
 
     if (!email) {
@@ -555,7 +652,7 @@ const Register = () => {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to={buildPathWithReservation("/")}>
-            <img src={vacanflyLogo} alt="Vacanfly" className="w-20" />
+              <img src={vacanflyLogo} alt="Vacanfly" className="w-20" />
             </Link>
           </div>
           <div className="flex items-center gap-2">
@@ -584,9 +681,9 @@ const Register = () => {
           {step === "method" ? (
             <div className="space-y-6 animate-slide-up">
               <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold">Registro de Huésped</h1>
+                <h1 className="text-3xl font-bold">{t('register.title')}</h1>
                 <p className="text-muted-foreground">
-                  Elige cómo prefieres introducir tus datos
+                  {t('register.howToRegister')}
                 </p>
               </div>
 
@@ -602,18 +699,18 @@ const Register = () => {
                     </div>
                     <div>
                       <h3 className="text-xl font-semibold mb-2">
-                        Escanear documento
+                        {t('register.scanDocument')}
                       </h3>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Rápido y automático
+                        {t('register.fastAutomatic')}
                       </p>
                       <div className="inline-flex items-center gap-1 text-xs text-success px-3 py-1 bg-success/10 rounded-full">
                         <CheckCircle2 className="w-3 h-3" />
-                        Recomendado
+                        {t('register.recommended')}
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Extracción automática de datos con IA
+                      {t('register.aiExtraction')}
                     </p>
                   </div>
                 </Card>
@@ -629,14 +726,14 @@ const Register = () => {
                     </div>
                     <div>
                       <h3 className="text-xl font-semibold mb-2">
-                        Introducir manualmente
+                        {t('register.enterManually')}
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        Prefiero escribir
+                        {t('register.preferWrite')}
                       </p>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Formulario guiado paso a paso
+                      {t('register.guidedForm')}
                     </p>
                   </div>
                 </Card>
@@ -644,16 +741,16 @@ const Register = () => {
 
               <div className="text-center p-4 bg-muted/50 rounded-xl">
                 <p className="text-sm text-muted-foreground">
-                  💡 <span className="font-medium text-foreground">Consejo:</span> El escaneo es más rápido y evita errores
+                  💡 <span className="font-medium text-foreground">{t('register.tip')}:</span> {t('register.scanTip')}
                 </p>
               </div>
             </div>
           ) : step === "upload" ? (
             <div className="space-y-6 animate-slide-up">
               <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold">Subir Documento</h1>
+                <h1 className="text-3xl font-bold">{t('register.uploadDocument')}</h1>
                 <p className="text-muted-foreground">
-                  Sube una foto de tu documento de identidad
+                  {t('register.uploadPhotoId')}
                 </p>
               </div>
 
@@ -667,10 +764,10 @@ const Register = () => {
                         </div>
                         <div>
                           <p className="text-lg font-semibold mb-2">
-                            Escaneando documento...
+                            {t('register.scanningDocument')}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Extrayendo datos con IA. Por favor espera.
+                            {t('register.extractingData')}
                           </p>
                         </div>
                       </div>
@@ -691,14 +788,14 @@ const Register = () => {
                         </div>
                         <div>
                           <p className="text-lg font-semibold mb-2">
-                            Selecciona o toma una foto
+                            {t('register.selectOrTakePhoto')}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            PNG, JPG o JPEG (Máx. 10MB)
+                            {t('register.fileFormats')}
                           </p>
                         </div>
                         <div className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 px-8 gap-2">
-                          Seleccionar archivo
+                          {t('register.selectFile')}
                         </div>
                       </label>
                     </div>
@@ -706,7 +803,7 @@ const Register = () => {
 
                   {uploadedImage && (
                     <div className="space-y-4">
-                      <p className="text-sm font-medium">Vista previa:</p>
+                      <p className="text-sm font-medium">{t('register.preview')}:</p>
                       <img
                         src={uploadedImage}
                         alt="Documento subido"
@@ -724,7 +821,7 @@ const Register = () => {
                       onClick={() => setStep("method")}
                     >
                       <ArrowLeft className="w-4 h-4" />
-                      Atrás
+                      {t('register.back')}
                     </Button>
                     {uploadedImage && (
                       <Button
@@ -734,7 +831,7 @@ const Register = () => {
                         onClick={() => setStep("form")}
                         disabled={scanningDocument}
                       >
-                        {scanningDocument ? "Procesando..." : "Continuar"}
+                        {scanningDocument ? t('register.processing') : t('register.continue')}
                         {!scanningDocument && <ArrowRight className="w-4 h-4" />}
                       </Button>
                     )}
@@ -745,11 +842,11 @@ const Register = () => {
           ) : (
             <div className="space-y-6 animate-slide-up">
               <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold">Información Personal</h1>
+                <h1 className="text-3xl font-bold">{t('register.personalInfo')}</h1>
                 <p className="text-muted-foreground">
                   {captureMethod === "scan"
-                    ? "Revisa y completa los datos extraídos"
-                    : "Completa tus datos de registro"}
+                    ? t('register.reviewExtractedData')
+                    : t('register.completeYourData')}
                 </p>
               </div>
 
@@ -766,10 +863,10 @@ const Register = () => {
                         />
                         <div className="flex-1">
                           <Label htmlFor="isResponsible" className="cursor-pointer text-lg font-semibold text-blue-900">
-                            ✓ Soy el titular de la reserva
+                            ✓ {t('register.imBookingHolder')}
                           </Label>
                           <p className="text-sm text-blue-700 mt-1">
-                            Marca esta casilla si eres la persona que realizó la reserva. Tus datos se cargarán automáticamente.
+                            {t('register.bookingHolderInfo')}
                           </p>
                         </div>
                       </div>
@@ -778,7 +875,7 @@ const Register = () => {
                   {hasResponsible && (
                     <div className="p-4 rounded-lg bg-muted/50 border border-muted">
                       <p className="text-sm text-muted-foreground">
-                        ℹ️ Ya hay un huésped responsable registrado para esta reserva
+                        ℹ️ {t('register.responsibleAlreadyExists')}
                       </p>
                     </div>
                   )}
@@ -789,14 +886,14 @@ const Register = () => {
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
                         1
                       </div>
-                      📄 Documento de Identidad
+                      📄 {t('register.identityDocument')}
                     </h3>
                     <div className="grid md:grid-cols-2 gap-4 ml-10">
                       <div className="space-y-2">
-                        <Label htmlFor="docType">Tipo de Documento *</Label>
+                        <Label htmlFor="docType">{t('register.documentType')} <span className="text-destructive">*</span></Label>
                         <Select value={documentType} onValueChange={setDocumentType}>
                           <SelectTrigger id="docType">
-                            <SelectValue placeholder="Seleccionar tipo" />
+                            <SelectValue placeholder={t('register.selectType')} />
                           </SelectTrigger>
                           <SelectContent>
                             {DOCUMENT_TYPES.map((type) => (
@@ -808,10 +905,10 @@ const Register = () => {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="docNumber">Número de Documento *</Label>
+                        <Label htmlFor="docNumber">{t('register.documentNumber')} <span className="text-destructive">*</span></Label>
                         <Input
                           id="docNumber"
-                          placeholder={documentType === 'DNI' ? "Ej: 12345678Z" : documentType === 'NIE' ? "Ej: X1234567L" : "Número de documento"}
+                          placeholder={documentType === 'DNI' ? t('register.dniPlaceholder') : documentType === 'NIE' ? t('register.niePlaceholder') : t('register.documentPlaceholder')}
                           className={`h-12 ${documentError ? 'border-destructive' : ''}`}
                           value={documentNumber}
                           onChange={(e) => setDocumentNumber(e.target.value.toUpperCase())}
@@ -824,33 +921,33 @@ const Register = () => {
                         )}
                         {!documentError && documentNumber && documentType === 'DNI' && (
                           <p className="text-xs text-success">
-                            ✓ Formato de DNI correcto
+                            ✓ {t('register.dniFormatCorrect')}
                           </p>
                         )}
                         {!documentError && documentNumber && documentType === 'NIE' && (
                           <p className="text-xs text-success">
-                            ✓ Formato de NIE correcto
+                            ✓ {t('register.nieFormatCorrect')}
                           </p>
                         )}
                       </div>
                       {requiresSupportNumber(documentType) && (
                         <div className="space-y-2">
-                          <Label htmlFor="supportNumber">Número de Soporte *</Label>
+                          <Label htmlFor="supportNumber">{t('register.supportNumber')} <span className="text-destructive">*</span></Label>
                           <Input
                             id="supportNumber"
-                            placeholder="Ej: ABC123456"
+                            placeholder={t('register.passportPlaceholder')}
                             className="h-12"
                             value={supportNumber}
                             onChange={(e) => setSupportNumber(e.target.value.toUpperCase())}
                             required
                           />
                           <p className="text-xs text-muted-foreground">
-                            📌 Aparece en la parte superior del DNI/NIE
+                            {t('register.supportNumberHint')}
                           </p>
                         </div>
                       )}
                       <div className="space-y-2">
-                        <Label htmlFor="issueDate">Fecha de Expedición</Label>
+                        <Label htmlFor="issueDate">{t('register.issueDate')}</Label>
                         <Input
                           id="issueDate"
                           type="date"
@@ -860,7 +957,7 @@ const Register = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="expiryDate">Fecha de Vencimiento</Label>
+                        <Label htmlFor="expiryDate">{t('register.expiryDate')}</Label>
                         <Input
                           id="expiryDate"
                           type="date"
@@ -878,65 +975,48 @@ const Register = () => {
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
                         2
                       </div>
-                      👤 Datos Personales
+                      👤 {t('register.personalData')}
                     </h3>
                     <div className="grid md:grid-cols-2 gap-4 ml-10">
                       <div className="space-y-2">
-                        <Label htmlFor="nationality">Nacionalidad *</Label>
-                        {(documentType === 'DNI' || documentType === 'NIE') ? (
-                          <>
-                            <Input
-                              id="nationality"
-                              className="h-12"
-                              value="España"
-                              disabled
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Auto-asignado para DNI/NIE
-                            </p>
-                          </>
-                        ) : (
-                          <>
-                            <div className="relative">
-                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                              <Input
-                                id="nationality"
-                                placeholder="Buscar país..."
-                                className="h-12 pl-10"
-                                value={nationalitySearch || countries.find(c => c.code === nationality)?.name || ""}
-                                onChange={(e) => {
-                                  setNationalitySearch(e.target.value);
-                                  if (!e.target.value) setNationality("");
+                        <Label htmlFor="nationality">{t('register.nationality')} <span className="text-destructive">*</span></Label>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            id="nationality"
+                            placeholder={t('register.searchCountry')}
+                            className="h-12 pl-10"
+                            value={nationalitySearch || countries.find(c => c.code === nationality)?.name || ""}
+                            onChange={(e) => {
+                              setNationalitySearch(e.target.value);
+                              if (!e.target.value) setNationality("");
+                            }}
+                            required
+                          />
+                        </div>
+                        {filteredCountriesNationality.length > 0 && (
+                          <div className="border rounded-lg max-h-48 overflow-y-auto">
+                            {filteredCountriesNationality.map((country) => (
+                              <button
+                                key={country.code}
+                                type="button"
+                                className="w-full text-left px-4 py-2 hover:bg-muted transition-colors"
+                                onClick={() => {
+                                  setNationality(country.code);
+                                  setNationalitySearch(country.name);
                                 }}
-                                required
-                              />
-                            </div>
-                            {filteredCountriesNationality.length > 0 && (
-                              <div className="border rounded-lg max-h-48 overflow-y-auto">
-                                {filteredCountriesNationality.map((country) => (
-                                  <button
-                                    key={country.code}
-                                    type="button"
-                                    className="w-full text-left px-3 py-2 hover:bg-muted transition-colors text-sm"
-                                    onClick={() => {
-                                      setNationality(country.code);
-                                      setNationalitySearch(country.name);
-                                      setFilteredCountriesNationality([]);
-                                    }}
-                                  >
-                                    {country.name}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </>
+                              >
+                                {country.name}
+                              </button>
+                            ))}
+                          </div>
                         )}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="firstName">Nombres *</Label>
+                        <Label htmlFor="firstName">{t('register.firstNames')} <span className="text-destructive">*</span></Label>
                         <Input
                           id="firstName"
-                          placeholder="Nombre(s)"
+                          placeholder={t('register.firstNamesPlaceholder')}
                           className="h-12"
                           value={firstName}
                           onChange={(e) => setFirstName(e.target.value)}
@@ -944,31 +1024,32 @@ const Register = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="lastName">Primer Apellido *</Label>
+                        <Label htmlFor="lastName">{t('register.firstSurname')} <span className="text-destructive">*</span></Label>
                         <Input
                           id="lastName"
-                          placeholder="Primer apellido"
+                          placeholder={t('register.firstSurnamePlaceholder')}
                           className="h-12"
                           value={lastName}
                           onChange={(e) => setLastName(e.target.value)}
                           required
                         />
                       </div>
-                      {requiresSecondSurname(documentType) && (
-                        <div className="space-y-2">
-                          <Label htmlFor="secondLastName">Segundo Apellido *</Label>
-                          <Input
-                            id="secondLastName"
-                            placeholder="Segundo apellido"
-                            className="h-12"
-                            value={secondLastName}
-                            onChange={(e) => setSecondLastName(e.target.value)}
-                            required
-                          />
-                        </div>
-                      )}
                       <div className="space-y-2">
-                        <Label htmlFor="birthDate">Fecha de Nacimiento *</Label>
+                        <Label htmlFor="secondLastName">
+                          {t('register.secondSurname')}
+                          {documentType === 'DNI' && <span className="text-destructive"> *</span>}
+                          {documentType !== 'DNI' && <span className="text-muted-foreground text-xs ml-1">{t('register.optional')}</span>}
+                        </Label>
+                        <Input
+                          id="secondLastName"
+                          placeholder={t('register.secondSurnamePlaceholder')}
+                          className="h-12"
+                          value={secondLastName}
+                          onChange={(e) => setSecondLastName(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="birthDate">{t('register.birthDate')} <span className="text-destructive">*</span></Label>
                         <Input
                           id="birthDate"
                           type="date"
@@ -979,15 +1060,15 @@ const Register = () => {
                         />
                         {age !== null && (
                           <p className="text-xs text-muted-foreground">
-                            📅 Edad: {age} años
+                            📅 {t('register.age')}: {age} {t('register.years')}
                           </p>
                         )}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="sex">Sexo *</Label>
+                        <Label htmlFor="sex">{t('register.sex')} <span className="text-destructive">*</span></Label>
                         <Select value={sex} onValueChange={setSex}>
                           <SelectTrigger id="sex">
-                            <SelectValue placeholder="Seleccionar" />
+                            <SelectValue placeholder={t('register.select')} />
                           </SelectTrigger>
                           <SelectContent>
                             {SEX_OPTIONS.map((option) => (
@@ -1000,10 +1081,10 @@ const Register = () => {
                       </div>
                       {age !== null && age < 18 && (
                         <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="relationship">Parentesco con el Responsable *</Label>
+                          <Label htmlFor="relationship">{t('register.relationshipWithHolder')} <span className="text-destructive">*</span></Label>
                           <Select value={relationship} onValueChange={setRelationship}>
                             <SelectTrigger id="relationship">
-                              <SelectValue placeholder="Seleccionar parentesco" />
+                              <SelectValue placeholder={t('register.selectRelationship')} />
                             </SelectTrigger>
                             <SelectContent>
                               {RELATIONSHIP_TYPES.map((rel) => (
@@ -1014,7 +1095,7 @@ const Register = () => {
                             </SelectContent>
                           </Select>
                           <p className="text-xs text-warning">
-                            ⚠️ Obligatorio para menores de 18 años
+                            {t('register.minorRequiredRelationship')}
                           </p>
                         </div>
                       )}
@@ -1027,16 +1108,16 @@ const Register = () => {
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
                         3
                       </div>
-                      🏠 Datos de Residencia
+                      🏠 {t('register.residenceData')}
                     </h3>
                     <div className="grid md:grid-cols-2 gap-4 ml-10">
                       <div className="space-y-2">
-                        <Label htmlFor="residenceCountry">País de Residencia *</Label>
+                        <Label htmlFor="residenceCountry">{t('register.residenceCountry')} <span className="text-destructive">*</span></Label>
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                           <Input
                             id="residenceCountry"
-                            placeholder="Buscar país..."
+                            placeholder={t('register.searchCountry')}
                             className="h-12 pl-10"
                             value={residenceCountrySearch || countries.find(c => c.code === residenceCountry)?.name || ""}
                             onChange={(e) => {
@@ -1076,19 +1157,19 @@ const Register = () => {
                       {residenceCountry === 'ES' ? (
                         <>
                           <div className="space-y-2">
-                            <Label htmlFor="municipalitySearch">Municipio *</Label>
+                            <Label htmlFor="municipalitySearch">{t('register.municipality')} <span className="text-destructive">*</span></Label>
                             <div className="relative">
                               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                               <Input
                                 id="municipalitySearch"
-                                placeholder="Buscar municipio..."
+                                placeholder={t('register.searchMunicipality')}
                                 className="h-12 pl-10"
                                 value={municipalitySearch}
                                 onChange={(e) => setMunicipalitySearch(e.target.value)}
                               />
                             </div>
                             {loadingMunicipalities && (
-                              <p className="text-xs text-muted-foreground">Buscando...</p>
+                              <p className="text-xs text-muted-foreground">{t('register.searching')}</p>
                             )}
                             {municipalities.length > 0 && (
                               <div className="border rounded-lg max-h-48 overflow-y-auto">
@@ -1100,7 +1181,7 @@ const Register = () => {
                                     onClick={() => {
                                       setResidenceMunicipalityCode(mun.code);
                                       setResidenceMunicipalityName(mun.name);
-                                      setResidencePostalCode(mun.postal_code);
+                                      setResidencePostalCode(""); // Limpiar CP para que usuario seleccione
                                       setMunicipalitySearch(mun.display_name);
                                       setMunicipalities([]);
                                     }}
@@ -1112,27 +1193,58 @@ const Register = () => {
                             )}
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="residencePostalCode">Código Postal *</Label>
-                            <Input
-                              id="residencePostalCode"
-                              placeholder="28001"
-                              className="h-12"
-                              value={residencePostalCode}
-                              onChange={(e) => setResidencePostalCode(e.target.value)}
-                              disabled
-                            />
+                            <Label htmlFor="residencePostalCode">{t('register.postalCode')} <span className="text-destructive">*</span></Label>
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                              <Input
+                                id="residencePostalCode"
+                                placeholder={loadingPostalCodes ? t('register.loading') : t('register.selectPostalCode')}
+                                className="h-12 pl-10"
+                                value={postalCodeSearch || residencePostalCode}
+                                onChange={(e) => {
+                                  setPostalCodeSearch(e.target.value);
+                                  if (!e.target.value) {
+                                    setResidencePostalCode("");
+                                  }
+                                }}
+                                disabled={!residenceMunicipalityCode || loadingPostalCodes}
+                              />
+                            </div>
+                            {filteredPostalCodes.length > 0 && postalCodeSearch && (
+                              <div className="border rounded-lg max-h-48 overflow-y-auto z-10 bg-background">
+                                {filteredPostalCodes.map((pc) => (
+                                  <button
+                                    key={pc.value}
+                                    type="button"
+                                    className="w-full text-left px-3 py-2 hover:bg-muted transition-colors text-sm"
+                                    onClick={() => {
+                                      setResidencePostalCode(pc.value);
+                                      setPostalCodeSearch("");
+                                      setFilteredPostalCodes([]);
+                                    }}
+                                  >
+                                    {pc.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                             <p className="text-xs text-muted-foreground">
-                              Se completa automáticamente al seleccionar municipio
+                              {!residenceMunicipalityCode
+                                ? t('register.selectMunicipalityFirst')
+                                : postalCodes.length > 0
+                                  ? `${postalCodes.length} ${t('register.availablePostalCodes')}`
+                                  : t('register.autoCompletesMunicipality')
+                              }
                             </p>
                           </div>
                         </>
                       ) : residenceCountry ? (
                         <>
                           <div className="space-y-2">
-                            <Label htmlFor="residenceMunicipalityName">Ciudad/Municipio *</Label>
+                            <Label htmlFor="residenceMunicipalityName">{t('register.cityMunicipality')} <span className="text-destructive">*</span></Label>
                             <Input
                               id="residenceMunicipalityName"
-                              placeholder="Nombre de la ciudad"
+                              placeholder={t('register.cityNamePlaceholder')}
                               className="h-12"
                               value={residenceMunicipalityName}
                               onChange={(e) => setResidenceMunicipalityName(e.target.value)}
@@ -1140,10 +1252,10 @@ const Register = () => {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="residencePostalCode">Código Postal</Label>
+                            <Label htmlFor="residencePostalCode">{t('register.postalCode')}</Label>
                             <Input
                               id="residencePostalCode"
-                              placeholder="Código postal"
+                              placeholder={t('register.postalCodePlaceholder')}
                               className="h-12"
                               value={residencePostalCode}
                               onChange={(e) => setResidencePostalCode(e.target.value)}
@@ -1152,10 +1264,10 @@ const Register = () => {
                         </>
                       ) : null}
                       <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="residenceAddress">Dirección Completa *</Label>
+                        <Label htmlFor="residenceAddress">{t('register.fullAddress')} <span className="text-destructive">*</span></Label>
                         <Input
                           id="residenceAddress"
-                          placeholder="Calle, número, piso, puerta..."
+                          placeholder={t('register.addressPlaceholder')}
                           className="h-12"
                           value={residenceAddress}
                           onChange={(e) => setResidenceAddress(e.target.value)}
@@ -1171,32 +1283,23 @@ const Register = () => {
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
                         4
                       </div>
-                      📞 Información de Contacto
+                      📞 {t('register.contactInfo')}
                     </h3>
                     <div className="grid md:grid-cols-2 gap-4 ml-10">
                       <div className="space-y-2">
-                        <Label htmlFor="phoneCountryCode">Código País *</Label>
-                        <Select value={phoneCountryCode} onValueChange={setPhoneCountryCode}>
-                          <SelectTrigger id="phoneCountryCode">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="+34">🇪🇸 +34 (España)</SelectItem>
-                            <SelectItem value="+33">🇫🇷 +33 (Francia)</SelectItem>
-                            <SelectItem value="+49">🇩🇪 +49 (Alemania)</SelectItem>
-                            <SelectItem value="+44">🇬🇧 +44 (Reino Unido)</SelectItem>
-                            <SelectItem value="+351">🇵🇹 +351 (Portugal)</SelectItem>
-                            <SelectItem value="+39">🇮🇹 +39 (Italia)</SelectItem>
-                            <SelectItem value="+1">🇺🇸 +1 (USA/Canadá)</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Label htmlFor="phoneCountryCode">{t('register.countryCode')} <span className="text-destructive">*</span></Label>
+                        <PhoneCountryCodeSelect
+                          id="phoneCountryCode"
+                          value={phoneCountryCode}
+                          onChange={setPhoneCountryCode}
+                        />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="phone">Número de Teléfono *</Label>
+                        <Label htmlFor="phone">{t('register.phoneNumber')} <span className="text-destructive">*</span></Label>
                         <Input
                           id="phone"
                           type="tel"
-                          placeholder="600 000 000"
+                          placeholder={t('register.phonePlaceholder')}
                           className="h-12"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
@@ -1204,11 +1307,11 @@ const Register = () => {
                         />
                       </div>
                       <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="email">Correo Electrónico *</Label>
+                        <Label htmlFor="email">{t('register.email')} <span className="text-destructive">*</span></Label>
                         <Input
                           id="email"
                           type="email"
-                          placeholder="tu@email.com"
+                          placeholder={t('register.emailPlaceholder')}
                           className="h-12"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
@@ -1228,14 +1331,14 @@ const Register = () => {
                       onClick={() => setStep("method")}
                     >
                       <ArrowLeft className="w-4 h-4" />
-                      Atrás
+                      {t('register.back')}
                     </Button>
                     <Button
                       type="submit"
                       size="lg"
                       className="flex-1 gap-2 bg-gradient-primary hover:opacity-90"
                     >
-                      Continuar
+                      {t('register.continue')}
                       <ArrowRight className="w-4 h-4" />
                     </Button>
                   </div>
@@ -1244,13 +1347,16 @@ const Register = () => {
 
               {/* Info de guardado automático */}
               <div className="text-center text-sm text-muted-foreground">
-                💾 Tu progreso se guarda automáticamente
+                {t('register.autoSave')}
               </div>
             </div>
           )}
         </div>
-      </main>
-    </div>
+      </main >
+
+      {/* Barra flotante de acciones */}
+      < FloatingActionBar />
+    </div >
   );
 };
 
