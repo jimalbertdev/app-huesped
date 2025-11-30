@@ -153,43 +153,34 @@ class ContractService
     private function generateContractHTML($reservation, $guest, $preferences, $signature_path)
     {
         // Formatear fechas
-        $check_in = date('d/m/Y', strtotime($reservation['check_in']));
-        $check_out = date('d/m/Y', strtotime($reservation['check_out']));
-        $contract_date = date('d/m/Y H:i');
-        $birth_date = date('d/m/Y', strtotime($guest['birth_date']));
+        $check_in = date('d-m-Y', strtotime($reservation['check_in']));
+        $check_out = date('d-m-Y', strtotime($reservation['check_out']));
+        $contract_date = date('d-m-Y');
 
-        // Formatear camas si hay preferencias
-        $beds_info = '';
-        if ($preferences) {
-            $beds_parts = [];
-            if ($preferences['double_beds'] > 0) {
-                $beds_parts[] = $preferences['double_beds'] . ' cama(s) doble(s)';
-            }
-            if ($preferences['single_beds'] > 0) {
-                $beds_parts[] = $preferences['single_beds'] . ' cama(s) individual(es)';
-            }
-            if ($preferences['sofa_beds'] > 0) {
-                $beds_parts[] = $preferences['sofa_beds'] . ' sofá(s) cama';
-            }
-            if ($preferences['needs_crib']) {
-                $beds_parts[] = '1 cuna';
-            }
-            $beds_info = !empty($beds_parts) ? implode(', ', $beds_parts) : 'No especificado';
-        }
+        // Calcular número de huéspedes
+        $num_guests = $reservation['num_guests'] ?? $reservation['numero_huespedes'] ?? 'N/A';
+        
+        // Precio total
+        $total_price = isset($reservation['precio_total']) ? number_format($reservation['precio_total'], 2, ',', '.') : '0,00';
+        
+        // Nombre del alojamiento
+        $property_name = $reservation['accommodation_name'] ?? $reservation['property_name'] ?? 'N/A';
+        
+        // Nombre completo del huésped
+        $guest_full_name = trim(($guest['n0mbr3s'] ?? '') . ' ' . ($guest['p3ll1d01'] ?? '') . ' ' . ($guest['p3ll1d02'] ?? ''));
+        
+        // Documento del huésped
+        $guest_document = ($guest['tipo_documento'] ?? 'DNI') . ': ' . ($guest['nvm3r0_d0cvm3nt0'] ?? 'N/A');
 
         // Ruta absoluta de la firma
         $signature_img = '';
-        // Asegurar que la ruta no tenga slash inicial para concatenar correctamente
         $clean_path = ltrim($signature_path, '/');
         $full_signature_path = __DIR__ . '/../../' . $clean_path;
         
         error_log("CONTRACT: Verificando firma en: " . $full_signature_path);
         
         if ($signature_path && file_exists($full_signature_path)) {
-            // Usar ruta absoluta limpia y atributos HTML simples para mPDF
-            // object-fit no es soportado por mPDF
             $clean_full_path = realpath($full_signature_path);
-            
             $signature_img = '
             <table width="100%">
                 <tr>
@@ -203,11 +194,7 @@ class ContractService
             error_log("CONTRACT WARNING: No se encontró el archivo de firma o path vacío. Path original: " . $signature_path);
         }
 
-        // DEBUG: Mostrar ruta en el PDF
-        $signature_img .= '<div style="color: red; font-size: 10px; margin-top: 5px;">Firma Temporal (Debug): ' . ($signature_path ?? 'NULL') . '</div>';
-        $signature_img .= '<div style="color: red; font-size: 10px;">Full Path (Debug): ' . ($full_signature_path ?? 'NULL') . '</div>';
-
-        return <<<HTML
+        $html = <<<HTML
 <!DOCTYPE html>
 <html>
 <head>
@@ -215,19 +202,29 @@ class ContractService
     <style>
         body {
             font-family: Arial, sans-serif;
-            font-size: 11pt;
-            line-height: 1.6;
+            font-size: 10pt;
+            line-height: 1.4;
             color: #333;
+            margin: 20px;
+        }
+        .header-notice {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 9pt;
+            text-align: justify;
         }
         h1 {
             text-align: center;
             color: #2563eb;
-            font-size: 18pt;
-            margin-bottom: 20px;
+            font-size: 16pt;
+            margin: 20px 0;
+            text-transform: uppercase;
         }
         h2 {
             color: #2563eb;
-            font-size: 14pt;
+            font-size: 12pt;
             margin-top: 20px;
             margin-bottom: 10px;
             border-bottom: 2px solid #2563eb;
@@ -235,154 +232,195 @@ class ContractService
         }
         h3 {
             color: #1e40af;
-            font-size: 12pt;
+            font-size: 11pt;
             margin-top: 15px;
             margin-bottom: 8px;
         }
-        .info-box {
-            background-color: #f3f4f6;
-            border-left: 4px solid #2563eb;
-            padding: 15px;
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
             margin: 15px 0;
         }
-        .info-row {
+        table.data-table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+        table.data-table td.label {
+            font-weight: bold;
+            background-color: #f3f4f6;
+            width: 40%;
+        }
+        .clause {
+            margin: 10px 0;
+            text-align: justify;
+        }
+        .clause ul {
+            margin: 5px 0;
+            padding-left: 20px;
+        }
+        .clause li {
             margin: 5px 0;
         }
-        .label {
-            font-weight: bold;
-            color: #1e40af;
-        }
-        .terms {
-            text-align: justify;
-            margin: 10px 0;
+        .signature-section {
+            margin-top: 30px;
+            page-break-inside: avoid;
         }
         .signature-box {
-            margin-top: 30px;
             border: 1px solid #ddd;
-            padding: 20px;
-            text-align: center;
+            padding: 15px;
+            margin: 10px 0;
+            min-height: 120px;
         }
-        .footer {
-            margin-top: 30px;
-            text-align: center;
-            font-size: 9pt;
-            color: #666;
-            border-top: 1px solid #ddd;
+        .signature-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .footer-note {
+            margin-top: 20px;
             padding-top: 10px;
+            border-top: 1px solid #ddd;
+            font-size: 8pt;
+            color: #666;
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <h1>📄 CONTRATO DE HOSPEDAJE</h1>
-
-    <div class="info-box">
-        <div class="info-row"><span class="label">Código de Reserva:</span> {$reservation['reservation_code']}</div>
-        <div class="info-row"><span class="label">Fecha del Contrato:</span> {$contract_date}</div>
+    <div class="header-notice">
+        Este documento tiene valor de <strong>CONTRATO DE ARRENDAMIENTO</strong> y se rige por la Ley 29/1994, 
+        de Arrendamientos Urbanos (LAU), y la normativa turística específica de la Comunidad Autónoma de 
+        ubicación del inmueble.
     </div>
 
-    <h2>1. Datos del Alojamiento</h2>
-    <div class="info-box">
-        <div class="info-row"><span class="label">Propiedad:</span> {$reservation['property_name']}</div>
-        <div class="info-row"><span class="label">Dirección:</span> {$reservation['property_address']}</div>
-        <div class="info-row"><span class="label">Anfitrión:</span> {$reservation['host_name']}</div>
-        <div class="info-row"><span class="label">Teléfono Anfitrión:</span> {$reservation['host_phone']}</div>
+    <h1>Contrato de Arrendamiento de Uso Turístico</h1>
+
+    <h2>Datos de la Reserva</h2>
+    
+    <table class="data-table">
+        <tr>
+            <td class="label">Alojamiento (Nombre):</td>
+            <td>{$property_name}</td>
+        </tr>
+        <tr>
+            <td class="label">Nº de Registro Turístico (NRVT/NRUA):</td>
+            <td>Pendiente de registro</td>
+        </tr>
+        <tr>
+            <td class="label">Entidad Explotadora:</td>
+            <td>GESTIÓN DE INMUEBLES SSL (Vacanfly)</td>
+        </tr>
+        <tr>
+            <td class="label">Huésped Responsable:</td>
+            <td>{$guest_full_name}</td>
+        </tr>
+        <tr>
+            <td class="label">Nº de Ocupantes:</td>
+            <td>{$num_guests}</td>
+        </tr>
+        <tr>
+            <td class="label">Teléfono de Asistencia:</td>
+            <td>+34 683 22 66 05</td>
+        </tr>
+        <tr>
+            <td class="label">Precio Total:</td>
+            <td>{$total_price} €</td>
+        </tr>
+        <tr>
+            <td class="label">Fecha de Entrada:</td>
+            <td>{$check_in}</td>
+        </tr>
+        <tr>
+            <td class="label">Fecha de Salida:</td>
+            <td>{$check_out}</td>
+        </tr>
+    </table>
+
+    <h2>Cláusulas Contractuales</h2>
+
+    <h3>1. Objeto y Naturaleza</h3>
+    <div class="clause">
+        El objeto del presente es el Arrendamiento de Temporada con destino a uso turístico/vacacional del inmueble. 
+        Este contrato no se destina a cubrir la necesidad de vivienda permanente del Huésped y, por lo tanto, 
+        queda excluido del régimen de prórroga obligatoria de la LAU.
     </div>
 
-    <h2>2. Datos del Huésped Responsable</h2>
-    <div class="info-box">
-        <div class="info-row"><span class="label">Nombre Completo:</span> {$guest['first_name']} {$guest['last_name']}</div>
-        <div class="info-row"><span class="label">Documento:</span> {$guest['document_type']} - {$guest['document_number']}</div>
-        <div class="info-row"><span class="label">Nacionalidad:</span> {$guest['nationality']}</div>
-        <div class="info-row"><span class="label">Fecha de Nacimiento:</span> {$birth_date}</div>
-        <div class="info-row"><span class="label">Teléfono:</span> {$guest['phone']}</div>
-        <div class="info-row"><span class="label">Email:</span> {$guest['email']}</div>
+    <h3>2. Duración y Extensión</h3>
+    <div class="clause">
+        El período de arrendamiento es el estipulado en la tabla superior. El Huésped deberá abandonar la propiedad 
+        en la fecha y hora de salida.<br><br>
+        El Huésped renuncia a cualquier derecho de prórroga o renovación forzosa del contrato. No obstante, 
+        si El Huésped solicitara una extensión de la estadía, esta podrá ser concedida solo si La Arrendadora 
+        tiene disponibilidad y ambas partes firman un nuevo acuerdo de extensión con las condiciones económicas 
+        y temporales pactadas.
     </div>
 
-    <h2>3. Detalles de la Estancia</h2>
-    <div class="info-box">
-        <div class="info-row"><span class="label">Check-in:</span> {$check_in}</div>
-        <div class="info-row"><span class="label">Check-out:</span> {$check_out}</div>
-        <div class="info-row"><span class="label">Número de Huéspedes:</span> {$reservation['num_guests']}</div>
-HTML;
-
-        // Agregar preferencias si existen
-        if ($preferences && $beds_info) {
-            $html .= <<<HTML
-        <div class="info-row"><span class="label">Configuración de Camas:</span> {$beds_info}</div>
-HTML;
-            if ($preferences['estimated_arrival_time']) {
-                $html .= <<<HTML
-        <div class="info-row"><span class="label">Hora Estimada de Llegada:</span> {$preferences['estimated_arrival_time']}</div>
-HTML;
-            }
-        }
-
-        $html .= <<<HTML
+    <h3>3. Precio y Fianza</h3>
+    <div class="clause">
+        El precio total de la estancia es el indicado. El Huésped entrega una fianza para garantizar la conservación 
+        del inmueble y el cumplimiento de las obligaciones. La fianza será devuelta tras la salida, una vez 
+        comprobado el buen estado de la propiedad.
     </div>
 
-    <h2>4. Términos y Condiciones</h2>
-
-    <h3>4.1. Horarios</h3>
-    <div class="terms">
-        <strong>Check-in:</strong> Entre las 15:00 y las 20:00 horas.<br>
-        <strong>Check-out:</strong> Hasta las 11:00 horas.<br>
-        El incumplimiento de estos horarios sin previo aviso podrá resultar en cargos adicionales.
+    <h3>4. Obligaciones del Huésped</h3>
+    <div class="clause">
+        <ul>
+            <li><strong>Responsabilidad por Daños:</strong> El Huésped es directa y totalmente responsable de los daños, 
+            desperfectos, pérdidas o menoscabos causados en el inmueble, mobiliario o enseres, por él o por sus acompañantes.</li>
+            
+            <li><strong>Ocupación Máxima:</strong> El número de ocupantes no podrá exceder del máximo indicado. 
+            El incumplimiento o el subarriendo de la vivienda son causas de resolución contractual y desalojo 
+            inmediato sin derecho a reembolso.</li>
+            
+            <li><strong>Normas de Convivencia:</strong> Queda estrictamente prohibido realizar fiestas, actividades 
+            molestas, insalubres o ilícitas, debiendo respetar el descanso vecinal, especialmente en horas nocturnas.</li>
+            
+            <li><strong>Identificación:</strong> El Huésped se compromete a facilitar los datos de identificación de 
+            todos los ocupantes, según lo exige la normativa española de seguridad ciudadana (Libro Registro).</li>
+        </ul>
     </div>
 
-    <h3>4.2. Normas del Alojamiento</h3>
-    <div class="terms">
-        El huésped se compromete a mantener el alojamiento en buen estado y hacer un uso responsable de las instalaciones.
-        Está <strong>prohibido fumar</strong> en el interior del alojamiento. No se permiten fiestas ni eventos sin autorización
-        previa. El ruido debe mantenerse a un nivel razonable, especialmente entre las 22:00 y las 08:00 horas.
+    <h3>5. Ley Aplicable y Jurisdicción</h3>
+    <div class="clause">
+        Este contrato se interpreta y aplica conforme a la ley española. Para cualquier controversia, las partes 
+        se someten expresamente a los Juzgados y Tribunales del lugar donde se ubica el inmueble, con renuncia 
+        a cualquier otro fuero.
     </div>
 
-    <h3>4.3. Capacidad Máxima</h3>
-    <div class="terms">
-        El número máximo de huéspedes permitidos es el indicado en la reserva. El alojamiento de personas adicionales
-        sin autorización previa podrá resultar en la cancelación inmediata de la reserva sin derecho a reembolso.
+    <div class="signature-section">
+        <h2>Firmas</h2>
+        
+        <table width="100%">
+            <tr>
+                <td width="50%" style="vertical-align: top;">
+                    <div class="signature-box">
+                        <div class="signature-title">La Arrendadora</div>
+                        <div>(GESTIÓN DE INMUEBLES SSL)</div>
+                        <div style="margin-top: 60px; border-top: 1px solid #000; padding-top: 5px;">
+                            Firmado digitalmente
+                        </div>
+                    </div>
+                </td>
+                <td width="50%" style="vertical-align: top;">
+                    <div class="signature-box">
+                        <div class="signature-title">El Huésped</div>
+                        <div>{$guest_full_name}</div>
+                        <div>{$guest_document}</div>
+                        <div style="margin-top: 10px;">
+                            {$signature_img}
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <strong>Fecha:</strong> {$contract_date}
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
 
-    <h3>4.4. Política de Cancelación</h3>
-    <div class="terms">
-        Las cancelaciones realizadas con más de 7 días de antelación tendrán reembolso completo. Cancelaciones entre 3
-        y 7 días: 50% de reembolso. Cancelaciones con menos de 3 días: sin reembolso. En caso de no presentarse sin
-        cancelación previa, no habrá reembolso.
-    </div>
-
-    <h3>4.5. Responsabilidades</h3>
-    <div class="terms">
-        El huésped es responsable de cualquier daño causado al alojamiento durante su estancia. Se realizará inspección
-        al check-out. Los daños serán cargados a la tarjeta de crédito proporcionada. El anfitrión no se hace responsable
-        de pérdidas o robos de pertenencias personales.
-    </div>
-
-    <h3>4.6. Protección de Datos</h3>
-    <div class="terms">
-        Los datos personales proporcionados serán tratados conforme al RGPD y la legislación española de protección de datos.
-        La información será utilizada exclusivamente para la gestión de la reserva y el cumplimiento de obligaciones legales,
-        incluyendo el registro de viajeros obligatorio según la normativa vigente.
-    </div>
-
-    <h2>5. Firma y Aceptación</h2>
-    <div class="terms">
-        El huésped responsable declara haber leído, comprendido y aceptado todos los términos y condiciones establecidos
-        en este contrato. La firma digital a continuación confirma su conformidad y compromiso de cumplimiento.
-    </div>
-
-    <div class="signature-box">
-        <div style="margin-bottom: 10px;"><strong>Firma del Huésped Responsable:</strong></div>
-        {$signature_img}
-        <div style="margin-top: 20px;">
-            <div><strong>{$guest['first_name']} {$guest['last_name']}</strong></div>
-            <div>{$guest['document_type']}: {$guest['document_number']}</div>
-            <div>Fecha: {$contract_date}</div>
-        </div>
-    </div>
-
-    <div class="footer">
-        <p>Generado automáticamente por VACANFLY Guest App</p>
-        <p>Este documento tiene validez legal como contrato de hospedaje.</p>
-        <p>Para consultas: {$reservation['host_phone']} | {$reservation['host_email']}</p>
+    <div class="footer-note">
+        <p>Este contrato incluye de forma prominente el Nº de Registro Turístico, esencial para operar legalmente 
+        y demostrar el cumplimiento de las normativas de turismo de las Comunidades Autónomas.</p>
+        <p>Generado automáticamente por VACANFLY </p>
     </div>
 </body>
 </html>
@@ -391,3 +429,4 @@ HTML;
         return $html;
     }
 }
+
