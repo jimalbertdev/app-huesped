@@ -416,7 +416,7 @@ const RegisterTerms = () => {
                   <canvas
                     ref={canvasRef}
                     width={800}
-                    height={200}
+                    height={350}
                     className="w-full touch-none cursor-crosshair bg-card"
                     onMouseDown={startDrawing}
                     onMouseMove={draw}

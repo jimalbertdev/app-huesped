@@ -83,6 +83,15 @@ const RegisterConfirmation = () => {
     window.open(`https://wa.me/?text=${message}`, '_blank');
   };
 
+  const handleEmail = () => {
+    const basename = import.meta.env.PROD ? '/web/site' : '';
+    const url = window.location.origin + basename + buildPathWithReservation("/register");
+    const subject = encodeURIComponent(t('share.message'));
+    const body = encodeURIComponent(`${t('share.message')}: ${url}`);
+    console.log(subject, body);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-hero">
       {/* Header */}
@@ -173,16 +182,19 @@ const RegisterConfirmation = () => {
                     );
                   }
                 } else {
-                  // Huésped pendiente - Color gris
+                  // Huésped pendiente - Color gris pero clickable
                   return (
-                    <div
+                    <Link
                       key={`pending-${index}`}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border"
+                      to={buildPathWithReservation("/register")}
+                      className="block"
                     >
-                      <User className="w-5 h-5 text-muted-foreground/50 flex-shrink-0" />
-                      <span className="text-muted-foreground italic">{slot.fullName}</span>
-                      <span className="ml-auto text-xs text-muted-foreground">{t('confirmation.pending')}</span>
-                    </div>
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border hover:bg-muted transition-colors cursor-pointer">
+                        <User className="w-5 h-5 text-muted-foreground/50 flex-shrink-0" />
+                        <span className="text-muted-foreground italic">{slot.fullName}</span>
+                        <span className="ml-auto text-xs text-muted-foreground">{t('confirmation.pending')}</span>
+                      </div>
+                    </Link>
                   );
                 }
               })}
@@ -268,18 +280,12 @@ const RegisterConfirmation = () => {
                   <Button
                     variant="outline"
                     className="w-full justify-start gap-3 h-12"
+                    onClick={handleEmail}
                   >
                     <Mail className="w-5 h-5" />
                     {t('confirmation.shareEmail')}
                   </Button>
 
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start gap-3 h-12"
-                  >
-                    <QrCode className="w-5 h-5" />
-                    {t('confirmation.showQR')}
-                  </Button>
                 </div>
               </Card>
 

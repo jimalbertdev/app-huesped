@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Camera, Edit3, ArrowRight, ArrowLeft, CheckCircle2, Search } from "lucide-react";
+import { Camera, Edit3, ArrowRight, ArrowLeft, CheckCircle2, Search, ChevronDown } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useReservation } from "@/hooks/useReservation";
 import { useReservationParams } from "@/hooks/useReservationParams";
@@ -83,6 +83,12 @@ const Register = () => {
   const [documentError, setDocumentError] = useState<string>("");
   const [phoneError, setPhoneError] = useState<string>("");
   const [scanningDocument, setScanningDocument] = useState(false);
+
+  // Estados para validación de autocomplete (sin resultados)
+  const [nationalityNotFound, setNationalityNotFound] = useState(false);
+  const [residenceCountryNotFound, setResidenceCountryNotFound] = useState(false);
+  const [municipalityNotFound, setMunicipalityNotFound] = useState(false);
+  const [postalCodeNotFound, setPostalCodeNotFound] = useState(false);
 
   // Cargar países al montar el componente
   useEffect(() => {
@@ -185,9 +191,12 @@ const Register = () => {
           const response = await municipalityService.search(municipalitySearch);
           if (response.data.success) {
             setMunicipalities(response.data.data);
+            // Marcar error si no hay resultados
+            setMunicipalityNotFound(response.data.data.length === 0);
           }
         } catch (error) {
           console.error('Error buscando municipios:', error);
+          setMunicipalityNotFound(true);
         } finally {
           setLoadingMunicipalities(false);
         }
@@ -196,6 +205,7 @@ const Register = () => {
       return () => clearTimeout(timer);
     } else {
       setMunicipalities([]);
+      setMunicipalityNotFound(false);
     }
   }, [municipalitySearch, residenceCountry]);
 
@@ -235,8 +245,11 @@ const Register = () => {
         pc.value.includes(postalCodeSearch)
       );
       setFilteredPostalCodes(filtered);
+      // Marcar error si no hay resultados y hay texto de búsqueda
+      setPostalCodeNotFound(filtered.length === 0 && postalCodeSearch.length > 0);
     } else {
       setFilteredPostalCodes(postalCodes);
+      setPostalCodeNotFound(false);
     }
   }, [postalCodeSearch, postalCodes]);
 
@@ -248,10 +261,13 @@ const Register = () => {
         country.code.toLowerCase().includes(nationalitySearch.toLowerCase())
       );
       setFilteredCountriesNationality(filtered);
+      // Marcar error si no hay resultados y el usuario ya seleccionó antes
+      setNationalityNotFound(filtered.length === 0 && !nationality);
     } else {
       setFilteredCountriesNationality([]);
+      setNationalityNotFound(false);
     }
-  }, [nationalitySearch, countries]);
+  }, [nationalitySearch, countries, nationality]);
 
   // Filtrar países por búsqueda - País de Residencia
   useEffect(() => {
@@ -261,10 +277,13 @@ const Register = () => {
         country.code.toLowerCase().includes(residenceCountrySearch.toLowerCase())
       );
       setFilteredCountriesResidence(filtered);
+      // Marcar error si no hay resultados y el usuario ya seleccionó antes
+      setResidenceCountryNotFound(filtered.length === 0 && !residenceCountry);
     } else {
       setFilteredCountriesResidence([]);
+      setResidenceCountryNotFound(false);
     }
-  }, [residenceCountrySearch, countries]);
+  }, [residenceCountrySearch, countries, residenceCountry]);
 
   // Validar formato de documento en tiempo real
   useEffect(() => {
@@ -670,7 +689,7 @@ const Register = () => {
               </div>
             </div>
             <span className="text-sm font-medium text-muted-foreground">
-              Paso <span className="text-foreground">1</span> de 3
+              {t('register.step')} <span className="text-foreground">1</span> {t('register.of')} 3
             </span>
           </div>
         </div>
@@ -981,11 +1000,12 @@ const Register = () => {
                       <div className="space-y-2">
                         <Label htmlFor="nationality">{t('register.nationality')} <span className="text-destructive">*</span></Label>
                         <div className="relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                          <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
                           <Input
                             id="nationality"
                             placeholder={t('register.searchCountry')}
-                            className="h-12 pl-10"
+                            className={`h-12 pl-10 pr-10 ${nationalityNotFound ? 'border-destructive' : ''}`}
                             value={nationalitySearch || countries.find(c => c.code === nationality)?.name || ""}
                             onChange={(e) => {
                               setNationalitySearch(e.target.value);
@@ -995,18 +1015,20 @@ const Register = () => {
                           />
                         </div>
                         {filteredCountriesNationality.length > 0 && (
-                          <div className="border rounded-lg max-h-48 overflow-y-auto">
+                          <div className="absolute z-20 w-full mt-1 border-2 border-primary/30 rounded-lg max-h-48 overflow-y-auto bg-background shadow-lg">
                             {filteredCountriesNationality.map((country) => (
                               <button
                                 key={country.code}
                                 type="button"
-                                className="w-full text-left px-4 py-2 hover:bg-muted transition-colors"
+                                className="w-full text-left px-4 py-3 hover:bg-primary/10 hover:text-primary transition-colors border-b border-border last:border-b-0 flex items-center gap-2"
                                 onClick={() => {
                                   setNationality(country.code);
                                   setNationalitySearch(country.name);
+                                  setFilteredCountriesNationality([]);
                                 }}
                               >
-                                {country.name}
+                                <ChevronDown className="w-3 h-3 rotate-[-90deg] text-primary" />
+                                <span className="font-medium">{country.name}</span>
                               </button>
                             ))}
                           </div>
@@ -1114,11 +1136,12 @@ const Register = () => {
                       <div className="space-y-2">
                         <Label htmlFor="residenceCountry">{t('register.residenceCountry')} <span className="text-destructive">*</span></Label>
                         <div className="relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                          <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
                           <Input
                             id="residenceCountry"
                             placeholder={t('register.searchCountry')}
-                            className="h-12 pl-10"
+                            className={`h-12 pl-10 pr-10 ${residenceCountryNotFound ? 'border-destructive' : ''}`}
                             value={residenceCountrySearch || countries.find(c => c.code === residenceCountry)?.name || ""}
                             onChange={(e) => {
                               setResidenceCountrySearch(e.target.value);
@@ -1133,12 +1156,12 @@ const Register = () => {
                           />
                         </div>
                         {filteredCountriesResidence.length > 0 && (
-                          <div className="border rounded-lg max-h-48 overflow-y-auto z-10 bg-background">
+                          <div className="absolute z-20 w-full mt-1 border-2 border-primary/30 rounded-lg max-h-48 overflow-y-auto bg-background shadow-lg">
                             {filteredCountriesResidence.map((country) => (
                               <button
                                 key={country.code}
                                 type="button"
-                                className="w-full text-left px-3 py-2 hover:bg-muted transition-colors text-sm"
+                                className="w-full text-left px-4 py-3 hover:bg-primary/10 hover:text-primary transition-colors border-b border-border last:border-b-0 flex items-center gap-2"
                                 onClick={() => {
                                   setResidenceCountry(country.code);
                                   setResidenceCountrySearch(country.name);
@@ -1148,7 +1171,8 @@ const Register = () => {
                                   setResidencePostalCode("");
                                 }}
                               >
-                                {country.name}
+                                <ChevronDown className="w-3 h-3 rotate-[-90deg] text-primary" />
+                                <span className="font-medium">{country.name}</span>
                               </button>
                             ))}
                           </div>
@@ -1159,11 +1183,12 @@ const Register = () => {
                           <div className="space-y-2">
                             <Label htmlFor="municipalitySearch">{t('register.municipality')} <span className="text-destructive">*</span></Label>
                             <div className="relative">
-                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
                               <Input
                                 id="municipalitySearch"
                                 placeholder={t('register.searchMunicipality')}
-                                className="h-12 pl-10"
+                                className={`h-12 pl-10 pr-10 ${municipalityNotFound ? 'border-destructive' : ''}`}
                                 value={municipalitySearch}
                                 onChange={(e) => setMunicipalitySearch(e.target.value)}
                               />
@@ -1172,12 +1197,12 @@ const Register = () => {
                               <p className="text-xs text-muted-foreground">{t('register.searching')}</p>
                             )}
                             {municipalities.length > 0 && (
-                              <div className="border rounded-lg max-h-48 overflow-y-auto">
+                              <div className="absolute z-20 w-full mt-1 border-2 border-primary/30 rounded-lg max-h-48 overflow-y-auto bg-background shadow-lg">
                                 {municipalities.map((mun) => (
                                   <button
                                     key={mun.code}
                                     type="button"
-                                    className="w-full text-left px-3 py-2 hover:bg-muted transition-colors text-sm"
+                                    className="w-full text-left px-4 py-3 hover:bg-primary/10 hover:text-primary transition-colors border-b border-border last:border-b-0 flex items-center gap-2"
                                     onClick={() => {
                                       setResidenceMunicipalityCode(mun.code);
                                       setResidenceMunicipalityName(mun.name);
@@ -1186,7 +1211,8 @@ const Register = () => {
                                       setMunicipalities([]);
                                     }}
                                   >
-                                    {mun.display_name}
+                                    <ChevronDown className="w-3 h-3 rotate-[-90deg] text-primary" />
+                                    <span className="font-medium">{mun.display_name}</span>
                                   </button>
                                 ))}
                               </div>
@@ -1195,11 +1221,12 @@ const Register = () => {
                           <div className="space-y-2">
                             <Label htmlFor="residencePostalCode">{t('register.postalCode')} <span className="text-destructive">*</span></Label>
                             <div className="relative">
-                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
                               <Input
                                 id="residencePostalCode"
                                 placeholder={loadingPostalCodes ? t('register.loading') : t('register.selectPostalCode')}
-                                className="h-12 pl-10"
+                                className={`h-12 pl-10 pr-10 ${postalCodeNotFound ? 'border-destructive' : ''}`}
                                 value={postalCodeSearch || residencePostalCode}
                                 onChange={(e) => {
                                   setPostalCodeSearch(e.target.value);
@@ -1211,19 +1238,23 @@ const Register = () => {
                               />
                             </div>
                             {filteredPostalCodes.length > 0 && postalCodeSearch && (
-                              <div className="border rounded-lg max-h-48 overflow-y-auto z-10 bg-background">
+                              <div className="absolute z-20 w-full mt-1 border-2 border-primary/30 rounded-lg max-h-48 overflow-y-auto bg-background shadow-lg">
+                                <p className="text-xs text-muted-foreground px-4 py-2 bg-muted/50 border-b border-border sticky top-0">
+                                  {filteredPostalCodes.length} {t('register.availablePostalCodes')}
+                                </p>
                                 {filteredPostalCodes.map((pc) => (
                                   <button
                                     key={pc.value}
                                     type="button"
-                                    className="w-full text-left px-3 py-2 hover:bg-muted transition-colors text-sm"
+                                    className="w-full text-left px-4 py-3 hover:bg-primary/10 hover:text-primary transition-colors border-b border-border last:border-b-0 flex items-center gap-2"
                                     onClick={() => {
                                       setResidencePostalCode(pc.value);
                                       setPostalCodeSearch("");
                                       setFilteredPostalCodes([]);
                                     }}
                                   >
-                                    {pc.label}
+                                    <ChevronDown className="w-3 h-3 rotate-[-90deg] text-primary" />
+                                    <span className="font-medium">{pc.label}</span>
                                   </button>
                                 ))}
                               </div>

@@ -32,7 +32,7 @@ try {
                     Ine as code,
                     Descripcion as name,
                     codigo_postal as postal_code,
-                    CONCAT(Descripcion, ' (CP: ', codigo_postal, ')') as display_name
+                    Descripcion as display_name
                 FROM municipios_ine_esp
                 WHERE Descripcion LIKE ? OR codigo_postal LIKE ?
                 ORDER BY Descripcion ASC

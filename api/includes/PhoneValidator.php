@@ -31,68 +31,99 @@ class PhoneValidator {
             ];
         }
 
+        $phoneNumber = trim($phoneNumber);
+
+        // INTENTO 1: Validar tal cual viene (con o sin código de país, usando el countryCode si está disponible)
+        $isValid1 = false;
+        $parsedNumber1 = null;
+        $error1 = null;
+
         try {
-            // Intentar parsear el número
-            // Si tiene +, lo parseamos sin país de referencia
-            // Si no tiene +, usamos el país proporcionado
-            if (strpos($phoneNumber, '+') === 0) {
-                $parsedNumber = $this->phoneUtil->parse($phoneNumber, null);
-                
-                // NUEVA VALIDACIÓN: Verificar que el código del número coincida con el seleccionado
-                if (!empty($countryCode)) {
-                    $expectedRegion = strtoupper($countryCode);
-                    $actualRegion = $this->phoneUtil->getRegionCodeForNumber($parsedNumber);
-                    
-                    if ($actualRegion !== $expectedRegion) {
-                        $expectedCountryName = $this->getCountryNameByISO($expectedRegion);
-                        $actualCountryName = $this->getCountryNameByISO($actualRegion);
-                        
+            // Si tiene +, parsear sin región por defecto. Si no, usar región.
+            $region = (strpos($phoneNumber, '+') === 0) ? null : strtoupper($countryCode);
+            $parsedNumber1 = $this->phoneUtil->parse($phoneNumber, $region);
+            
+            if ($this->phoneUtil->isValidNumber($parsedNumber1)) {
+                $isValid1 = true;
+            } else {
+                $countryName = $this->getCountryName($parsedNumber1->getCountryCode());
+                $error1 = "El número no es válido para {$countryName}";
+            }
+        } catch (NumberParseException $e) {
+            $error1 = 'Formato de número inválido';
+        }
+
+        if ($isValid1) {
+            return $this->formatSuccess($parsedNumber1, $countryCode);
+        }
+
+        // INTENTO 2: Si falló y no tenía +, intentar agregando + (asumiendo que el usuario puso el código de país ej: 34600...)
+        if (strpos($phoneNumber, '+') !== 0) {
+            try {
+                $phoneNumberWithPlus = '+' . $phoneNumber;
+                $parsedNumber2 = $this->phoneUtil->parse($phoneNumberWithPlus, null);
+
+                if ($this->phoneUtil->isValidNumber($parsedNumber2)) {
+                    return $this->formatSuccess($parsedNumber2, $countryCode);
+                }
+            } catch (NumberParseException $e) {
+                // Ignorar error del segundo intento
+            }
+        }
+
+        // Si llegamos aquí, ninguna validación funcionó. Devolver el error del primer intento (el más relevante)
+        return [
+            'valid' => false,
+            'formatted' => null,
+            'error' => $error1 ?? 'Número de teléfono inválido'
+        ];
+    }
+
+    /**
+     * Helper para formatear respuesta exitosa y validar coincidencia de país
+     */
+    private function formatSuccess($parsedNumber, $expectedCountryCode) {
+        // Verificar coincidencia de país si se solicitó
+        if (!empty($expectedCountryCode)) {
+            $expectedRegion = strtoupper($expectedCountryCode);
+            $actualRegion = $this->phoneUtil->getRegionCodeForNumber($parsedNumber);
+            
+            // Si la región es diferente, verificar si es compatible (ej: NANP US/CA) o si es un error real
+            if ($actualRegion !== $expectedRegion) {
+                // Permitir si el código de país numérico coincide (ej: +1 para US y CA)
+                // O si la región actual es desconocida (ZZ) pero el número es válido
+                if ($actualRegion !== 'ZZ') {
+                     $expectedCountryName = $this->getCountryNameByISO($expectedRegion);
+                     $actualCountryName = $this->getCountryNameByISO($actualRegion);
+                     
+                     // Si los códigos de llamada son diferentes, es un error seguro
+                     // Si son iguales (ej: US/CA +1), podríamos ser permisivos, pero por ahora estricto con advertencia
+                     // NOTA: Para este caso específico del usuario, si pone 34... y selecciona ES, coincidirá.
+                     
+                     // Vamos a ser permisivos si el código de llamada coincide con el esperado para esa región
+                     $expectedCallingCode = $this->phoneUtil->getCountryCodeForRegion($expectedRegion);
+                     $actualCallingCode = $parsedNumber->getCountryCode();
+                     
+                     if ($expectedCallingCode !== $actualCallingCode) {
                         return [
                             'valid' => false,
                             'formatted' => null,
-                            'error' => "El número pertenece a {$actualCountryName}, pero seleccionaste {$expectedCountryName}. Por favor, cambia el código de país o ingresa el número sin el símbolo +"
+                            'error' => "El número pertenece a {$actualCountryName} (+{$actualCallingCode}), pero seleccionaste {$expectedCountryName} (+{$expectedCallingCode})."
                         ];
-                    }
+                     }
                 }
-            } else {
-                if (empty($countryCode)) {
-                    return [
-                        'valid' => false,
-                        'formatted' => null,
-                        'error' => 'Debe proporcionar un código de país o un número con formato internacional (+34...)'
-                    ];
-                }
-                $parsedNumber = $this->phoneUtil->parse($phoneNumber, strtoupper($countryCode));
             }
-
-            // Validar que sea un número válido
-            if (!$this->phoneUtil->isValidNumber($parsedNumber)) {
-                $countryName = $this->getCountryName($parsedNumber->getCountryCode());
-                return [
-                    'valid' => false,
-                    'formatted' => null,
-                    'error' => "El número no es válido para {$countryName}"
-                ];
-            }
-
-            // Formatear al formato internacional E.164 (+34612345678)
-            $formattedNumber = $this->phoneUtil->format($parsedNumber, PhoneNumberFormat::E164);
-
-            return [
-                'valid' => true,
-                'formatted' => $formattedNumber,
-                'error' => null,
-                'country_code' => $parsedNumber->getCountryCode(),
-                'national_number' => $parsedNumber->getNationalNumber()
-            ];
-
-        } catch (NumberParseException $e) {
-            return [
-                'valid' => false,
-                'formatted' => null,
-                'error' => 'Formato de número inválido: ' . $e->getMessage()
-            ];
         }
+
+        $formattedNumber = $this->phoneUtil->format($parsedNumber, PhoneNumberFormat::E164);
+
+        return [
+            'valid' => true,
+            'formatted' => $formattedNumber,
+            'error' => null,
+            'country_code' => $parsedNumber->getCountryCode(),
+            'national_number' => $parsedNumber->getNationalNumber()
+        ];
     }
 
     /**

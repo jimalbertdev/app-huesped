@@ -189,8 +189,9 @@ try {
             }
 
             // Combinar código de país + número para validación
-            $fullPhone = $data['phone_country_code'] . $data['phone'];
-            $validation = $phoneValidator->validate($fullPhone, $countryISO);
+            // NOTA: Pasamos el teléfono tal cual. PhoneValidator se encarga de probar si necesita el código de país o si ya lo tiene.
+            // Esto evita problemas cuando el usuario escribe "34600..." y seleccionó "+34", lo que resultaba en "+3434600..."
+            $validation = $phoneValidator->validate($data['phone'], $countryISO);
 
             if (!$validation['valid']) {
                 Response::error($validation['error'], 400);

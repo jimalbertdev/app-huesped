@@ -208,7 +208,7 @@ export interface PhoneValidationResult {
 /**
  * Valida un número de teléfono
  *
- * @param phoneNumber - Número de teléfono (puede incluir código de país)
+ * @param phoneNumber - Número de teléfono (puede incluir código de país con o sin +)
  * @param countryCode - Código de país ISO 2 letras (ej: ES, US, FR)
  * @returns Resultado de validación con número formateado
  */
@@ -221,37 +221,19 @@ export function validatePhoneNumber(
     return { valid: true };
   }
 
-  try {
-    // Si el número ya tiene +, lo parseamos sin país de referencia
-    // Si no tiene +, usamos el país proporcionado
-    const hasPlus = phoneNumber.trim().startsWith('+');
+  const cleanNumber = phoneNumber.trim();
 
-    if (hasPlus) {
-      // Ya tiene formato internacional
-      if (!isValidPhoneNumber(phoneNumber)) {
+  try {
+    // CASO 1: El número ya tiene + (formato internacional completo)
+    if (cleanNumber.startsWith('+')) {
+      if (!isValidPhoneNumber(cleanNumber)) {
         return {
           valid: false,
           error: 'El número de teléfono no es válido'
         };
       }
 
-      const parsed = parsePhoneNumber(phoneNumber);
-
-      // NUEVA VALIDACIÓN: Verificar que el código del número coincida con el seleccionado
-      if (countryCode) {
-        const expectedCountry = countryCode.toUpperCase() as CountryCode;
-        const actualCountry = parsed.country;
-
-        if (actualCountry !== expectedCountry) {
-          const expectedCountryName = getCountryName(expectedCountry);
-          const actualCountryName = getCountryName(actualCountry || '');
-
-          return {
-            valid: false,
-            error: `El número pertenece a ${actualCountryName}, pero seleccionaste ${expectedCountryName}. Por favor, cambia el código de país o ingresa el número sin el símbolo +`
-          };
-        }
-      }
+      const parsed = parsePhoneNumber(cleanNumber);
 
       return {
         valid: true,
@@ -260,35 +242,103 @@ export function validatePhoneNumber(
         international: parsed.formatInternational(), // +34 612 34 56 78
         country: parsed.country
       };
-    } else {
-      // No tiene +, necesitamos país
-      if (!countryCode) {
-        return {
-          valid: false,
-          error: 'Debe seleccionar un código de país'
-        };
-      }
+    }
 
-      const fullNumber = phoneNumber;
+    // CASO 2: El número NO tiene +, pero podría tener el código de país incluido
+    // Ejemplo: "34600421285" o "600421285"
+
+    // Primero intentamos parsearlo con el país seleccionado (asumiendo que NO tiene código)
+    if (countryCode) {
       const country = countryCode.toUpperCase() as CountryCode;
 
-      if (!isValidPhoneNumber(fullNumber, country)) {
-        return {
-          valid: false,
-          error: `El número no es válido para ${getCountryName(country)}`
-        };
+      try {
+        // Intento 1: Parsear como número nacional del país seleccionado
+        if (isValidPhoneNumber(cleanNumber, country)) {
+          const parsed = parsePhoneNumber(cleanNumber, country);
+
+          return {
+            valid: true,
+            formatted: parsed.format('E.164'),
+            national: parsed.formatNational(),
+            international: parsed.formatInternational(),
+            country: parsed.country
+          };
+        }
+      } catch {
+        // Si falla, continuamos con el siguiente intento
       }
 
-      const parsed = parsePhoneNumber(fullNumber, country);
+      // Intento 2: El número podría tener el código de país sin el +
+      // Agregamos el + y volvemos a intentar
+      try {
+        const withPlus = '+' + cleanNumber;
+        if (isValidPhoneNumber(withPlus)) {
+          const parsed = parsePhoneNumber(withPlus);
 
+          return {
+            valid: true,
+            formatted: parsed.format('E.164'),
+            national: parsed.formatNational(),
+            international: parsed.formatInternational(),
+            country: parsed.country
+          };
+        }
+      } catch {
+        // Si falla, continuamos
+      }
+
+      // Intento 3: Quizás el número tiene el código del país seleccionado al inicio
+      // Ejemplo: si seleccionó +34 y escribió "34600421285"
+      const countryCallingCode = COUNTRY_CODES.find(c => c.country === country)?.code.replace('+', '');
+      if (countryCallingCode && cleanNumber.startsWith(countryCallingCode)) {
+        try {
+          const withPlus = '+' + cleanNumber;
+          if (isValidPhoneNumber(withPlus)) {
+            const parsed = parsePhoneNumber(withPlus);
+
+            return {
+              valid: true,
+              formatted: parsed.format('E.164'),
+              national: parsed.formatNational(),
+              international: parsed.formatInternational(),
+              country: parsed.country
+            };
+          }
+        } catch {
+          // Si falla, continuamos
+        }
+      }
+
+      // Si llegamos aquí, el número no es válido para el país seleccionado
       return {
-        valid: true,
-        formatted: parsed.format('E.164'),
-        national: parsed.formatNational(),
-        international: parsed.formatInternational(),
-        country: parsed.country
+        valid: false,
+        error: `El número no es válido para ${getCountryName(country)}`
       };
     }
+
+    // CASO 3: No hay país seleccionado, intentamos parsear sin contexto
+    // Agregamos + y vemos si es válido
+    try {
+      const withPlus = '+' + cleanNumber;
+      if (isValidPhoneNumber(withPlus)) {
+        const parsed = parsePhoneNumber(withPlus);
+
+        return {
+          valid: true,
+          formatted: parsed.format('E.164'),
+          national: parsed.formatNational(),
+          international: parsed.formatInternational(),
+          country: parsed.country
+        };
+      }
+    } catch {
+      // Si falla, retornamos error
+    }
+
+    return {
+      valid: false,
+      error: 'Debe seleccionar un código de país o ingresar el número con +'
+    };
   } catch (error) {
     return {
       valid: false,
