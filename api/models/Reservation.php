@@ -22,6 +22,7 @@ class Reservation {
                     DATE(r.fecha_inicio) as check_in_date,
                     DATE(r.fecha_fin) as check_out_date,
                     r.hora_entrada as check_in_time,
+                    r.hora_salida as check_out_time,
                     r.total_huespedes as total_guests,
                     r.cliente_id,
                     r.estado_reserva_id as status,
@@ -96,6 +97,7 @@ class Reservation {
                     DATE(r.fecha_inicio) as check_in_date,
                     DATE(r.fecha_fin) as check_out_date,
                     r.hora_entrada as check_in_time,
+                    r.hora_salida as check_out_time,
                     r.total_huespedes as total_guests,
                     r.cliente_id,
                     r.estado_reserva_id as status,
@@ -140,7 +142,8 @@ class Reservation {
             $data['reservation_code'],
             $data['check_in_date'],
             $data['check_out_date'],
-            $data['check_in_time'] ?? '15:00:00',
+            $data['check_in_time'] ?? '16:00:00',
+            $data['check_out_time'] ?? '11:00:00',
             $data['total_guests'],
             $data['cliente_id'] ?? null
         ]);

@@ -79,6 +79,55 @@ class DoorUnlock {
     }
 
     /**
+     * Validar si la reserva está activa (dentro del rango de fechas)
+     * @param int $reservation_id ID de la reserva
+     * @return array ['active' => bool, 'message' => string]
+     */
+    private function isReservationActive($reservation_id) {
+        $sql = "SELECT 
+                    CONCAT(fecha_inicio, ' ', hora_entrada) as check_in,
+                    CONCAT(fecha_fin, ' ', hora_salida) as check_out
+                FROM reserva
+                WHERE id = ?";
+        
+        $reservation = $this->db->queryOne($sql, [$reservation_id]);
+        
+        if (!$reservation) {
+            return ['active' => false, 'message' => 'Reserva no encontrada'];
+        }
+        
+        try {
+            // Obtener fecha/hora actual en zona horaria de España
+            $timezone = new DateTimeZone('Europe/Madrid');
+            $now = new DateTime('now', $timezone);
+            
+            $checkIn = new DateTime($reservation['check_in'], $timezone);
+            $checkOut = new DateTime($reservation['check_out'], $timezone);
+            
+            if ($now < $checkIn) {
+                return [
+                    'active' => false, 
+                    'message' => 'El acceso estará disponible a partir del ' . 
+                                $checkIn->format('d/m/Y H:i') . ' (hora de España)'
+                ];
+            }
+            
+            if ($now > $checkOut) {
+                return [
+                    'active' => false, 
+                    'message' => 'El acceso finalizó el ' . 
+                                $checkOut->format('d/m/Y H:i') . ' (hora de España)'
+                ];
+            }
+            
+            return ['active' => true];
+        } catch (Exception $e) {
+            error_log('Error validando rango de fechas: ' . $e->getMessage());
+            return ['active' => false, 'message' => 'Error al validar el rango de fechas'];
+        }
+    }
+
+    /**
      * Get lock information for a reservation
      */
     public function getLockInfo($reservation_id) {
@@ -154,6 +203,18 @@ class DoorUnlock {
         $success = false;
 
         try {
+            // Validar rango de fechas de la reserva
+            $activeCheck = $this->isReservationActive($reservation_id);
+            if (!$activeCheck['active']) {
+                $error_message = $activeCheck['message'];
+                $this->logUnlock($reservation_id, $guest_id, $door_type, false, $error_message);
+                return [
+                    'success' => false,
+                    'error_message' => $error_message,
+                    'timestamp' => date('Y-m-d H:i:s')
+                ];
+            }
+
             // Get lock information
             $lockInfo = $this->getLockInfo($reservation_id);
 

@@ -863,7 +863,7 @@ const Register = () => {
                         />
                         <div className="flex-1">
                           <Label htmlFor="isResponsible" className="cursor-pointer text-lg font-semibold text-blue-900">
-                            ✓ {t('register.imBookingHolder')}
+                            {t('register.imBookingHolder')}
                           </Label>
                           <p className="text-sm text-blue-700 mt-1">
                             {t('register.bookingHolderInfo')}

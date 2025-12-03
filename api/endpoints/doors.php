@@ -77,8 +77,15 @@ try {
         // Check if reservation is active (within check-in/check-out dates)
         $timezone = new DateTimeZone('Europe/Madrid');
         $now = new DateTime('now', $timezone);
-        $checkin = new DateTime($reservation['check_in'] . ' ' . ($reservation['arrival_time'] ?? '15:00'), $timezone);
-        $checkout = new DateTime($reservation['check_out'] . ' ' . ($reservation['departure_time'] ?? '11:00'), $timezone);
+        
+        // Usar los nombres de campo correctos del modelo Reservation
+        $checkInDate = $reservation['check_in_date'] ?? date('Y-m-d');
+        $checkInTime = $reservation['check_in_time'] ?? '15:00:00';
+        $checkOutDate = $reservation['check_out_date'] ?? date('Y-m-d');
+        $checkOutTime = $reservation['check_out_time'] ?? '11:00:00';
+        
+        $checkin = new DateTime($checkInDate . ' ' . $checkInTime, $timezone);
+        $checkout = new DateTime($checkOutDate . ' ' . $checkOutTime, $timezone);
 
         $is_active = ($now >= $checkin && $now <= $checkout);
 

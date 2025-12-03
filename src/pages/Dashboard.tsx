@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -72,7 +72,7 @@ const Dashboard = () => {
   // Obtener contrato del huésped responsable
   const responsibleGuest = guests.find(g => g.is_responsible);
   // const contractPath = responsibleGuest?.contract_path; // Ya no se usa, usamos reservationData.contract_path
-  //console.log(reservationData);
+  // console.log(reservationData);
   // Obtener datos de la reserva - Sin valores por defecto, mostrar '?' si no hay datos
   const totalGuests = reservationData?.total_guests || 0;
   const registeredGuests = reservationData?.registered_guests || 0;
@@ -90,6 +90,51 @@ const Dashboard = () => {
   const [isRegistered] = useState(true);
   const allGuestsRegistered = totalGuests > 0 && registeredGuests === totalGuests;
   const hasResponsibleGuest = guests.some(guest => guest.is_responsible);
+
+  // Validar si la reserva está activa (dentro del rango de fechas en zona horaria de España)
+  const isReservationActive = useMemo(() => {
+    if (!checkInDate || !checkInTime || !checkOutDate || !checkOutTime) {
+      return false;
+    }
+
+    if (checkInDate === '?' || checkInTime === '?' || checkOutDate === '?' || checkOutTime === '?') {
+      return false;
+    }
+
+    try {
+      // Obtener fecha/hora actual en zona horaria de España (Europe/Madrid)
+      const nowInSpain = new Date().toLocaleString('en-US', {
+        timeZone: 'Europe/Madrid'
+      });
+      const currentDateTime = new Date(nowInSpain);
+
+      // Construir fechas de check-in y check-out
+      const checkInDateTime = new Date(`${checkInDate}T${checkInTime}`);
+      const checkOutDateTime = new Date(`${checkOutDate}T${checkOutTime}`);
+
+      // Validar que estamos dentro del rango
+      return currentDateTime >= checkInDateTime && currentDateTime <= checkOutDateTime;
+    } catch (error) {
+      console.error('Error validando rango de fechas:', error);
+      return false;
+    }
+  }, [checkInDate, checkInTime, checkOutDate, checkOutTime]);
+
+  // Calcular si estamos antes o después del rango para mostrar mensaje apropiado
+  const reservationTimeStatus = useMemo(() => {
+    if (isReservationActive) return 'active';
+    if (!checkInDate || !checkInTime || checkInDate === '?' || checkInTime === '?') return 'unknown';
+
+    try {
+      const nowInSpain = new Date().toLocaleString('en-US', { timeZone: 'Europe/Madrid' });
+      const currentDateTime = new Date(nowInSpain);
+      const checkInDateTime = new Date(`${checkInDate}T${checkInTime}`);
+
+      return currentDateTime < checkInDateTime ? 'before' : 'after';
+    } catch (error) {
+      return 'unknown';
+    }
+  }, [isReservationActive, checkInDate, checkInTime]);
   const [showIncidentDialog, setShowIncidentDialog] = useState(false);
   const [incidentType, setIncidentType] = useState<"complaint" | "suggestion">("complaint");
   const [incidentSubject, setIncidentSubject] = useState("");
@@ -289,7 +334,7 @@ const Dashboard = () => {
 
     try {
       const response = await doorService.getHistory(reservationData.id);
-      console.log(response);
+      // console.log(response);
       if (response.data.success) {
         const history = response.data.data.map((entry: any) => ({
           time: entry.time || new Date(entry.unlock_time).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
@@ -610,6 +655,28 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* Banner si la reserva no está activa (fuera del rango de fechas) */}
+        {allGuestsRegistered && !isReservationActive && reservationTimeStatus !== 'unknown' && (
+          <div className="mb-6 animate-slide-up">
+            <Card className="p-4 border-yellow-500/50 bg-yellow-500/5">
+              <div className="flex items-start gap-3">
+                <Clock className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-sm mb-1 text-yellow-900 dark:text-yellow-100">
+                    {reservationTimeStatus === 'before' ? t('dashboard.accessNotYetAvailable') : t('dashboard.accessFinished')}
+                  </h3>
+                  <p className="text-xs text-yellow-800 dark:text-yellow-200">
+                    {reservationTimeStatus === 'before'
+                      ? `${t('dashboard.accessAvailableFrom')} ${checkInDate} a las ${checkInTime} (${t('dashboard.spainTime')})`
+                      : `${t('dashboard.accessFinishedOn')} ${checkOutDate} a las ${checkOutTime} (${t('dashboard.spainTime')})`
+                    }
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
         {/* Grid de cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Card 1: Mi Reserva */}
@@ -655,25 +722,49 @@ const Dashboard = () => {
                 </div>
               </div>
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    className="gap-2 bg-gradient-primary hover:opacity-90"
-                    disabled={!allGuestsRegistered}
-                    onClick={() => handleOpenDoorClick("portal")}
-                  >
-                    <Unlock className="w-4 h-4" />
-                    {t('dashboard.openPortal')}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    className="gap-2"
-                    disabled={!allGuestsRegistered}
-                    onClick={() => handleOpenDoorClick("accommodation")}
-                  >
-                    <Unlock className="w-4 h-4" />
-                    {t('dashboard.openAccommodation')}
-                  </Button>
-                </div>
+                {/* Mostrar mensaje si no hay cerraduras Raixer configuradas */}
+                {doorInfoLoaded && doorInfo?.has_locks === false ? (
+                  <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <MessageSquare className="w-8 h-8 text-green-600 dark:text-green-400" />
+                      <div>
+                        <h5 className="font-semibold text-green-900 dark:text-green-100 mb-1">
+                          {t('dashboard.noRaixerTitle')}
+                        </h5>
+                        <p className="text-sm text-green-800 dark:text-green-200">
+                          {t('dashboard.noRaixerMessage')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : doorInfoLoaded && doorInfo?.has_locks === true ? (
+                  <>
+                    {/* Botones de apertura Raixer */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        className="gap-2 bg-gradient-primary hover:opacity-90"
+                        disabled={!allGuestsRegistered || !isReservationActive}
+                        onClick={() => handleOpenDoorClick("portal")}
+                      >
+                        <Unlock className="w-4 h-4" />
+                        {t('dashboard.openPortal')}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        className="gap-2"
+                        disabled={!allGuestsRegistered || !isReservationActive}
+                        onClick={() => handleOpenDoorClick("accommodation")}
+                      >
+                        <Unlock className="w-4 h-4" />
+                        {t('dashboard.openAccommodation')}
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center text-muted-foreground text-sm py-4">
+                    {t('dashboard.loadingAccessInfo')}
+                  </div>
+                )}
 
                 {/* Ver Historial de Aperturas */}
                 <Dialog open={showUnlockHistoryDialog} onOpenChange={setShowUnlockHistoryDialog}>
@@ -947,7 +1038,7 @@ const Dashboard = () => {
               <div className="flex items-center gap-3">
                 {hostPhotoUrl ? (
                   <img
-                    src={`${import.meta.env.VITE_API_URL || 'http://localhost.local'}${hostPhotoUrl}`}
+                    src={`${import.meta.env.VITE_API_URL || 'https://extranetmoon.vacanfly.com/'}${hostPhotoUrl}`}
                     alt={hostName}
                     className="w-14 h-14 rounded-full object-cover border-2 border-secondary"
                   />
