@@ -1277,20 +1277,20 @@ const Dashboard = () => {
                 <Accordion type="single" collapsible className="w-full">
                   {accommodationGuide.map((category) => (
                     <AccordionItem key={category.id} value={category.id}>
-                      <AccordionTrigger className="text-sm">
-                        <div className="flex items-center gap-2">
+                      <AccordionTrigger className="text-sm text-left [&[data-state=open]>svg]:rotate-180">
+                        <div className="flex items-center gap-2 text-left w-full">
                           <MapPin className="w-4 h-4 text-red-600 flex-shrink-0" />
-                          <span>{category.title}</span>
+                          <span className="text-left">{category.title}</span>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>
                         <div className="space-y-2">
                           {category.items && category.items.length > 0 ? (
                             category.items.map((item: any) => (
-                              <div key={item.id} className="p-2 bg-muted/50 rounded-lg">
+                              <div key={item.id} className="p-2 bg-muted/50 rounded-lg text-left">
                                 {item.description && (
                                   <div
-                                    className="text-xs text-muted-foreground prose prose-xs max-w-none [&_h2]:font-semibold [&_h3]:font-semibold [&_h4]:font-semibold"
+                                    className="text-xs text-muted-foreground prose prose-xs max-w-none [&_h2]:font-semibold [&_h3]:font-semibold [&_h4]:font-semibold text-left [&_*]:!text-left"
                                     dangerouslySetInnerHTML={{ __html: item.description }}
                                   />
                                 )}
