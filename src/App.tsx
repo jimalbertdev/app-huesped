@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "./hooks/useLanguage";
 import { ReservationProvider } from "./hooks/useReservation";
 import { RegistrationFlowProvider } from "./hooks/useRegistrationFlow";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import Welcome from "./pages/Welcome";
 import Register from "./pages/Register";
 import RegisterPreferences from "./pages/RegisterPreferences";
@@ -25,16 +26,22 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter basename={basename}>
+        <BrowserRouter
+          basename={basename}
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
           <ReservationProvider>
             <RegistrationFlowProvider>
               <Routes>
                 <Route path="/" element={<Welcome />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/register/preferences" element={<RegisterPreferences />} />
-                <Route path="/register/terms" element={<RegisterTerms />} />
-                <Route path="/register/confirmation" element={<RegisterConfirmation />} />
-                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/register" element={<ProtectedRoute><Register /></ProtectedRoute>} />
+                <Route path="/register/preferences" element={<ProtectedRoute><RegisterPreferences /></ProtectedRoute>} />
+                <Route path="/register/terms" element={<ProtectedRoute><RegisterTerms /></ProtectedRoute>} />
+                <Route path="/register/confirmation" element={<ProtectedRoute><RegisterConfirmation /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/404" element={<NotFound />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

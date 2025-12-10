@@ -26,10 +26,27 @@ const Welcome = () => {
   const hostName = reservationData?.host_name || '?';
   const hostPhone = reservationData?.host_phone || '?';
   const hostEmail = reservationData?.host_email || '?';
+  const hostPhotoUrl = reservationData?.host_photo_url;
   const hasResponsibleGuest = guests.some(guest => guest.is_responsible);
   const allGuestsRegistered = totalGuests > 0 && registeredGuests >= totalGuests;
 
+  // Debug: Log host photo URL
+  useEffect(() => {
+    if (reservationData) {
+      console.log('🖼️ Host Photo URL:', hostPhotoUrl);
+      console.log('📸 Host Photo:', reservationData.host_photo);
+      console.log('🆔 Host Document:', reservationData.host_document);
+    }
+  }, [reservationData, hostPhotoUrl]);
+
   // Funciones de compartir movidas a ShareDialog component
+
+  // Redirección a 404 si hay error al cargar la reserva
+  useEffect(() => {
+    if (error) {
+      navigate('/404', { replace: true });
+    }
+  }, [error, navigate]);
 
   // Redirección automática al dashboard si todos los huéspedes están registrados
   useEffect(() => {
@@ -56,8 +73,8 @@ const Welcome = () => {
       <header className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-          <Link to={buildPathWithReservation("/")}>
-            <img src={vacanflyLogo} alt="Vacanfly" className="w-20" />
+            <Link to={buildPathWithReservation("/")}>
+              <img src={vacanflyLogo} alt="Vacanfly" className="w-20" />
             </Link>
 
           </div>
@@ -121,11 +138,10 @@ const Welcome = () => {
                     {Array.from({ length: totalGuests }).map((_, i) => (
                       <div
                         key={i}
-                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
-                          i < registeredGuests
-                            ? "bg-success text-success-foreground"
-                            : "bg-muted text-muted-foreground"
-                        }`}
+                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${i < registeredGuests
+                          ? "bg-success text-success-foreground"
+                          : "bg-muted text-muted-foreground"
+                          }`}
                       >
                         {i < registeredGuests ? (
                           <CheckCircle2 className="w-6 h-6" />
@@ -242,9 +258,23 @@ const Welcome = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl">
-                👤
-              </div>
+              {hostPhotoUrl ? (
+                <img
+                  src={hostPhotoUrl}
+                  alt={hostName}
+                  className="w-16 h-16 rounded-full object-cover bg-primary/10"
+                  onError={(e) => {
+                    // Si la imagen falla, ocultar y mostrar fallback
+                    const target = e.currentTarget as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              ) : null}
+              {!hostPhotoUrl && (
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl">
+                  👤
+                </div>
+              )}
               <div>
                 <p className="font-semibold">{hostName}</p>
                 <p className="text-sm text-muted-foreground">{t('contact.available')}</p>

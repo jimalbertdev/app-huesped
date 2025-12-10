@@ -64,8 +64,10 @@ class Reservation {
         $result['all_guests_registered'] = $registeredCount >= $result['total_guests'];
 
         // Construir URL de la foto del anfitrión
+        // Nota: En desarrollo (Vite), los archivos de /public se sirven desde la raíz
+        // En producción, también se copian a la raíz del build
         if (!empty($result['host_photo']) && !empty($result['host_document'])) {
-            $result['host_photo_url'] = '/app_huesped/public/anfitrion/' . $result['host_document'] . '/' . $result['host_photo'];
+            $result['host_photo_url'] = '/anfitrion/' . $result['host_document'] . '/' . $result['host_photo'];
         } else {
             $result['host_photo_url'] = null;
         }
@@ -212,7 +214,7 @@ class Reservation {
      */
     public function processHostInfo(&$data) {
         if (!empty($data['host_photo']) && !empty($data['host_document'])) {
-            $data['host_photo_url'] = '/app_huesped/public/anfitrion/' . $data['host_document'] . '/' . $data['host_photo'];
+            $data['host_photo_url'] = '/anfitrion/' . $data['host_document'] . '/' . $data['host_photo'];
         } else {
             $data['host_photo_url'] = null;
         }

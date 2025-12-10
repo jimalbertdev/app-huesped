@@ -42,7 +42,7 @@ try {
 
         if (!empty($youtubeMatches[1])) {
             foreach ($youtubeMatches[1] as $videoId) {
-                $newDescription .= '<div class="video-container mb-4"><iframe width="100%" height="315" src="https://www.youtube.com/embed/' . $videoId . '" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>';
+                $newDescription .= '<div class="video-container mb-4"><iframe width="100%" height="315" src="https://www.youtube-nocookie.com/embed/' . $videoId . '" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>';
                 $hasVideo = true;
             }
         }

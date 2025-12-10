@@ -1013,26 +1013,26 @@ const Register = () => {
                             }}
                             required
                           />
+                          {filteredCountriesNationality.length > 0 && (
+                            <div className="absolute z-20 w-full mt-1 border-2 border-primary/30 rounded-lg max-h-48 overflow-y-auto bg-background shadow-lg">
+                              {filteredCountriesNationality.map((country) => (
+                                <button
+                                  key={country.code}
+                                  type="button"
+                                  className="w-full text-left px-4 py-3 hover:bg-primary/10 hover:text-primary transition-colors border-b border-border last:border-b-0 flex items-center gap-2"
+                                  onClick={() => {
+                                    setNationality(country.code);
+                                    setNationalitySearch(country.name);
+                                    setFilteredCountriesNationality([]);
+                                  }}
+                                >
+                                  <ChevronDown className="w-3 h-3 rotate-[-90deg] text-primary" />
+                                  <span className="font-medium">{country.name}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        {filteredCountriesNationality.length > 0 && (
-                          <div className="absolute z-20 w-full mt-1 border-2 border-primary/30 rounded-lg max-h-48 overflow-y-auto bg-background shadow-lg">
-                            {filteredCountriesNationality.map((country) => (
-                              <button
-                                key={country.code}
-                                type="button"
-                                className="w-full text-left px-4 py-3 hover:bg-primary/10 hover:text-primary transition-colors border-b border-border last:border-b-0 flex items-center gap-2"
-                                onClick={() => {
-                                  setNationality(country.code);
-                                  setNationalitySearch(country.name);
-                                  setFilteredCountriesNationality([]);
-                                }}
-                              >
-                                <ChevronDown className="w-3 h-3 rotate-[-90deg] text-primary" />
-                                <span className="font-medium">{country.name}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="firstName">{t('register.firstNames')} <span className="text-destructive">*</span></Label>
@@ -1154,29 +1154,29 @@ const Register = () => {
                             }}
                             required
                           />
+                          {filteredCountriesResidence.length > 0 && (
+                            <div className="absolute z-20 w-full mt-1 border-2 border-primary/30 rounded-lg max-h-48 overflow-y-auto bg-background shadow-lg">
+                              {filteredCountriesResidence.map((country) => (
+                                <button
+                                  key={country.code}
+                                  type="button"
+                                  className="w-full text-left px-4 py-3 hover:bg-primary/10 hover:text-primary transition-colors border-b border-border last:border-b-0 flex items-center gap-2"
+                                  onClick={() => {
+                                    setResidenceCountry(country.code);
+                                    setResidenceCountrySearch(country.name);
+                                    setFilteredCountriesResidence([]);
+                                    setResidenceMunicipalityCode("");
+                                    setResidenceMunicipalityName("");
+                                    setResidencePostalCode("");
+                                  }}
+                                >
+                                  <ChevronDown className="w-3 h-3 rotate-[-90deg] text-primary" />
+                                  <span className="font-medium">{country.name}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        {filteredCountriesResidence.length > 0 && (
-                          <div className="absolute z-20 w-full mt-1 border-2 border-primary/30 rounded-lg max-h-48 overflow-y-auto bg-background shadow-lg">
-                            {filteredCountriesResidence.map((country) => (
-                              <button
-                                key={country.code}
-                                type="button"
-                                className="w-full text-left px-4 py-3 hover:bg-primary/10 hover:text-primary transition-colors border-b border-border last:border-b-0 flex items-center gap-2"
-                                onClick={() => {
-                                  setResidenceCountry(country.code);
-                                  setResidenceCountrySearch(country.name);
-                                  setFilteredCountriesResidence([]);
-                                  setResidenceMunicipalityCode("");
-                                  setResidenceMunicipalityName("");
-                                  setResidencePostalCode("");
-                                }}
-                              >
-                                <ChevronDown className="w-3 h-3 rotate-[-90deg] text-primary" />
-                                <span className="font-medium">{country.name}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
                       </div>
                       {residenceCountry === 'ES' ? (
                         <>
@@ -1192,30 +1192,30 @@ const Register = () => {
                                 value={municipalitySearch}
                                 onChange={(e) => setMunicipalitySearch(e.target.value)}
                               />
+                              {municipalities.length > 0 && (
+                                <div className="absolute z-20 w-full mt-1 border-2 border-primary/30 rounded-lg max-h-48 overflow-y-auto bg-background shadow-lg">
+                                  {municipalities.map((mun) => (
+                                    <button
+                                      key={mun.code}
+                                      type="button"
+                                      className="w-full text-left px-4 py-3 hover:bg-primary/10 hover:text-primary transition-colors border-b border-border last:border-b-0 flex items-center gap-2"
+                                      onClick={() => {
+                                        setResidenceMunicipalityCode(mun.code);
+                                        setResidenceMunicipalityName(mun.name);
+                                        setResidencePostalCode(""); // Limpiar CP para que usuario seleccione
+                                        setMunicipalitySearch(mun.display_name);
+                                        setMunicipalities([]);
+                                      }}
+                                    >
+                                      <ChevronDown className="w-3 h-3 rotate-[-90deg] text-primary" />
+                                      <span className="font-medium">{mun.display_name}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                             {loadingMunicipalities && (
                               <p className="text-xs text-muted-foreground">{t('register.searching')}</p>
-                            )}
-                            {municipalities.length > 0 && (
-                              <div className="absolute z-20 w-full mt-1 border-2 border-primary/30 rounded-lg max-h-48 overflow-y-auto bg-background shadow-lg">
-                                {municipalities.map((mun) => (
-                                  <button
-                                    key={mun.code}
-                                    type="button"
-                                    className="w-full text-left px-4 py-3 hover:bg-primary/10 hover:text-primary transition-colors border-b border-border last:border-b-0 flex items-center gap-2"
-                                    onClick={() => {
-                                      setResidenceMunicipalityCode(mun.code);
-                                      setResidenceMunicipalityName(mun.name);
-                                      setResidencePostalCode(""); // Limpiar CP para que usuario seleccione
-                                      setMunicipalitySearch(mun.display_name);
-                                      setMunicipalities([]);
-                                    }}
-                                  >
-                                    <ChevronDown className="w-3 h-3 rotate-[-90deg] text-primary" />
-                                    <span className="font-medium">{mun.display_name}</span>
-                                  </button>
-                                ))}
-                              </div>
                             )}
                           </div>
                           <div className="space-y-2">
@@ -1236,29 +1236,29 @@ const Register = () => {
                                 }}
                                 disabled={!residenceMunicipalityCode || loadingPostalCodes}
                               />
+                              {filteredPostalCodes.length > 0 && postalCodeSearch && (
+                                <div className="absolute z-20 w-full mt-1 border-2 border-primary/30 rounded-lg max-h-48 overflow-y-auto bg-background shadow-lg">
+                                  <p className="text-xs text-muted-foreground px-4 py-2 bg-muted/50 border-b border-border sticky top-0">
+                                    {filteredPostalCodes.length} {t('register.availablePostalCodes')}
+                                  </p>
+                                  {filteredPostalCodes.map((pc) => (
+                                    <button
+                                      key={pc.value}
+                                      type="button"
+                                      className="w-full text-left px-4 py-3 hover:bg-primary/10 hover:text-primary transition-colors border-b border-border last:border-b-0 flex items-center gap-2"
+                                      onClick={() => {
+                                        setResidencePostalCode(pc.value);
+                                        setPostalCodeSearch("");
+                                        setFilteredPostalCodes([]);
+                                      }}
+                                    >
+                                      <ChevronDown className="w-3 h-3 rotate-[-90deg] text-primary" />
+                                      <span className="font-medium">{pc.label}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                            {filteredPostalCodes.length > 0 && postalCodeSearch && (
-                              <div className="absolute z-20 w-full mt-1 border-2 border-primary/30 rounded-lg max-h-48 overflow-y-auto bg-background shadow-lg">
-                                <p className="text-xs text-muted-foreground px-4 py-2 bg-muted/50 border-b border-border sticky top-0">
-                                  {filteredPostalCodes.length} {t('register.availablePostalCodes')}
-                                </p>
-                                {filteredPostalCodes.map((pc) => (
-                                  <button
-                                    key={pc.value}
-                                    type="button"
-                                    className="w-full text-left px-4 py-3 hover:bg-primary/10 hover:text-primary transition-colors border-b border-border last:border-b-0 flex items-center gap-2"
-                                    onClick={() => {
-                                      setResidencePostalCode(pc.value);
-                                      setPostalCodeSearch("");
-                                      setFilteredPostalCodes([]);
-                                    }}
-                                  >
-                                    <ChevronDown className="w-3 h-3 rotate-[-90deg] text-primary" />
-                                    <span className="font-medium">{pc.label}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            )}
                             <p className="text-xs text-muted-foreground">
                               {!residenceMunicipalityCode
                                 ? t('register.selectMunicipalityFirst')
