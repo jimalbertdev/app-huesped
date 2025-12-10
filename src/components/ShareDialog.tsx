@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useReservationParams } from "@/hooks/useReservationParams";
@@ -43,24 +43,27 @@ export const ShareDialog = ({ open, onOpenChange }: ShareDialogProps) => {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t('share.title')}</DialogTitle>
+          <DialogDescription>
+            {t('share.message')}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full justify-start gap-2"
             onClick={handleCopyLink}
           >
             📋 {t('share.copy')}
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full justify-start gap-2"
             onClick={handleWhatsApp}
           >
             💬 {t('share.whatsapp')}
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full justify-start gap-2"
             onClick={handleEmail}
           >

@@ -24,6 +24,7 @@ import {
   Plus,
   Minus,
   FileText,
+  Link as LinkIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
@@ -151,7 +152,7 @@ const Dashboard = () => {
   // Door info state
   const [doorInfo, setDoorInfo] = useState<any>(null);
   const [doorInfoLoaded, setDoorInfoLoaded] = useState(false);
-
+  // console.log(doorInfo);
   // Historial de aperturas
   const [unlockHistory, setUnlockHistory] = useState<any[]>([]);
 
@@ -837,6 +838,88 @@ const Dashboard = () => {
             </div>
           </Card>
 
+          {/* Card 0: Gestión de Huéspedes */}
+          <Card className="p-6 shadow-card hover-lift">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center">
+                  <User className="w-6 h-6 text-blue-600" />
+                </div>
+                <h2 className="text-xl font-bold">{t('dashboard.guestManagement')}</h2>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">{t('dashboard.registeredGuests')}</span>
+                  <span className="font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                    {registeredGuests} / {totalGuests}
+                  </span>
+                </div>
+
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {/* Huéspedes Registrados */}
+                  {guests.map((guest, index) => (
+                    <div
+                      key={guest.id || index}
+                      className={`flex items-center justify-between p-2 rounded-lg border ${guest.is_responsible
+                        ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-500/50'
+                        : 'bg-muted/40 border-border/50'
+                        }`}
+                    >
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${guest.is_responsible ? 'bg-blue-500/10' : 'bg-green-500/10'
+                          }`}>
+                          <div className={`w-2 h-2 rounded-full ${guest.is_responsible ? 'bg-blue-500' : 'bg-green-500'
+                            }`} />
+                        </div>
+                        <div className="truncate">
+                          <p className={`font-medium text-sm truncate ${guest.is_responsible ? 'text-blue-700 dark:text-blue-300' : ''
+                            }`}>
+                            {guest.first_name} {guest.last_name}
+                          </p>
+                          {!!guest.is_responsible && (
+                            <p className="text-[10px] text-blue-600 dark:text-blue-400 uppercase tracking-wider font-bold">
+                              {t('preferences.responsible')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Slots Pendientes */}
+                  {Array.from({ length: Math.max(0, totalGuests - guests.length) }).map((_, i) => (
+                    <Link
+                      key={`pending-${i}`}
+                      to={buildPathWithReservation("/register")}
+                      className="block"
+                    >
+                      <div className="flex items-center justify-between p-2 border border-dashed border-muted-foreground/30 rounded-lg bg-muted/5 hover:bg-muted/20 transition-colors">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+                            <span className="text-xs text-muted-foreground">?</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground italic">
+                            {t('dashboard.pendingGuest')} {guests.length + i + 1}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 border-primary/20 hover:bg-primary/5 text-primary"
+                  onClick={() => setShowShareDialog(true)}
+                >
+                  <LinkIcon className="w-4 h-4" />
+                  {t('dashboard.copyLink')}
+                </Button>
+              </div>
+            </div>
+          </Card>
+
           {/* Card 2: Preferencias de Estancia */}
           <Card
             className={`p-6 shadow-card hover-lift ${!hasResponsibleGuest ? "relative overflow-hidden" : ""
@@ -1385,6 +1468,9 @@ const Dashboard = () => {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="sr-only">Confirmar apertura de puerta</DialogTitle>
+            <DialogDescription className="sr-only">
+              Confirma que deseas realizar la apertura de la puerta seleccionada.
+            </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center space-y-6 py-4">
             {/* Icono de interrogación */}
@@ -1397,6 +1483,14 @@ const Dashboard = () => {
               <p className="text-xl font-semibold text-foreground">
                 {selectedDoor === "portal" ? "🏢 ¡Perfecto! Vamos a abrir el portal" : "🏠 ¡Perfecto! Vamos a abrir el alojamiento"}
               </p>
+              {doorInfo && (
+                <div
+                  className="text-sm text-muted-foreground mt-2 text-justify"
+                  dangerouslySetInnerHTML={{
+                    __html: selectedDoor === "portal" ? doorInfo.portal_info : doorInfo.casa_info
+                  }}
+                />
+              )}
             </div>
 
             {/* Botones */}
@@ -1425,6 +1519,9 @@ const Dashboard = () => {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="sr-only">Confirmar entrada al alojamiento</DialogTitle>
+            <DialogDescription className="sr-only">
+              Confirma que has podido entrar correctamente al alojamiento.
+            </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center space-y-6 py-4">
             {/* Icono de casa */}
@@ -1468,6 +1565,9 @@ const Dashboard = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('contact.title')}</DialogTitle>
+            <DialogDescription>
+              {t('contact.available')}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex items-center gap-3">

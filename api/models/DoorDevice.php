@@ -49,7 +49,7 @@ class DoorDevice {
                 INNER JOIN raixer_doors RDO ON RD.deviceId = RDO.deviceId
                 WHERE RD._id = :lock_id
             ";
-
+           // echo $query;
             $stmt = $this->db->prepare($query);
             $stmt->execute(['lock_id' => $lockId]);
             $doors = $stmt->fetchAll(PDO::FETCH_ASSOC);

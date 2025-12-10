@@ -24,6 +24,10 @@ const translations: Record<Language, Record<string, string>> = {
     'welcome.contact': 'Contactar',
 
     // Dashboard - Reservation Card
+    'dashboard.guestManagement': 'Gestión de Huéspedes',
+    'dashboard.registeredGuests': 'Huéspedes registrados',
+    'dashboard.pendingGuest': 'Huésped pendiente',
+    'dashboard.copyLink': 'Copiar enlace',
     'dashboard.myStay': 'Mi Estancia',
     'dashboard.myReservation': 'Mi Reserva',
     'dashboard.accommodation': 'Alojamiento',
@@ -401,6 +405,10 @@ const translations: Record<Language, Record<string, string>> = {
     'welcome.contact': 'Contact',
 
     // Dashboard - Reservation Card
+    'dashboard.guestManagement': 'Guest Management',
+    'dashboard.registeredGuests': 'Registered guests',
+    'dashboard.pendingGuest': 'Pending guest',
+    'dashboard.copyLink': 'Copy link',
     'dashboard.myStay': 'My Stay',
     'dashboard.myReservation': 'My Reservation',
     'dashboard.accommodation': 'Accommodation',
@@ -779,6 +787,10 @@ const translations: Record<Language, Record<string, string>> = {
     'welcome.contact': 'Contactar',
 
     // Dashboard - Reservation Card
+    'dashboard.guestManagement': 'Gestió d\'Hostes',
+    'dashboard.registeredGuests': 'Hostes registrats',
+    'dashboard.pendingGuest': 'Hoste pendent',
+    'dashboard.copyLink': 'Copiar enllaç',
     'dashboard.myStay': 'La Meva Estada',
     'dashboard.myReservation': 'La Meva Reserva',
     'dashboard.accommodation': 'Allotjament',
@@ -1148,6 +1160,10 @@ const translations: Record<Language, Record<string, string>> = {
     'welcome.contact': 'Contacter',
 
     // Dashboard - Reservation Card
+    'dashboard.guestManagement': 'Gestion des Invités',
+    'dashboard.registeredGuests': 'Invités enregistrés',
+    'dashboard.pendingGuest': 'Invité en attente',
+    'dashboard.copyLink': 'Copier le lien',
     'dashboard.myStay': 'Mon Séjour',
     'dashboard.myReservation': 'Ma Réservation',
     'dashboard.accommodation': 'Hébergement',
@@ -1510,6 +1526,10 @@ const translations: Record<Language, Record<string, string>> = {
     'welcome.contact': 'Kontakt',
 
     // Dashboard - Reservation Card
+    'dashboard.guestManagement': 'Gästemanagement',
+    'dashboard.registeredGuests': 'Registrierte Gäste',
+    'dashboard.pendingGuest': 'Ausstehender Gast',
+    'dashboard.copyLink': 'Link kopieren',
     'dashboard.myStay': 'Mein Aufenthalt',
     'dashboard.myReservation': 'Meine Reservierung',
     'dashboard.accommodation': 'Unterkunft',
@@ -1807,6 +1827,10 @@ const translations: Record<Language, Record<string, string>> = {
     'welcome.contact': 'Contact',
 
     // Dashboard - Reservation Card
+    'dashboard.guestManagement': 'Gastenbeheer',
+    'dashboard.registeredGuests': 'Geregistreerde gasten',
+    'dashboard.pendingGuest': 'In afwachting van gast',
+    'dashboard.copyLink': 'Link kopiëren',
     'dashboard.myStay': 'Mijn Verblijf',
     'dashboard.myReservation': 'Mijn Reservering',
     'dashboard.accommodation': 'Accommodatie',

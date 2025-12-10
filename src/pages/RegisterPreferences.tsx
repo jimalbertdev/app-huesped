@@ -3,6 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowRight, ArrowLeft, Plus, Minus, AlertCircle } from "lucide-react";
@@ -242,14 +249,26 @@ const RegisterPreferences = () => {
                 <Label htmlFor="arrivalTime">
                   {t('preferences.arrivalTime')}
                 </Label>
-                <Input
-                  id="arrivalTime"
-                  type="time"
+                <Select
                   value={estimatedArrivalTime}
-                  onChange={(e) => setEstimatedArrivalTime(e.target.value)}
-                  className="h-12 text-base"
-                  placeholder="15:00"
-                />
+                  onValueChange={setEstimatedArrivalTime}
+                >
+                  <SelectTrigger className="h-12 text-base">
+                    <SelectValue placeholder="--:--" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {Array.from({ length: 48 }).map((_, i) => {
+                      const hour = Math.floor(i / 2);
+                      const minute = i % 2 === 0 ? '00' : '30';
+                      const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+                      return (
+                        <SelectItem key={time} value={time}>
+                          {time}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
                 <p className="text-sm text-muted-foreground">
                   {t('preferences.arrivalHelp')}
                 </p>

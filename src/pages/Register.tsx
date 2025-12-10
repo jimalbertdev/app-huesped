@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import { countryService, municipalityService, postalCodeService, documentScanSer
 import type { Country, Municipality } from "@/schemas/guestSchema";
 import { PhoneCountryCodeSelect } from "@/components/PhoneCountryCodeSelect";
 import FloatingActionBar from "@/components/FloatingActionBar";
+import { useClickOutside } from "@/hooks/useClickOutside";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -89,6 +90,36 @@ const Register = () => {
   const [residenceCountryNotFound, setResidenceCountryNotFound] = useState(false);
   const [municipalityNotFound, setMunicipalityNotFound] = useState(false);
   const [postalCodeNotFound, setPostalCodeNotFound] = useState(false);
+
+  // Refs for click outside handling
+  const nationalityRef = useRef<HTMLDivElement>(null);
+  const residenceCountryRef = useRef<HTMLDivElement>(null);
+  const municipalityRef = useRef<HTMLDivElement>(null);
+  const postalCodeRef = useRef<HTMLDivElement>(null);
+
+  useClickOutside(nationalityRef, () => {
+    if (filteredCountriesNationality.length > 0) {
+      setFilteredCountriesNationality([]);
+    }
+  });
+
+  useClickOutside(residenceCountryRef, () => {
+    if (filteredCountriesResidence.length > 0) {
+      setFilteredCountriesResidence([]);
+    }
+  });
+
+  useClickOutside(municipalityRef, () => {
+    if (municipalities.length > 0) {
+      setMunicipalities([]);
+    }
+  });
+
+  useClickOutside(postalCodeRef, () => {
+    if (filteredPostalCodes.length > 0) {
+      setFilteredPostalCodes([]);
+    }
+  });
 
   // Cargar países al montar el componente
   useEffect(() => {
@@ -184,6 +215,13 @@ const Register = () => {
 
   // Buscar municipios con debounce
   useEffect(() => {
+    // Si ya hay un municipio seleccionado, no buscar de nuevo
+    if (residenceMunicipalityCode) {
+      setMunicipalities([]);
+      setLoadingMunicipalities(false);
+      return;
+    }
+
     if (residenceCountry === 'ES' && municipalitySearch.length >= 2) {
       const timer = setTimeout(async () => {
         setLoadingMunicipalities(true);
@@ -204,10 +242,11 @@ const Register = () => {
 
       return () => clearTimeout(timer);
     } else {
+      // Si el usuario borra o escribe menos de 2 caracteres, limpiar
       setMunicipalities([]);
       setMunicipalityNotFound(false);
     }
-  }, [municipalitySearch, residenceCountry]);
+  }, [municipalitySearch, residenceCountry, residenceMunicipalityCode]);
 
   // Cargar códigos postales cuando se selecciona un municipio español
   useEffect(() => {
@@ -240,6 +279,13 @@ const Register = () => {
 
   // Filtrar códigos postales por búsqueda
   useEffect(() => {
+    // Si ya tenemos un valor seleccionado y coincide con la búsqueda, no mostrar lista
+    const isSelected = postalCodes.some(pc => pc.value === residencePostalCode && pc.label === postalCodeSearch);
+    if (isSelected) {
+      setFilteredPostalCodes([]);
+      return;
+    }
+
     if (postalCodeSearch) {
       const filtered = postalCodes.filter(pc =>
         pc.value.includes(postalCodeSearch)
@@ -248,13 +294,22 @@ const Register = () => {
       // Marcar error si no hay resultados y hay texto de búsqueda
       setPostalCodeNotFound(filtered.length === 0 && postalCodeSearch.length > 0);
     } else {
-      setFilteredPostalCodes(postalCodes);
+      setFilteredPostalCodes([]); // No mostrar nada si no hay búsqueda (salvo focus manual)
       setPostalCodeNotFound(false);
     }
-  }, [postalCodeSearch, postalCodes]);
+  }, [postalCodeSearch, postalCodes, residencePostalCode]);
 
   // Filtrar países por búsqueda - Nacionalidad
   useEffect(() => {
+    // Si ya tenemos un país seleccionado y el nombre coincide, no volver a abrir la lista
+    if (nationality) {
+      const selectedCountry = countries.find(c => c.code === nationality);
+      if (selectedCountry && selectedCountry.name === nationalitySearch) {
+        setFilteredCountriesNationality([]);
+        return;
+      }
+    }
+
     if (nationalitySearch.length >= 2) {
       const filtered = countries.filter(country =>
         country.name.toLowerCase().includes(nationalitySearch.toLowerCase()) ||
@@ -271,6 +326,15 @@ const Register = () => {
 
   // Filtrar países por búsqueda - País de Residencia
   useEffect(() => {
+    // Si ya tenemos un país seleccionado y el nombre coincide, no volver a abrir la lista
+    if (residenceCountry) {
+      const selectedCountry = countries.find(c => c.code === residenceCountry);
+      if (selectedCountry && selectedCountry.name === residenceCountrySearch) {
+        setFilteredCountriesResidence([]);
+        return;
+      }
+    }
+
     if (residenceCountrySearch.length >= 2) {
       const filtered = countries.filter(country =>
         country.name.toLowerCase().includes(residenceCountrySearch.toLowerCase()) ||
@@ -532,21 +596,52 @@ const Register = () => {
       return;
     }
 
+    // Helper para validación de campos de texto (nombres, apellidos, dirección)
+    const validateTextField = (value: string, fieldName: string, isSurname: boolean = false): boolean => {
+      // 1. Longitud mínima de 2 caracteres
+      if (value.length < 2) {
+        focusField(fieldName, "Debe tener al menos 2 caracteres");
+        return false;
+      }
+
+      // 2. Caracteres restringidos (., -, *)
+      if (/[\.\-\*]/.test(value)) {
+        focusField(fieldName, "No se permiten caracteres especiales (., -, *)");
+        return false;
+      }
+
+      // 3. Validaciones específicas de apellido
+      if (isSurname) {
+        const lowerValue = value.toLowerCase();
+        if (lowerValue === "de" || lowerValue === "del") {
+          focusField(fieldName, "Apellido inválido (no puede ser solo 'de' o 'del')");
+          return false;
+        }
+      }
+
+      return true;
+    };
+
     if (!firstName) {
       focusField("firstName", "Debes ingresar el nombre");
       return;
     }
+    if (!validateTextField(firstName, "firstName")) return;
 
     if (!lastName) {
       focusField("lastName", "Debes ingresar el primer apellido");
       return;
     }
+    if (!validateTextField(lastName, "lastName", true)) return;
 
     // Validaciones condicionales - Solo DNI requiere segundo apellido
     if (documentType === 'DNI' && !secondLastName) {
       focusField("secondLastName", "El segundo apellido es obligatorio para DNI español");
       return;
     }
+
+    // Si se ha ingresado segundo apellido, validarlo
+    if (secondLastName && !validateTextField(secondLastName, "secondLastName", true)) return;
 
     if (!birthDate) {
       focusField("birthDate", "Debes ingresar la fecha de nacimiento");
@@ -586,6 +681,7 @@ const Register = () => {
       focusField("residenceAddress", "Debes ingresar la dirección completa");
       return;
     }
+    if (!validateTextField(residenceAddress, "residenceAddress")) return;
 
     // Validaciones de contacto
     if (!phoneCountryCode) {
@@ -997,7 +1093,7 @@ const Register = () => {
                       👤 {t('register.personalData')}
                     </h3>
                     <div className="grid md:grid-cols-2 gap-4 ml-10">
-                      <div className="space-y-2">
+                      <div className="space-y-2" ref={nationalityRef}>
                         <Label htmlFor="nationality">{t('register.nationality')} <span className="text-destructive">*</span></Label>
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
@@ -1009,7 +1105,19 @@ const Register = () => {
                             value={nationalitySearch || countries.find(c => c.code === nationality)?.name || ""}
                             onChange={(e) => {
                               setNationalitySearch(e.target.value);
-                              if (!e.target.value) setNationality("");
+                              // Si escribe algo nuevo, reseteamos la selección para permitir nueva búsqueda
+                              if (nationality) setNationality("");
+                            }}
+                            onFocus={() => {
+                              if (nationalitySearch.length >= 2) {
+                                // Trigger filter logic again or just let the effect handle it if search changes
+                                // Ideally we want to show list if there is a search term
+                                const filtered = countries.filter(country =>
+                                  country.name.toLowerCase().includes(nationalitySearch.toLowerCase()) ||
+                                  country.code.toLowerCase().includes(nationalitySearch.toLowerCase())
+                                );
+                                setFilteredCountriesNationality(filtered);
+                              }
                             }}
                             required
                           />
@@ -1133,7 +1241,7 @@ const Register = () => {
                       🏠 {t('register.residenceData')}
                     </h3>
                     <div className="grid md:grid-cols-2 gap-4 ml-10">
-                      <div className="space-y-2">
+                      <div className="space-y-2" ref={residenceCountryRef}>
                         <Label htmlFor="residenceCountry">{t('register.residenceCountry')} <span className="text-destructive">*</span></Label>
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
@@ -1145,11 +1253,21 @@ const Register = () => {
                             value={residenceCountrySearch || countries.find(c => c.code === residenceCountry)?.name || ""}
                             onChange={(e) => {
                               setResidenceCountrySearch(e.target.value);
-                              if (!e.target.value) {
+                              // Si escribe, reseteamos selección
+                              if (residenceCountry) {
                                 setResidenceCountry("");
                                 setResidenceMunicipalityCode("");
                                 setResidenceMunicipalityName("");
                                 setResidencePostalCode("");
+                              }
+                            }}
+                            onFocus={() => {
+                              if (residenceCountrySearch.length >= 2) {
+                                const filtered = countries.filter(country =>
+                                  country.name.toLowerCase().includes(residenceCountrySearch.toLowerCase()) ||
+                                  country.code.toLowerCase().includes(residenceCountrySearch.toLowerCase())
+                                );
+                                setFilteredCountriesResidence(filtered);
                               }
                             }}
                             required
@@ -1180,7 +1298,7 @@ const Register = () => {
                       </div>
                       {residenceCountry === 'ES' ? (
                         <>
-                          <div className="space-y-2">
+                          <div className="space-y-2" ref={municipalityRef}>
                             <Label htmlFor="municipalitySearch">{t('register.municipality')} <span className="text-destructive">*</span></Label>
                             <div className="relative">
                               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
@@ -1190,7 +1308,15 @@ const Register = () => {
                                 placeholder={t('register.searchMunicipality')}
                                 className={`h-12 pl-10 pr-10 ${municipalityNotFound ? 'border-destructive' : ''}`}
                                 value={municipalitySearch}
-                                onChange={(e) => setMunicipalitySearch(e.target.value)}
+                                onChange={(e) => {
+                                  setMunicipalitySearch(e.target.value);
+                                  // Si el usuario modifica el texto, resetear la selección para permitir búsqueda
+                                  if (residenceMunicipalityCode) {
+                                    setResidenceMunicipalityCode("");
+                                    setResidenceMunicipalityName("");
+                                    setResidencePostalCode("");
+                                  }
+                                }}
                               />
                               {municipalities.length > 0 && (
                                 <div className="absolute z-20 w-full mt-1 border-2 border-primary/30 rounded-lg max-h-48 overflow-y-auto bg-background shadow-lg">
@@ -1218,7 +1344,7 @@ const Register = () => {
                               <p className="text-xs text-muted-foreground">{t('register.searching')}</p>
                             )}
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-2" ref={postalCodeRef}>
                             <Label htmlFor="residencePostalCode">{t('register.postalCode')} <span className="text-destructive">*</span></Label>
                             <div className="relative">
                               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
@@ -1230,13 +1356,17 @@ const Register = () => {
                                 value={postalCodeSearch || residencePostalCode}
                                 onChange={(e) => {
                                   setPostalCodeSearch(e.target.value);
-                                  if (!e.target.value) {
-                                    setResidencePostalCode("");
+                                  // Resetear si cambia el texto
+                                  if (residencePostalCode) setResidencePostalCode("");
+                                }}
+                                onFocus={() => {
+                                  if (filteredPostalCodes.length === 0 && postalCodes.length > 0) {
+                                    setFilteredPostalCodes(postalCodes);
                                   }
                                 }}
                                 disabled={!residenceMunicipalityCode || loadingPostalCodes}
                               />
-                              {filteredPostalCodes.length > 0 && postalCodeSearch && (
+                              {filteredPostalCodes.length > 0 && (postalCodeSearch || residencePostalCode == "" || true) && (
                                 <div className="absolute z-20 w-full mt-1 border-2 border-primary/30 rounded-lg max-h-48 overflow-y-auto bg-background shadow-lg">
                                   <p className="text-xs text-muted-foreground px-4 py-2 bg-muted/50 border-b border-border sticky top-0">
                                     {filteredPostalCodes.length} {t('register.availablePostalCodes')}
