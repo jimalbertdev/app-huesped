@@ -1,7 +1,7 @@
 <?php
 /**
  * API Endpoint para obtener información del alojamiento
- * NOTA: Actualizado para usar nuevas tablas (alojamiento, informacion_externa_alojamiento, informacion_turistica_alojamiento)
+ * NOTA: Actualizado para usar nuevas tablas (alojamiento, informacion_externa_alojamiento, guia_local, guia_local_subcategoria)
  *
  * Endpoints:
  * - GET /api/accommodation/{accommodation_id} - Obtener toda la información del alojamiento
@@ -99,31 +99,9 @@ try {
         // Obtener guía local
         // ============================================
         if ($endpoint === 'all' || $endpoint === 'guide') {
-            // Obtener items de guía local (agrupados por categoría = nombre)
-            $guideItems = $localGuideModel->getByAccommodation($accommodationId);
-
-            // Agrupar por nombre (categoría)
-            $guideGrouped = [];
-            foreach ($guideItems as $item) {
-                $category = $item['category'];
-                if (!isset($guideGrouped[$category])) {
-                    $guideGrouped[$category] = [
-                        'id' => $category,
-                        'title' => $category, // nombre es la categoría
-                        'items' => []
-                    ];
-                }
-
-                $guideGrouped[$category]['items'][] = [
-                    'id' => $item['id'],
-                    'name' => $item['name'],
-                    'description' => $item['description'],
-                    'icon' => $item['icon']
-                ];
-            }
-
-            // Convertir a array indexado
-            $result['guide'] = array_values($guideGrouped);
+            // Obtener items de guía local agrupados por categoría
+            // El modelo ya maneja la lógica de agrupación y jerarquía
+            $result['guide'] = $localGuideModel->getGroupedByCategory($accommodationId);
         }
 
         Response::success($result, 'Información del alojamiento obtenida correctamente');

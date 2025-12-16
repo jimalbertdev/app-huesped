@@ -88,6 +88,22 @@ const Dashboard = () => {
   const hostPhotoUrl = reservationData?.host_photo_url;
   const accommodationName = reservationData?.accommodation_name || '?';
 
+  // Configuración unificada de la URL de la API
+  // Prioridad: 1. Variable de entorno, 2. Fallback a producción
+  const API_URL = import.meta.env.VITE_API_URL || 'https://extranetmoon.vacanfly.com';
+
+  // Helper para construir URLs de imágenes correctamente (evitando dobles slashes)
+  const getImageUrl = (path: string | undefined | null) => {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+
+    // Asegurar que no haya doble slash al concatenar
+    const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
+    return `${baseUrl}${cleanPath}`;
+  };
+
   const [isRegistered] = useState(true);
   const allGuestsRegistered = totalGuests > 0 && registeredGuests === totalGuests;
   const hasResponsibleGuest = guests.some(guest => guest.is_responsible);
@@ -818,9 +834,7 @@ const Dashboard = () => {
                 {/* Descargar Contrato */}
                 {reservationData?.contract_path && (
                   <a
-                    href={reservationData.contract_path.startsWith('http')
-                      ? reservationData.contract_path
-                      : `${import.meta.env.VITE_API_URL || 'http://localhost.local'}${reservationData.contract_path}`}
+                    href={getImageUrl(reservationData.contract_path)}
                     target="_blank"
                     rel="noopener noreferrer"
                     download
@@ -1121,7 +1135,7 @@ const Dashboard = () => {
               <div className="flex items-center gap-3">
                 {hostPhotoUrl ? (
                   <img
-                    src={`${import.meta.env.VITE_API_URL || 'https://extranetmoon.vacanfly.com/'}${hostPhotoUrl}`}
+                    src={getImageUrl(hostPhotoUrl)}
                     alt={hostName}
                     className="w-14 h-14 rounded-full object-cover border-2 border-secondary"
                   />
@@ -1284,19 +1298,44 @@ const Dashboard = () => {
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>
-                        <div className="space-y-2">
-                          {category.items && category.items.length > 0 ? (
-                            category.items.map((item: any) => (
-                              <div key={item.id} className="p-2 bg-muted/50 rounded-lg text-left">
-                                {item.description && (
-                                  <div
-                                    className="text-xs text-muted-foreground prose prose-xs max-w-none [&_h2]:font-semibold [&_h3]:font-semibold [&_h4]:font-semibold text-left [&_*]:!text-left"
-                                    dangerouslySetInnerHTML={{ __html: item.description }}
-                                  />
-                                )}
-                              </div>
-                            ))
-                          ) : (
+                        <div className="space-y-4">
+                          {/* Items directos (si los hay) */}
+                          {category.items && category.items.length > 0 && (
+                            <div className="space-y-2">
+                              {category.items.map((item: any) => (
+                                <div key={item.id} className="p-2 bg-muted/50 rounded-lg text-left">
+                                  {item.description && (
+                                    <div
+                                      className="text-xs text-muted-foreground prose prose-xs max-w-none [&_h2]:font-semibold [&_h3]:font-semibold [&_h4]:font-semibold text-left [&_*]:!text-left"
+                                      dangerouslySetInnerHTML={{ __html: item.description }}
+                                    />
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Subcategorías (Jerarquía) */}
+                          {category.subcategories && category.subcategories.map((sub: any) => (
+                            <div key={sub.id} className="space-y-2 pt-2 first:pt-0">
+                              <h4 className="font-semibold text-sm text-primary/80 border-b pb-1 mb-2">
+                                {sub.title}
+                              </h4>
+                              {sub.items && sub.items.map((item: any) => (
+                                <div key={item.id} className="p-2 bg-muted/50 rounded-lg text-left">
+                                  {item.description && (
+                                    <div
+                                      className="text-xs text-muted-foreground prose prose-xs max-w-none [&_h2]:font-semibold [&_h3]:font-semibold [&_h4]:font-semibold text-left [&_*]:!text-left"
+                                      dangerouslySetInnerHTML={{ __html: item.description }}
+                                    />
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+
+                          {/* Mensaje vacio si no hay nada */}
+                          {(!category.items?.length && !category.subcategories?.length) && (
                             <p className="text-xs text-muted-foreground">No hay información disponible</p>
                           )}
                         </div>
@@ -1573,7 +1612,7 @@ const Dashboard = () => {
             <div className="flex items-center gap-3">
               {hostPhotoUrl ? (
                 <img
-                  src={`${import.meta.env.VITE_API_URL || 'http://localhost.local'}${hostPhotoUrl}`}
+                  src={getImageUrl(hostPhotoUrl)}
                   alt={hostName}
                   className="w-16 h-16 rounded-full object-cover border-2 border-primary/20"
                 />

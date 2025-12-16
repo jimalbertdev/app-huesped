@@ -10,7 +10,9 @@ require_once __DIR__ . '/../api/config/database.php';
 require_once __DIR__ . '/../api/includes/Database.php';
 
 // Verificar si es dry-run
-$dryRun = in_array('--dry-run', $argv);
+$isCli = (php_sapi_name() === 'cli');
+$args = $isCli ? $argv : [];
+$dryRun = in_array('--dry-run', $args) || (isset($_GET['dry-run']) && $_GET['dry-run'] == '1');
 
 echo "\n===========================================\n";
 echo "MIGRACIÓN: Separar registros de guía local\n";
