@@ -55,6 +55,7 @@ class LocalGuide {
                     COALESCE(parent.nombre, sc.nombre) ASC,
                     CASE WHEN parent.id IS NOT NULL THEN sc.orden ELSE 0 END ASC, -- Orden interno (Subcategorias)
                     sc.nombre ASC,
+                    gl.orden ASC,
                     gl.nombre ASC";
 
         $rows = $this->db->query($sql, [$accommodation_id]);
@@ -129,7 +130,8 @@ class LocalGuide {
         // Implementación básica anterior
          $sql = "SELECT gl.*, sc.nombre as category FROM guia_local gl 
                  LEFT JOIN guia_local_subcategoria sc ON gl.id_subcategoria = sc.id
-                 WHERE gl.id_alojamiento = ?";
+                 WHERE gl.id_alojamiento = ?
+                 ORDER BY gl.orden ASC, gl.nombre ASC";
          if ($category_id) {
              $sql .= " AND gl.id_subcategoria = ?";
              return $this->db->query($sql, [$accommodation_id, $category_id]);

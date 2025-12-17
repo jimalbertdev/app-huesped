@@ -59,6 +59,8 @@ try {
         
         $currentParentId = null;
         $currentSubId = null;
+        $itemOrder = 0; // Orden de items dentro de la categoría actual
+
         
         $currentItemName = null;
         $currentItemDesc = "";
@@ -73,7 +75,8 @@ try {
             if (mb_strpos($line, '❖') !== false) {
                 // Guardar item anterior
                 if ($currentItemName) {
-                    saveItem($db, $accommodationId, $currentItemName, $currentItemDesc, ($currentSubId ?: $currentParentId), $dryRun);
+                    $itemOrder++;
+                    saveItem($db, $accommodationId, $currentItemName, $currentItemDesc, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
                 }
                 
                 // Nuevo item
@@ -138,7 +141,10 @@ try {
                 } else if (preg_match('/^[A-ZÁÉÍÓÚÑ\s,]+$/u', $line) && strlen($line) > 3 && !strpos($line, ':')) {
                      // Parece un nuevo Parent Category (ALL CAPS)
                      // Guardar item y cerrar
-                     saveItem($db, $accommodationId, $currentItemName, $currentItemDesc, ($currentSubId ?: $currentParentId), $dryRun);
+                     if ($currentItemName) {
+                         $itemOrder++;
+                         saveItem($db, $accommodationId, $currentItemName, $currentItemDesc, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
+                     }
                      $currentItemName = null;
                      
                      // Procesar como Parent
@@ -148,6 +154,7 @@ try {
                      
                      $currentParentId = findOrCreateCategory($db, $catName, null, $categoryCache, $globalOrder, $dryRun);
                      $currentSubId = null; // Reset sub
+                     $itemOrder = 0; // Reset item order
                 } else if (preg_match('/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ\s]+$/u', $line) && strlen($line) < 50 && !strpos($line, ':')) {
                      // Parece una Subcategoría (Title Case, corta)
                      // Pero cuidado con lineas de descripción que coincidan.
@@ -158,11 +165,15 @@ try {
                          $currentItemDesc .= $line . "<br>";
                      } else {
                          // Asumir que es nueva subcategoría
-                         saveItem($db, $accommodationId, $currentItemName, $currentItemDesc, ($currentSubId ?: $currentParentId), $dryRun);
+                         if ($currentItemName) {
+                             $itemOrder++;
+                             saveItem($db, $accommodationId, $currentItemName, $currentItemDesc, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
+                         }
                          $currentItemName = null;
                          
                          $catName = trim($line);
                          $currentSubId = findOrCreateCategory($db, $catName, $currentParentId, $categoryCache, $globalOrder, $dryRun);
+                         $itemOrder = 0; // Reset item order
                      }
                 } else {
                      // Línea normal de descripción
@@ -182,6 +193,7 @@ try {
                  
                  $currentParentId = findOrCreateCategory($db, $catName, null, $categoryCache, $globalOrder, $dryRun);
                  $currentSubId = null;
+                 $itemOrder = 0;
                  echo "    [PADRE] $catName (ID: $currentParentId)\n";
             }
             // Subcategory (Mixed Case)
@@ -198,7 +210,8 @@ try {
         
         // Guardar último item
         if ($currentItemName) {
-            saveItem($db, $accommodationId, $currentItemName, $currentItemDesc, ($currentSubId ?: $currentParentId), $dryRun);
+            $itemOrder++;
+            saveItem($db, $accommodationId, $currentItemName, $currentItemDesc, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
         }
         
     }
@@ -258,14 +271,14 @@ function findOrCreateCategory($db, $name, $parentId, &$cache, &$order, $dryRun) 
     }
 }
 
-function saveItem($db, $accId, $name, $desc, $catId, $dryRun) {
+function saveItem($db, $accId, $name, $desc, $catId, $dryRun, $order = 0) {
     if (!$name || !$catId) return;
     
     // Limpiar nombre de caracteres extraños (espacios duros)
     $name = trim(preg_replace('/\s+/', ' ', $name));
     
     if ($dryRun) {
-        echo "      + ITEM: $name (CatID: $catId)\n";
+        echo "      + ITEM: $name (CatID: $catId, Order: $order)\n";
         return;
     }
     
@@ -277,7 +290,7 @@ function saveItem($db, $accId, $name, $desc, $catId, $dryRun) {
         return;
     }
     
-    $stmt = $db->prepare("INSERT INTO guia_local (id_alojamiento, id_subcategoria, nombre, descripcion) VALUES (?, ?, ?, ?)");
-    $stmt->execute([$accId, $catId, $name, $desc]);
-    echo "      + Insertado: $name\n";
+    $stmt = $db->prepare("INSERT INTO guia_local (id_alojamiento, id_subcategoria, nombre, descripcion, orden) VALUES (?, ?, ?, ?, ?)");
+    $stmt->execute([$accId, $catId, $name, $desc, $order]);
+    echo "      + Insertado: $name (Orden: $order)\n";
 }
