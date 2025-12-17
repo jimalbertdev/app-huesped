@@ -1,7 +1,10 @@
 <?php
 /**
- * Migración: Convertir enlaces de video a embeds
+ * Migración: Extraer URLs limpias de YouTube desde iframes
  * Ejecutable desde navegador web
+ * 
+ * Esta migración extrae las URLs de YouTube de los iframes existentes
+ * y las guarda en formato limpio para usar con el componente LiteYouTube
  * 
  * URL: http://tudominio.com/database/prod/run_video_migration.php?dry_run=1
  * Para ejecutar real: http://tudominio.com/database/prod/run_video_migration.php
@@ -35,7 +38,7 @@ function output($message, $type = 'info') {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Migración de Videos</title>
+    <title>Migración de Videos - Extracción de URLs</title>
     <style>
         body { font-family: Arial, sans-serif; max-width: 1200px; margin: 20px auto; padding: 20px; background: #f5f5f5; }
         .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -48,7 +51,7 @@ function output($message, $type = 'info') {
 </head>
 <body>
 <div class="container">
-    <h1>🎬 Migración de Videos</h1>
+    <h1>🎬 Migración de Videos - Extracción de URLs Limpias</h1>
     
     <?php if ($dryRun): ?>
         <div style="background: #fff3cd; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
@@ -148,52 +151,42 @@ try {
     
     foreach ($records as $record) {
         $description = $record['descripcion'];
-        $newDescription = "";
-        $hasVideo = false;
+        $videoUrl = null;
         
-        // Buscar enlaces de YouTube
-        $youtubeMatches = [];
-        preg_match_all('/(?:youtu\.be\/|youtube\.com\/watch\?v=)([\w-]+)/', $description, $youtubeMatches);
-        
-        if (!empty($youtubeMatches[1])) {
-            foreach ($youtubeMatches[1] as $videoId) {
-                $newDescription .= '<div class="video-container mb-4"><iframe width="100%" height="315" src="https://www.youtube.com/embed/' . $videoId . '" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>';
-                $hasVideo = true;
-            }
+        // 1. Intentar extraer URL de YouTube desde iframe existente
+        // Buscar: src="https://www.youtube.com/embed/VIDEO_ID" o src="https://www.youtube-nocookie.com/embed/VIDEO_ID"
+        if (preg_match('/src=["\']https?:\/\/(?:www\.)?youtube(?:-nocookie)?\.com\/embed\/([a-zA-Z0-9_-]+)["\']/', $description, $matches)) {
+            $videoId = $matches[1];
+            $videoUrl = "https://www.youtube.com/watch?v=" . $videoId;
+        }
+        // 2. Buscar URL directa de YouTube (watch?v=)
+        else if (preg_match('/(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/', $description, $matches)) {
+            $videoId = $matches[1];
+            $videoUrl = "https://www.youtube.com/watch?v=" . $videoId;
+        }
+        // 3. Buscar URL corta de YouTube (youtu.be/)
+        else if (preg_match('/(?:https?:\/\/)?youtu\.be\/([a-zA-Z0-9_-]+)/', $description, $matches)) {
+            $videoId = $matches[1];
+            $videoUrl = "https://www.youtube.com/watch?v=" . $videoId;
         }
         
-        // Buscar enlaces de Google Drive
-        $driveMatches = [];
-        preg_match_all('/drive\.google\.com\/file\/d\/([\w-]+)\//', $description, $driveMatches);
-        
-        if (!empty($driveMatches[1])) {
-            foreach ($driveMatches[1] as $fileId) {
-                $newDescription .= '<div class="video-container mb-4"><iframe src="https://drive.google.com/file/d/' . $fileId . '/preview" width="100%" height="315" allow="autoplay"></iframe></div>';
-                $hasVideo = true;
-            }
-        }
-        
-        if ($hasVideo) {
-            $youtubeCount = count($youtubeMatches[1] ?? []);
-            $driveCount = count($driveMatches[1] ?? []);
-            
-            $info = [];
-            if ($youtubeCount > 0) $info[] = "$youtubeCount YouTube";
-            if ($driveCount > 0) $info[] = "$driveCount Google Drive";
-            
-            $details .= "ID {$record['id']}: " . implode(", ", $info) . "\n";
+        if ($videoUrl) {
+            $details .= "ID {$record['id']}: Extraído video ID: $videoId\n";
+            $details .= "  URL limpia: $videoUrl\n";
             
             $updates[] = [
                 'id' => $record['id'],
-                'descripcion' => $newDescription
+                'descripcion' => $videoUrl  // Guardar solo la URL limpia
             ];
             $countUpdated++;
         } else {
+            $details .= "ID {$record['id']}: ⚠️ No se encontró URL de YouTube válida\n";
             $countSkipped++;
         }
     }
     
     output($details, 'info');
+
     
     // ========================================
     // EJECUTAR ACTUALIZACIONES

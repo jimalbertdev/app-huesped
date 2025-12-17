@@ -49,6 +49,7 @@ import {
 import vacanflyLogo from "@/assets/vacanfly-logo.png";
 import { ShareDialog } from "@/components/ShareDialog";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { LiteYouTube } from "@/components/LiteYouTube";
 
 // Mapeo de categorías de información del alojamiento
 const ACCOMMODATION_INFO_CATEGORIES: { [key: string]: string } = {
@@ -1182,13 +1183,19 @@ const Dashboard = () => {
                 <h2 className="text-xl font-bold">{t('dashboard.welcomeVideo')}</h2>
               </div>
               {accommodationVideos.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {accommodationVideos.map((video) => (
-                    <div key={video.id} className="prose prose-sm max-w-none">
+                    <div key={video.id} className="space-y-2">
                       {video.title && (
-                        <h3 className="text-sm font-semibold mb-2">{video.title}</h3>
+                        <h3 className="text-sm font-semibold">{video.title}</h3>
                       )}
-                      <div dangerouslySetInnerHTML={{ __html: video.url || video.description }} />
+                      {video.description && video.description !== video.url && (
+                        <p className="text-xs text-muted-foreground">{video.description}</p>
+                      )}
+                      <LiteYouTube
+                        videoUrl={video.url || video.video_url || ''}
+                        title={video.title || 'Video de bienvenida'}
+                      />
                     </div>
                   ))}
                 </div>
@@ -1288,10 +1295,31 @@ const Dashboard = () => {
                 <h2 className="text-xl font-bold">{t('dashboard.localGuide')}</h2>
               </div>
               {accommodationGuide.length > 0 ? (
-                <Accordion type="single" collapsible className="w-full">
+                <Accordion
+                  type="single"
+                  collapsible
+                  className="w-full"
+                  onValueChange={(value) => {
+                    if (value) {
+                      // Small timeout to allow the accordion to expand before scrolling
+                      setTimeout(() => {
+                        const element = document.getElementById(`guide-item-${value}`);
+                        if (element) {
+                          const yOffset = -100; // Increased offset for fixed header
+                          const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
+                          window.scrollTo({ top: y, behavior: 'smooth' });
+                        }
+                      }, 150); // Slightly increased timeout
+                    }
+                  }}
+                >
                   {accommodationGuide.map((category) => (
-                    <AccordionItem key={category.id} value={category.id}>
-                      <AccordionTrigger className="text-sm text-left [&[data-state=open]>svg]:rotate-180">
+                    <AccordionItem
+                      key={category.id}
+                      value={category.id}
+                      id={`guide-item-${category.id}`}
+                    >
+                      <AccordionTrigger className="text-sm text-left [&[data-state=open]>svg]:rotate-180 sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 border-b">
                         <div className="flex items-center gap-2 text-left w-full">
                           <MapPin className="w-4 h-4 text-red-600 flex-shrink-0" />
                           <span className="text-left">{category.title}</span>
@@ -1304,6 +1332,9 @@ const Dashboard = () => {
                             <div className="space-y-2">
                               {category.items.map((item: any) => (
                                 <div key={item.id} className="p-2 bg-muted/50 rounded-lg text-left">
+                                  {item.name && (
+                                    <h5 className="font-bold text-sm mb-1">{item.name}</h5>
+                                  )}
                                   {item.description && (
                                     <div
                                       className="text-xs text-muted-foreground prose prose-xs max-w-none [&_h2]:font-semibold [&_h3]:font-semibold [&_h4]:font-semibold text-left [&_*]:!text-left"
@@ -1323,6 +1354,9 @@ const Dashboard = () => {
                               </h4>
                               {sub.items && sub.items.map((item: any) => (
                                 <div key={item.id} className="p-2 bg-muted/50 rounded-lg text-left">
+                                  {item.name && (
+                                    <h5 className="font-bold text-sm mb-1">{item.name}</h5>
+                                  )}
                                   {item.description && (
                                     <div
                                       className="text-xs text-muted-foreground prose prose-xs max-w-none [&_h2]:font-semibold [&_h3]:font-semibold [&_h4]:font-semibold text-left [&_*]:!text-left"
