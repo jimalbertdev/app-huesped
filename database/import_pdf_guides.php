@@ -3,6 +3,12 @@
  * Script de migración: Importar Guía Local desde PDFs
  * 
  * Uso: php database/import_pdf_guides.php [dry-run]
+ * 
+ * Actualizado para soportar jerarquía explícita:
+ * - Categoria-Padre: ...
+ * - sub-categoria: ...
+ * - sub-categoria-hija: ... (Item)
+ * - Resumen: ... (Descripción de subcategoría)
  */
 
 require_once __DIR__ . '/../api/config/database.php';
@@ -14,7 +20,7 @@ $isCli = (php_sapi_name() === 'cli');
 $args = $isCli ? $argv : [];
 $dryRun = in_array('dry-run', $args) || (isset($_GET['dry-run']) && $_GET['dry-run'] == '1');
 
-echo "=== MIGRACIÓN GUÍA LOCAL DESDE PDFs ===\n";
+echo "=== MIGRACIÓN GUÍA LOCAL DESDE PDFs (Estructura Jerárquica) ===\n";
 echo "Directorio: $docDir\n";
 echo "Modo: " . ($dryRun ? "SIMULACIÓN (No se realizarán cambios)" : "EJECUCIÓN") . "\n\n";
 
@@ -26,19 +32,8 @@ try {
     $files = glob("$docDir/*.pdf");
     echo "Encontrados " . count($files) . " archivos PDF.\n\n";
     
-    // Cache de categorías para evitar duplicados / mantener IDs
-    // [ 'NOMBRE_UPPER' => ['id' => 1, 'parent_id' => null] ]
+    // Cache de categorías
     $categoryCache = [];
-    
-    // Cargar categorías existentes
-    $stmt = $db->query("SELECT id, nombre, id_subcategoria FROM guia_local_subcategoria");
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $key = normalizeName($row['nombre']);
-        $categoryCache[$key] = [
-            'id' => $row['id'],
-            'parent_id' => $row['id_subcategoria']
-        ];
-    }
     
     $globalOrder = 0; // Para ordenar nuevas categorías
     
@@ -59,160 +54,98 @@ try {
         
         $currentParentId = null;
         $currentSubId = null;
-        $itemOrder = 0; // Orden de items dentro de la categoría actual
-
         
+        // State Machine
+        $context = 'NONE'; // NONE, ITEM, SUMMARY
         $currentItemName = null;
         $currentItemDesc = "";
-        
+        $currentSummary = "";
+        $itemOrder = 0;
+
         foreach ($lines as $line) {
             $line = trim($line);
+            // Limpiar caracteres de control
+            $line = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $line);
+            
             if (empty($line)) continue;
             
-            // Detectar Item (comienza con ❖)
-            // A veces pdftotext extrae "❖" como algo diferente, revisar char code si falla. 
-            // En la prueba salió "❖".
-            if (mb_strpos($line, '❖') !== false) {
-                // Guardar item anterior
-                if ($currentItemName) {
-                    $itemOrder++;
-                    saveItem($db, $accommodationId, $currentItemName, $currentItemDesc, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
-                }
+            // 1. Detectar Keywords explícitos
+            
+            // CATEGORIA PADRE
+            if (preg_match('/^Categoria-Padre:\s*(.+)/i', $line, $matches)) {
+                // Cerrar contextos anteriores
+                finishCurrentContext($db, $accommodationId, $context, $currentItemName, $currentItemDesc, $currentSummary, $currentSubId, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
                 
-                // Nuevo item
-                // Limpiar marcador
-                $currentItemName = trim(str_replace(['❖', '❖ '], '', $line));
-                $currentItemDesc = ""; // Reiniciar descripción
+                $catName = trim($matches[1]);
+                $currentParentId = findOrCreateCategory($db, $catName, null, $categoryCache, $globalOrder, $dryRun);
+                $currentSubId = null;
+                $context = 'NONE';
+                $itemOrder = 0;
+                echo "    [PADRE] $catName (ID: $currentParentId)\n";
                 continue;
             }
             
-            // Si estamos dentro de un item, agregar a descripción
-            if ($currentItemName) {
-                // Detectar si la línea parece un nuevo encabezado de categoría erróneo
-                // (e.g. ALL CAPS pero estamos en la descripción? Poco probable si sigue formato)
-                // Pero hay que tener cuidado con "Dirección:", etc.
+            // SUB CATEGORIA
+            if (preg_match('/^sub-categoria:\s*(.+)/i', $line, $matches)) {
+                finishCurrentContext($db, $accommodationId, $context, $currentItemName, $currentItemDesc, $currentSummary, $currentSubId, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
                 
-                // Formatear líneas de detalle
-                if (preg_match('/^(Dirección|Ubicación|Location|Teléfono|Telf|Móvil|Web|Redes|http|site|map):/i', $line) || strpos($line, 'http') !== false || preg_match('/^\+?\d[\d\s\-\.]{6,}/', $line)) {
-                     
-                     // Procesar Teléfonos
-                     if (preg_match('/(Teléfono|Telf|Móvil)[:\.]?\s*(.+)/i', $line, $matches) || (preg_match('/^\+?[\d\s\-\.]{7,}$/', $line) && !strpos($line, 'http'))) {
-                         $rawPhone = $matches[2] ?? $line;
-                         // Limpiar para href (solo números y +)
-                         $cleanPhone = preg_replace('/[^\d\+]/', '', $rawPhone);
-                         $formattedPhone = '<a href="tel:' . $cleanPhone . '">' . trim($rawPhone) . '</a>';
-                         
-                         $prefix = isset($matches[1]) ? $matches[1] . ': ' : '';
-                         $currentItemDesc .= $prefix . $formattedPhone . "<br>";
-                     }
-                     // Procesar URLs
-                     else if (preg_match('/(https?:\/\/[^\s]+)/', $line, $matches)) {
-                         $url = $matches[1];
-                         $lowerUrl = strtolower($url);
-                         
-                         $linkText = 'Página web';
-                         
-                         if (strpos($lowerUrl, 'google.com/maps') !== false || strpos($lowerUrl, 'goo.gl') !== false || strpos($lowerUrl, 'maps.app.goo.gl') !== false) {
-                             $linkText = 'Ver en Google Maps';
-                         } elseif (strpos($lowerUrl, 'instagram.com') !== false) {
-                             $linkText = 'Instagram';
-                         } elseif (strpos($lowerUrl, 'facebook.com') !== false) {
-                             $linkText = 'Facebook';
-                         } elseif (strpos($lowerUrl, 'tripadvisor') !== false) {
-                             $linkText = 'TripAdvisor';
-                         } elseif (strpos($lowerUrl, 'twitter.com') !== false || strpos($lowerUrl, 'x.com') !== false) {
-                             $linkText = 'X (Twitter)';
-                         } elseif (strpos($lowerUrl, 'youtube.com') !== false || strpos($lowerUrl, 'youtu.be') !== false) {
-                             $linkText = 'YouTube';
-                         } elseif (strpos($lowerUrl, 'tiktok.com') !== false) {
-                             $linkText = 'TikTok';
-                         }
-                         
-                         $linkHtml = '<a href="' . $url . '" target="_blank">' . $linkText . '</a>';
-                         
-                         // Reemplazar URL en la línea original por el enlace
-                         $newLine = str_replace($url, $linkHtml, $line);
-                         $currentItemDesc .= $newLine . "<br>";
-                     } 
-                     else {
-                         $currentItemDesc .= $line . "<br>";
-                     }
-                     
-                } else if (preg_match('/^[A-ZÁÉÍÓÚÑ\s,]+$/u', $line) && strlen($line) > 3 && !strpos($line, ':')) {
-                     // Parece un nuevo Parent Category (ALL CAPS)
-                     // Guardar item y cerrar
-                     if ($currentItemName) {
-                         $itemOrder++;
-                         saveItem($db, $accommodationId, $currentItemName, $currentItemDesc, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
-                     }
-                     $currentItemName = null;
-                     
-                     // Procesar como Parent
-                     $catName = trim($line);
-                     // Ignorar encabezados comunes o basura
-                     if (strpos($catName, 'GUÍA LOCAL') !== false) continue;
-                     
-                     $currentParentId = findOrCreateCategory($db, $catName, null, $categoryCache, $globalOrder, $dryRun);
-                     $currentSubId = null; // Reset sub
-                     $itemOrder = 0; // Reset item order
-                } else if (preg_match('/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ\s]+$/u', $line) && strlen($line) < 50 && !strpos($line, ':')) {
-                     // Parece una Subcategoría (Title Case, corta)
-                     // Pero cuidado con lineas de descripción que coincidan.
-                     // Asumimos que si estamos parseando descripción y sale esto, 
-                     // Y NO es "Spain" o "Castellón", etc.
-                     $ignore = ['spain', 'castellón', 'castelló'];
-                     if (in_array(strtolower($line), $ignore)) {
-                         $currentItemDesc .= $line . "<br>";
-                     } else {
-                         // Asumir que es nueva subcategoría
-                         if ($currentItemName) {
-                             $itemOrder++;
-                             saveItem($db, $accommodationId, $currentItemName, $currentItemDesc, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
-                         }
-                         $currentItemName = null;
-                         
-                         $catName = trim($line);
-                         $currentSubId = findOrCreateCategory($db, $catName, $currentParentId, $categoryCache, $globalOrder, $dryRun);
-                         $itemOrder = 0; // Reset item order
-                     }
-                } else {
-                     // Línea normal de descripción
-                     $currentItemDesc .= $line . "<br>";
+                $catName = trim($matches[1]);
+                if (!$currentParentId) {
+                    echo "    ! Advertencia: Subcategoría '$catName' encontrada sin Padre previo. Creando huérfana.\n";
                 }
-                
+                $currentSubId = findOrCreateCategory($db, $catName, $currentParentId, $categoryCache, $globalOrder, $dryRun);
+                $context = 'NONE';
+                $itemOrder = 0;
+                echo "      [SUB] $catName (ID: $currentSubId)\n";
                 continue;
             }
             
-            // Si NO estamos en un item, buscar categorías
-            
-            // Parent Category (ALL CAPS)
-            if (preg_match('/^[A-ZÁÉÍÓÚÑ\s,]+$/u', $line) && strlen($line) > 3) {
-                 $catName = trim($line);
-                 if (strpos($catName, 'GUÍA LOCAL') !== false) continue;
-                 if (strpos($catName, 'ORDENAR EN BASE') !== false) continue; // Instrucciones
+            // RESUMEN (Descripción de Subcategoría)
+            if (preg_match('/^Resumen:\s*(.+)?/i', $line, $matches)) {
+                 finishCurrentContext($db, $accommodationId, $context, $currentItemName, $currentItemDesc, $currentSummary, $currentSubId, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
                  
-                 $currentParentId = findOrCreateCategory($db, $catName, null, $categoryCache, $globalOrder, $dryRun);
-                 $currentSubId = null;
-                 $itemOrder = 0;
-                 echo "    [PADRE] $catName (ID: $currentParentId)\n";
+                 $context = 'SUMMARY';
+                 $currentSummary = isset($matches[1]) ? trim($matches[1]) : "";
+                 continue;
             }
-            // Subcategory (Mixed Case)
-            else if ($currentParentId && strlen($line) < 60 && !strpos($line, ':')) {
-                 $catName = trim($line);
-                 // Ignorar basura
-                 if (stripos($catName, 'recomendaciones') !== false) continue;
-                 if (stripos($catName, 'ordenar en') !== false) continue;
+            
+            // ITEM (Sub-categoria-hija OR Bullet Point)
+            $isItem = false;
+            $itemNameRaw = '';
+            
+            if (preg_match('/^sub-categoria-hija:\s*(.+)/i', $line, $matches)) {
+                $isItem = true;
+                $itemNameRaw = $matches[1];
+            } elseif (mb_strpos($line, '❖') !== false) {
+                 $isItem = true;
+                 $itemNameRaw = str_replace(['❖', '❖ '], '', $line);
+            }
+            
+            if ($isItem) {
+                 finishCurrentContext($db, $accommodationId, $context, $currentItemName, $currentItemDesc, $currentSummary, $currentSubId, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
                  
-                 $currentSubId = findOrCreateCategory($db, $catName, $currentParentId, $categoryCache, $globalOrder, $dryRun);
-                 echo "      [SUB] $catName (ID: $currentSubId)\n";
+                 $context = 'ITEM';
+                 $currentItemName = trim($itemNameRaw);
+                 $currentItemDesc = "";
+                 $itemOrder++;
+                 continue;
+            }
+            
+            // 2. Procesar contenido según contexto
+            if ($context === 'SUMMARY') {
+                $currentSummary .= ($currentSummary ? "<br>" : "") . $line;
+            } elseif ($context === 'ITEM') {
+                 // Detectar y formatear enlaces/teléfonos en la descripción del item (lógica anterior reutilizada)
+                 $line = formatLine($line);
+                 $currentItemDesc .= $line . "<br>";
+            } else {
+                // Texto fuera de contexto explícito... podría ser basura o continuación de algo mal parseado.
+                // Ignorar o loguear.
             }
         }
         
-        // Guardar último item
-        if ($currentItemName) {
-            $itemOrder++;
-            saveItem($db, $accommodationId, $currentItemName, $currentItemDesc, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
-        }
+        // Cerrar último bloque al terminar archivo
+        finishCurrentContext($db, $accommodationId, $context, $currentItemName, $currentItemDesc, $currentSummary, $currentSubId, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
         
     }
     
@@ -223,7 +156,19 @@ try {
 }
 
 
-// --- FUNCIONES ---
+// --- FUNCIONES DE SOPORTE ---
+
+function finishCurrentContext($db, $accId, &$context, &$itemName, &$itemDesc, &$summary, $subId, $targetCatId, $dryRun, $order) {
+    if ($context === 'ITEM' && $itemName) {
+        saveItem($db, $accId, $itemName, $itemDesc, $targetCatId, $dryRun, $order);
+        $itemName = null;
+        $itemDesc = "";
+    } elseif ($context === 'SUMMARY' && $subId && $summary) {
+        updateCategoryDescription($db, $subId, $summary, $dryRun);
+        $summary = "";
+    }
+    $context = 'NONE';
+}
 
 function normalizeName($name) {
     return trim(mb_strtoupper($name));
@@ -231,66 +176,102 @@ function normalizeName($name) {
 
 function findOrCreateCategory($db, $name, $parentId, &$cache, &$order, $dryRun) {
     $name = trim($name);
-    $key = normalizeName($name);
+    // Clave única compuesta por Nombre + PadreID para diferenciar subcategorías con mismo nombre
+    $key = normalizeName($name) . '_' . ($parentId ?: 'ROOT');
     
-    // Verificar si existe en cache (para este padre)
-    // Nota: Una subcategoría "Sushi" podría existir bajo "Asiático" y "Japonés".
-    // Así que la clave debe incluir el padre si es subcategoría?
-    // El usuario dijo "tengo catagorias padres y categoias hijas definidas en la misma tabla".
-    // Si queremos reutilizar globalmente "Restaurantes", usamos solo nombre.
-    // Si queremos "Trattoria" bajo "Italiano", usamos nombre.
-    // Asumiremos que el nombre es único globalmente para simplificar, 
-    // o buscamos por nombre AND parent_id.
-    
-    // Mejor buscar por nombre y padre
-    foreach ($cache as $k => $data) {
-        if ($k === $key && $data['parent_id'] == $parentId) {
-            return $data['id'];
-        }
+    if (isset($cache[$key])) {
+        return $cache[$key];
     }
     
-    // Si no existe, crear
-    if ($dryRun) {
-        return 999;
+    if ($dryRun) return 999;
+    
+    // Verificar en BD por si acaso
+    $sql = "SELECT id FROM guia_local_subcategoria WHERE nombre = ?";
+    $params = [$name];
+    if ($parentId) {
+        $sql .= " AND id_subcategoria = ?";
+        $params[] = $parentId;
+    } else {
+        $sql .= " AND id_subcategoria IS NULL";
     }
     
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+    if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $cache[$key] = $row['id'];
+        return $row['id'];
+    }
+    
+    // Crear
     $order++;
     $stmt = $db->prepare("INSERT INTO guia_local_subcategoria (nombre, id_subcategoria, orden) VALUES (?, ?, ?)");
     try {
         $stmt->execute([$name, $parentId, $order]);
         $id = $db->lastInsertId();
-        
-        // Agregar a cache
-        $cache[$key] = ['id' => $id, 'parent_id' => $parentId];
-        
+        $cache[$key] = $id;
         return $id;
     } catch (Exception $e) {
-        // Puede fallar si hay unique constraint
-        echo "      Error al crear categoría '$name': " . $e->getMessage() . "\n";
+        echo "      Error creando categoría '$name': " . $e->getMessage() . "\n";
         return 0;
     }
 }
 
-function saveItem($db, $accId, $name, $desc, $catId, $dryRun, $order = 0) {
-    if (!$name || !$catId) return;
+function updateCategoryDescription($db, $catId, $description, $dryRun) {
+    if (!$catId || !$description) return;
     
-    // Limpiar nombre de caracteres extraños (espacios duros)
+    if ($dryRun) {
+        echo "      + RESUMEN para CatID $catId: " . substr($description, 0, 50) . "...\n";
+        return;
+    }
+    
+    $stmt = $db->prepare("UPDATE guia_local_subcategoria SET descripcion = ? WHERE id = ?");
+    $stmt->execute([$description, $catId]);
+    echo "      + Resumen actualizado para CatID $catId\n";
+}
+
+function saveItem($db, $accId, $name, $desc, $catId, $dryRun, $order) {
+    if (!$name || !$catId) return;
     $name = trim(preg_replace('/\s+/', ' ', $name));
     
     if ($dryRun) {
-        echo "      + ITEM: $name (CatID: $catId, Order: $order)\n";
+        echo "      + ITEM: $name (CatID: $catId)\n";
         return;
     }
     
     // Verificar duplicado
-    $stmt = $db->prepare("SELECT id FROM guia_local WHERE id_alojamiento = ? AND nombre = ?");
-    $stmt->execute([$accId, $name]);
+    $stmt = $db->prepare("SELECT id FROM guia_local WHERE id_alojamiento = ? AND nombre = ? AND id_subcategoria = ?");
+    $stmt->execute([$accId, $name, $catId]);
     if ($stmt->fetch()) {
-        echo "      . Item existente: $name (Mismo alojamiento)\n";
+        // Podríamos actualizar la descripción si ya existe
+        $stmt = $db->prepare("UPDATE guia_local SET descripcion = ?, orden = ? WHERE id_alojamiento = ? AND nombre = ? AND id_subcategoria = ?");
+        $stmt->execute([$desc, $order, $accId, $name, $catId]);
+        echo "      . Item actualizado: $name\n";
         return;
     }
     
     $stmt = $db->prepare("INSERT INTO guia_local (id_alojamiento, id_subcategoria, nombre, descripcion, orden) VALUES (?, ?, ?, ?, ?)");
     $stmt->execute([$accId, $catId, $name, $desc, $order]);
-    echo "      + Insertado: $name (Orden: $order)\n";
+    echo "      + Insertado: $name\n";
+}
+
+function formatLine($line) {
+    // Formatear enlaces y teléfonos
+    if (preg_match('/(Teléfono|Telf|Móvil)[:\.]?\s*(.+)/i', $line, $matches) || (preg_match('/^\+?[\d\s\-\.]{7,}$/', $line) && !strpos($line, 'http'))) {
+         $rawPhone = $matches[2] ?? $line;
+         $cleanPhone = preg_replace('/[^\d\+]/', '', $rawPhone);
+         $formattedPhone = '<a href="tel:' . $cleanPhone . '">' . trim($rawPhone) . '</a>';
+         $prefix = isset($matches[1]) ? $matches[1] . ': ' : '';
+         return $prefix . $formattedPhone;
+    }
+    if (preg_match('/(https?:\/\/[^\s]+)/', $line, $matches)) {
+         $url = $matches[1];
+         $linkText = 'Ver enlace';
+         if (strpos($url, 'maps') !== false) $linkText = 'Ver en Google Maps';
+         elseif (strpos($url, 'instagram') !== false) $linkText = 'Instagram';
+         elseif (strpos($url, 'facebook') !== false) $linkText = 'Facebook';
+         
+         $linkHtml = '<a href="' . $url . '" target="_blank">' . $linkText . '</a>';
+         return str_replace($url, $linkHtml, $line);
+    }
+    return $line;
 }

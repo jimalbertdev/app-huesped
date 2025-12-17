@@ -1365,6 +1365,12 @@ const Dashboard = () => {
                                   )}
                                 </div>
                               ))}
+                              {sub.description && (
+                                <div
+                                  className="text-xs text-muted-foreground prose prose-xs max-w-none mt-2 mb-3 text-left [&_*]:!text-left italic bg-muted/20 p-2 rounded"
+                                  dangerouslySetInnerHTML={{ __html: sub.description }}
+                                />
+                              )}
                             </div>
                           ))}
 

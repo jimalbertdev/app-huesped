@@ -38,6 +38,7 @@ class LocalGuide {
                     
                     sc.id as cat_id,
                     sc.nombre as cat_name,
+                    sc.descripcion as cat_description,
                     sc.orden as cat_orden,
                     
                     parent.id as parent_id,
@@ -99,6 +100,7 @@ class LocalGuide {
                     $map[$parentId]['subcategories'][] = [
                         'id' => $subId,
                         'title' => $subName,
+                        'description' => $row['cat_description'],
                         'items' => []
                     ];
                     $subIndex = count($map[$parentId]['subcategories']) - 1;
