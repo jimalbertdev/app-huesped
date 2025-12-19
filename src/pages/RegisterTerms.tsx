@@ -245,8 +245,9 @@ const RegisterTerms = () => {
 
       const createdGuest = guestResponse.data.data;
 
-      // 4. SI ES RESPONSABLE, GUARDAR PREFERENCIAS
-      if (guestData.is_responsible && preferenceData) {
+      // 4. SI HAY DATOS DE PREFERENCIAS, GUARDARLAS
+      // (Si existe preferenceData implica que pasó por el paso 2, el cual está restringido a responsables)
+      if (preferenceData) {
         await preferenceService.save({
           reservation_id: reservationData.id,
           ...preferenceData,

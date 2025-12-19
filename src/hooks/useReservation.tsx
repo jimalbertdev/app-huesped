@@ -35,6 +35,7 @@ interface GuestData {
 
 interface PreferenceData {
   needs_crib: boolean;
+  pets: boolean;
   double_beds: number;
   single_beds: number;
   sofa_beds: number;

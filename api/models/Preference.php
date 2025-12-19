@@ -30,14 +30,15 @@ class Preference {
      */
     private function create($reservation_id, $data) {
         $sql = "INSERT INTO reservas_detalles (
-            reseva_id, hora_llegada, camas, cuna, informacion_anfitrion
-        ) VALUES (?, ?, ?, ?, ?)";
+            reseva_id, hora_llegada, camas, cuna, pets, informacion_anfitrion
+        ) VALUES (?, ?, ?, ?, ?, ?)";
 
         // Construir JSON de camas
         $camasJson = $this->buildBedsJson($data);
 
         // Convertir cuna a "si"/"no"
         $cuna = $this->convertToYesNo($data['needs_crib'] ?? false);
+        $pets = $this->convertToYesNo($data['pets'] ?? false);
 
         // Combinar información adicional
         $infoAnfitrion = $this->buildAdditionalInfo($data);
@@ -47,6 +48,7 @@ class Preference {
             $data['estimated_arrival_time'] ?? null,
             $camasJson,
             $cuna,
+            $pets,
             $infoAnfitrion
         ]);
     }
@@ -59,6 +61,7 @@ class Preference {
             hora_llegada = ?,
             camas = ?,
             cuna = ?,
+            pets = ?,
             informacion_anfitrion = ?
             WHERE reseva_id = ?";
 
@@ -67,6 +70,7 @@ class Preference {
 
         // Convertir cuna a "si"/"no"
         $cuna = $this->convertToYesNo($data['needs_crib'] ?? false);
+        $pets = $this->convertToYesNo($data['pets'] ?? false);
 
         // Combinar información adicional
         $infoAnfitrion = $this->buildAdditionalInfo($data);
@@ -75,6 +79,7 @@ class Preference {
             $data['estimated_arrival_time'] ?? null,
             $camasJson,
             $cuna,
+            $pets,
             $infoAnfitrion,
             $reservation_id
         ]);
@@ -141,6 +146,7 @@ class Preference {
             'id' => $dbData['id'],
             'reservation_id' => $dbData['reseva_id'],
             'needs_crib' => $dbData['cuna'] === 'si' || $dbData['cuna'] === '1',
+            'pets' => $dbData['pets'] === 'si' || $dbData['pets'] === '1',
             'double_beds' => (int)($camas['camas_dobles'] ?? 0),
             'single_beds' => (int)($camas['camas_individuales'] ?? 0),
             'sofa_beds' => (int)($camas['sofa_cama'] ?? 0),

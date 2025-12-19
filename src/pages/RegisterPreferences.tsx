@@ -31,6 +31,7 @@ const RegisterPreferences = () => {
   const { t } = useLanguage();
 
   const [needsCrib, setNeedsCrib] = useState(false);
+  const [hasPets, setHasPets] = useState(false);
   const [doubleBeds, setDoubleBeds] = useState(0);
   const [singleBeds, setSingleBeds] = useState(0);
   const [sofaBeds, setSofaBeds] = useState(0);
@@ -47,6 +48,7 @@ const RegisterPreferences = () => {
     sofa_beds: number;
     bunk_beds: number;
     crib: boolean;
+    pets: boolean;
   } | null>(null);
   const [loadingAvailability, setLoadingAvailability] = useState(true);
 
@@ -81,6 +83,7 @@ const RegisterPreferences = () => {
   useEffect(() => {
     if (preferenceData) {
       setNeedsCrib(preferenceData.needs_crib);
+      setHasPets(preferenceData.pets);
       setDoubleBeds(preferenceData.double_beds);
       setSingleBeds(preferenceData.single_beds);
       setSofaBeds(preferenceData.sofa_beds);
@@ -140,6 +143,7 @@ const RegisterPreferences = () => {
     // GUARDAR TEMPORALMENTE EN CONTEXTO (NO en DB todavía)
     setPreferenceData({
       needs_crib: needsCrib,
+      pets: hasPets,
       double_beds: doubleBeds,
       single_beds: singleBeds,
       sofa_beds: sofaBeds,
@@ -282,8 +286,33 @@ const RegisterPreferences = () => {
                   onCheckedChange={(checked) => setNeedsCrib(checked as boolean)}
                   disabled={bedAvailability !== null && !bedAvailability.crib}
                 />
-                <Label htmlFor="needsCrib" className={`cursor-pointer ${bedAvailability !== null && !bedAvailability.crib ? 'opacity-50' : ''}`}>
-                  {t('preferences.needsCrib')} {bedAvailability !== null && !bedAvailability.crib && <span className="text-xs text-muted-foreground">({t('preferences.notAvailable')})</span>}
+                <Label htmlFor="needsCrib" className={`cursor-pointer flex items-center gap-2 ${bedAvailability !== null && !bedAvailability.crib ? 'opacity-50' : ''}`}>
+                  {t('preferences.needsCrib')}
+                  {bedAvailability !== null && bedAvailability.crib && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                      {t('preferences.freeOfCharge')}
+                    </span>
+                  )}
+                  {bedAvailability !== null && !bedAvailability.crib && <span className="text-xs text-muted-foreground">({t('preferences.notAvailable')})</span>}
+                </Label>
+              </div>
+
+              {/* Tiene mascotas */}
+              <div className="flex items-center space-x-3 p-4 rounded-lg bg-muted/50 mt-4">
+                <Checkbox
+                  id="hasPets"
+                  checked={hasPets}
+                  onCheckedChange={(checked) => setHasPets(checked as boolean)}
+                  disabled={bedAvailability !== null && !bedAvailability.pets}
+                />
+                <Label htmlFor="hasPets" className={`cursor-pointer flex items-center gap-2 ${bedAvailability !== null && !bedAvailability.pets ? 'opacity-50' : ''}`}>
+                  {t('preferences.hasPets') || 'Viajo con mascotas'}
+                  {bedAvailability !== null && bedAvailability.pets && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                      {t('preferences.freeOfCharge')}
+                    </span>
+                  )}
+                  {bedAvailability !== null && !bedAvailability.pets && <span className="text-xs text-muted-foreground">({t('preferences.notAvailable') || 'No permitido'})</span>}
                 </Label>
               </div>
 

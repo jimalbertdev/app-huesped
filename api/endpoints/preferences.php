@@ -44,7 +44,8 @@ try {
                 'single_beds' => 0,
                 'sofa_beds' => 0,
                 'estimated_arrival_time' => null,
-                'additional_info' => null
+                'additional_info' => null,
+                'pets' => false
             ], "No hay preferencias configuradas");
         }
 
@@ -66,7 +67,7 @@ try {
         // Validar disponibilidad de camas si se están solicitando
         if (isset($data['double_beds']) || isset($data['single_beds']) ||
             isset($data['sofa_beds']) || isset($data['bunk_beds']) ||
-            isset($data['needs_crib'])) {
+            isset($data['needs_crib']) || isset($data['pets'])) {
 
             $bedAvailabilityModel = new BedAvailability($database);
             $validation = $bedAvailabilityModel->validateRequest(
@@ -76,7 +77,8 @@ try {
                     'single_beds' => $data['single_beds'] ?? 0,
                     'sofa_beds' => $data['sofa_beds'] ?? 0,
                     'bunk_beds' => $data['bunk_beds'] ?? 0,
-                    'needs_crib' => $data['needs_crib'] ?? false
+                    'needs_crib' => $data['needs_crib'] ?? false,
+                    'pets' => $data['pets'] ?? false
                 ]
             );
 

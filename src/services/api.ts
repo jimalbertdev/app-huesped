@@ -116,6 +116,7 @@ export const preferenceService = {
   save: (data: {
     reservation_id: number;
     needs_crib?: boolean;
+    pets?: boolean;
     double_beds?: number;
     single_beds?: number;
     sofa_beds?: number;

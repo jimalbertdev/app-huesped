@@ -21,7 +21,8 @@ class BedAvailability {
                     camas_individuales as single_beds,
                     sofa_cama as sofa_beds,
                     literas as bunk_beds,
-                    cuna as crib
+                    cuna as crib,
+                    pets
                 FROM camas_alojamiento
                 WHERE id_alojamiento = ?";
 
@@ -39,6 +40,7 @@ class BedAvailability {
             'sofa_beds' => (int)($result['sofa_beds'] ?? 0),
             'bunk_beds' => (int)($result['bunk_beds'] ?? 0),
             'crib' => (bool)($result['crib'] ?? false),
+            'pets' => (bool)($result['pets'] ?? false),
         ];
     }
 
@@ -57,7 +59,8 @@ class BedAvailability {
             'single' => 'single_beds',
             'sofa' => 'sofa_beds',
             'bunk' => 'bunk_beds',
-            'crib' => 'crib'
+            'crib' => 'crib',
+            'pets' => 'pets'
         ];
 
         $field = $field_map[$bed_type] ?? null;
@@ -120,6 +123,12 @@ class BedAvailability {
         if (isset($requested['needs_crib']) && $requested['needs_crib']) {
             if (!$availability['crib']) {
                 $errors[] = "Este alojamiento no tiene cuna disponible";
+            }
+        }
+
+        if (isset($requested['pets']) && $requested['pets']) {
+            if (!$availability['pets']) {
+                $errors[] = "Este alojamiento no admite mascotas";
             }
         }
 
