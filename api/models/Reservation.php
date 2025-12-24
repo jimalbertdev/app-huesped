@@ -43,12 +43,21 @@ class Reservation {
                     COALESCE(CONCAT(pi.nombres, ' ', pi.apellidos), ac.nombre_anfitrion) as host_name,
                     COALESCE(pia.correo, ac.email_anfitrion) as host_email,
                     COALESCE(pia.telefono, ac.tel_anfitrion) as host_phone,
-                    pi.foto as host_photo
+                    pi.foto as host_photo,
+                    -- Campos del Súper Anfitrión (Responsable)
+                    spi.identificador as super_host_document,
+                    CONCAT(spi.nombres, ' ', spi.apellidos) as super_host_name,
+                    spia.correo as super_host_email,
+                    spia.telefono as super_host_phone,
+                    spi.foto as super_host_photo
                 FROM reserva r
                 LEFT JOIN alojamiento a ON r.alojamiento_id = a.idalojamiento
                 LEFT JOIN alojamiento_caracteristica ac ON a.idalojamiento = ac.idalojamiento
                 LEFT JOIN personal_interno pi ON ac.id_personal_interno_anfitrion = pi.id
                 LEFT JOIN personal_interno_anfitrion pia ON pi.id = pia.personal_interno_id
+                -- Join para el Súper Anfitrión
+                LEFT JOIN personal_interno spi ON ac.id_personal_interno_responsable = spi.id
+                LEFT JOIN personal_interno_anfitrion spia ON spi.id = spia.personal_interno_id
                 WHERE r.localizador_canal = ?";
 
         $result = $this->db->queryOne($sql, [$code]);
@@ -72,6 +81,13 @@ class Reservation {
             $result['host_photo_url'] = '/anfitrion/' . $result['host_document'] . '/' . $result['host_photo'];
         } else {
             $result['host_photo_url'] = null;
+        }
+
+        // Construir URL de la foto del súper anfitrión
+        if (!empty($result['super_host_photo']) && !empty($result['super_host_document'])) {
+            $result['super_host_photo_url'] = '/anfitrion/' . $result['super_host_document'] . '/' . $result['super_host_photo'];
+        } else {
+            $result['super_host_photo_url'] = null;
         }
 
         // Construir URL completa del contrato
@@ -202,12 +218,21 @@ class Reservation {
                     COALESCE(CONCAT(pi.nombres, ' ', pi.apellidos), ac.nombre_anfitrion) as host_name,
                     COALESCE(pia.correo, ac.email_anfitrion) as host_email,
                     COALESCE(pia.telefono, ac.tel_anfitrion) as host_phone,
-                    pi.foto as host_photo
+                    pi.foto as host_photo,
+                    -- Campos del Súper Anfitrión (Responsable)
+                    spi.identificador as super_host_document,
+                    CONCAT(spi.nombres, ' ', spi.apellidos) as super_host_name,
+                    spia.correo as super_host_email,
+                    spia.telefono as super_host_phone,
+                    spi.foto as super_host_photo
                 FROM reserva r
                 JOIN alojamiento a ON r.alojamiento_id = a.idalojamiento
                 JOIN alojamiento_caracteristica ac ON a.idalojamiento = ac.idalojamiento
                 LEFT JOIN personal_interno pi ON ac.id_personal_interno_anfitrion = pi.id
                 LEFT JOIN personal_interno_anfitrion pia ON pi.id = pia.personal_interno_id
+                -- Join para el Súper Anfitrión
+                LEFT JOIN personal_interno spi ON ac.id_personal_interno_responsable = spi.id
+                LEFT JOIN personal_interno_anfitrion spia ON spi.id = spia.personal_interno_id
                 WHERE r.id = ?";
 
         return $this->db->queryOne($sql, [$reservation_id]);

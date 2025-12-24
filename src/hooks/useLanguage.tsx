@@ -156,6 +156,9 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.phone': '+34 612 345 678',
     'contact.email': 'maria@casavistahermosa.com',
     'contact.available': 'Disponible 24/7 para emergencias',
+    'contact.problemQuestion': '¿Tienes problemas para contactar con tu anfitrión?',
+    'contact.superHostMessage': 'No te preocupes, estamos aquí para asegurarnos de que tu estancia sea perfecta. Si no logras comunicarte con {hostName}, puedes contactar con nuestro Súper Anfitrión, quien estará encantado de ayudarte.',
+    'contact.superHostTitle': 'Súper Anfitrión',
 
     // Share
     'share.title': 'Compartir Enlace de Registro',
@@ -555,6 +558,9 @@ const translations: Record<Language, Record<string, string>> = {
     'contact.phone': '+34 612 345 678',
     'contact.email': 'maria@casavistahermosa.com',
     'contact.available': 'Available 24/7 for emergencies',
+    'contact.problemQuestion': 'Having trouble contacting your host?',
+    'contact.superHostMessage': "Don't worry, we're here to make sure your stay is perfect. If you can't reach {hostName}, you can contact our Super Host, who will be happy to help you.",
+    'contact.superHostTitle': 'Super Host',
 
     // Share
     'share.title': 'Share Registration Link',

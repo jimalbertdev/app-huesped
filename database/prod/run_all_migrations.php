@@ -49,6 +49,18 @@ $migrations = [
         'description' => 'Crea las vistas v_reservations_full, v_reservations_with_host, v_guests_with_reservation'
     ],
     [
+        'name' => 'Migración 017: Actualizar información de anfitrión',
+        'script' => 'run_migration_017.php',
+        'required' => true,
+        'description' => 'Actualiza las vistas para obtener información desde las nuevas tablas de personal'
+    ],
+    [
+        'name' => 'Migración 018: Añadir Súper Anfitrión a vistas',
+        'script' => 'run_migration_018.php',
+        'required' => true,
+        'description' => 'Actualiza las vistas para incluir campos del Súper Anfitrión (Responsable)'
+    ],
+    [
         'name' => 'Migración de guía local: Separar registros concatenados',
         'script' => 'run_local_guide_migration.php',
         'required' => false,

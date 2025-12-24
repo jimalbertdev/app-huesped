@@ -25,6 +25,8 @@ import {
   Minus,
   FileText,
   Link as LinkIcon,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
@@ -57,6 +59,7 @@ const Dashboard = () => {
   const { buildPathWithReservation } = useReservationParams();
   const { toast } = useToast();
   const [showContactDialog, setShowContactDialog] = useState(false);
+  const [showSuperHost, setShowSuperHost] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
 
   // Obtener contrato del huésped responsable
@@ -76,6 +79,10 @@ const Dashboard = () => {
   const hostPhone = reservationData?.host_phone || '?';
   const hostEmail = reservationData?.host_email || '?';
   const hostPhotoUrl = reservationData?.host_photo_url;
+  const superHostName = reservationData?.super_host_name;
+  const superHostPhone = reservationData?.super_host_phone;
+  const superHostEmail = reservationData?.super_host_email;
+  const superHostPhotoUrl = reservationData?.super_host_photo_url;
   const accommodationName = reservationData?.accommodation_name || '?';
 
   // Configuración unificada de la URL de la API
@@ -1705,49 +1712,125 @@ const Dashboard = () => {
       </Dialog>
 
       {/* Contact Dialog */}
-      <Dialog open={showContactDialog} onOpenChange={setShowContactDialog}>
-        <DialogContent>
+      <Dialog open={showContactDialog} onOpenChange={(open) => {
+        setShowContactDialog(open);
+        if (!open) setShowSuperHost(false);
+      }}>
+        <DialogContent className="max-w-sm sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t('contact.title')}</DialogTitle>
             <DialogDescription>
               {t('contact.available')}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              {hostPhotoUrl ? (
-                <img
-                  src={getImageUrl(hostPhotoUrl)}
-                  alt={hostName}
-                  className="w-16 h-16 rounded-full object-cover border-2 border-primary/20"
-                />
-              ) : (
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl">
-                  👤
+          <div className="space-y-6">
+            {/* Primary Host */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                {hostPhotoUrl ? (
+                  <img
+                    src={getImageUrl(hostPhotoUrl)}
+                    alt={hostName}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-border"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl">
+                    👤
+                  </div>
+                )}
+                <div>
+                  <p className="font-semibold text-lg">{hostName}</p>
+                  <p className="text-xs text-muted-foreground bg-primary/5 px-2 py-0.5 rounded-full inline-block">
+                    {t('contact.available')}
+                  </p>
                 </div>
-              )}
-              <div>
-                <p className="font-semibold">{hostName}</p>
-                <p className="text-sm text-muted-foreground">{t('contact.available')}</p>
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-3 h-12 border-border hover:bg-muted/50"
+                  onClick={() => window.location.href = `tel:${hostPhone}`}
+                >
+                  <Phone className="w-4 h-4 text-primary" />
+                  <span className="font-medium">{hostPhone}</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-3 h-12 border-border hover:bg-muted/50"
+                  onClick={() => window.location.href = `mailto:${hostEmail}`}
+                >
+                  <Mail className="w-4 h-4 text-primary" />
+                  <span className="font-medium truncate">{hostEmail}</span>
+                </Button>
               </div>
             </div>
-            <div className="space-y-2">
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-2"
-                onClick={() => window.location.href = `tel:${hostPhone}`}
-              >
-                <Phone className="w-4 h-4" />
-                {hostPhone}
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-2"
-                onClick={() => window.location.href = `mailto:${hostEmail}`}
-              >
-                📧 {hostEmail}
-              </Button>
-            </div>
+
+            {/* Super Host Accordion Trigger */}
+            {superHostName && (
+              <div className="pt-2 border-t border-border">
+                <button
+                  onClick={() => setShowSuperHost(!showSuperHost)}
+                  className="w-full flex items-center justify-between py-2 text-sm text-primary font-medium hover:underline group"
+                >
+                  <span className="text-left leading-tight">{t('contact.problemQuestion')}</span>
+                  {showSuperHost ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />}
+                </button>
+
+                {/* Collapsible Content */}
+                <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showSuperHost ? 'max-height-[500px] opacity-100 mt-4' : 'max-height-0 opacity-0'}`}>
+                  <div className="bg-muted/40 rounded-2xl p-4 space-y-4 border border-border/50">
+                    <p className="text-xs text-muted-foreground leading-relaxed italic">
+                      {t('contact.superHostMessage').replace('{hostName}', hostName)}
+                    </p>
+
+                    <div className="flex items-center gap-3 pt-1">
+                      {superHostPhotoUrl ? (
+                        <img
+                          src={getImageUrl(superHostPhotoUrl)}
+                          alt={superHostName}
+                          className="w-12 h-12 rounded-full object-cover border-2 border-white/50"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-xl shadow-sm">
+                          👤
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-bold text-sm">{superHostName}</p>
+                        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                          {t('contact.superHostTitle')}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2">
+                      {superHostPhone && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start gap-3 h-10 bg-background/50 border-border/40 hover:bg-background"
+                          onClick={() => window.location.href = `tel:${superHostPhone}`}
+                        >
+                          <Phone className="w-3 h-3 text-muted-foreground" />
+                          <span className="text-xs font-medium">{superHostPhone}</span>
+                        </Button>
+                      )}
+                      {superHostEmail && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start gap-3 h-10 bg-background/50 border-border/40 hover:bg-background"
+                          onClick={() => window.location.href = `mailto:${superHostEmail}`}
+                        >
+                          <Mail className="w-3 h-3 text-muted-foreground" />
+                          <span className="text-xs font-medium truncate">{superHostEmail}</span>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

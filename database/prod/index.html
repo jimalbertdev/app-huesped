@@ -218,6 +218,21 @@
                 </div>
             </div>
 
+            <!-- Migración 018 -->
+            <div class="migration-card">
+                <h3>🌟 Migración 018: Añadir Súper Anfitrión a Vistas</h3>
+                <span class="badge badge-required">NUEVO</span>
+                <p>
+                    Actualiza las vistas para incluir los campos del Súper Anfitrión (Responsable) obtenidos desde
+                    <code>id_personal_interno_responsable</code>.
+                </p>
+                <p><strong>Impacto:</strong> Actualiza vistas SQL (no modifica datos)</p>
+                <p><strong>Nota:</strong> Ejecutar después de la Migración 017</p>
+                <div class="btn-group">
+                    <a href="run_migration_018.php" class="btn btn-primary" target="_blank">▶️ Ejecutar Migración</a>
+                </div>
+            </div>
+
             <!-- Migración Guía Local -->
             <div class="migration-card">
                 <h3>📍 Migración: Separar Registros de Guía Local</h3>
@@ -261,9 +276,9 @@
                 <ul>
                     <li><strong>Paso 1:</strong> Ejecutar Migración 016 (Vistas) - OBLIGATORIO</li>
                     <li><strong>Paso 2:</strong> Ejecutar Migración 017 (Actualizar Info Anfitrión) - RECOMENDADO</li>
-                    <li><strong>Paso 3:</strong> Ejecutar Migración de Guía Local (si tienes registros concatenados)
-                    </li>
-                    <li><strong>Paso 4:</strong> Ejecutar Migración de Videos (si quieres embeds de videos)</li>
+                    <li><strong>Paso 3:</strong> Ejecutar Migración 018 (Añadir Súper Anfitrión) - NUEVO</li>
+                    <li><strong>Paso 4:</strong> Ejecutar Migración de Guía Local (si tienes registros concatenados)</li>
+                    <li><strong>Paso 5:</strong> Ejecutar Migración de Videos (si quieres embeds de videos)</li>
                 </ul>
                 <p style="margin-top: 15px;"><strong>Nota:</strong> Usa siempre el botón "Dry-Run" primero para ver qué
                     cambios se realizarán antes de ejecutar la migración real.</p>

@@ -21,6 +21,10 @@ interface ReservationData {
   host_email?: string;
   host_phone?: string;
   host_photo_url?: string;
+  super_host_name?: string;
+  super_host_email?: string;
+  super_host_phone?: string;
+  super_host_photo_url?: string;
   contract_path?: string;
 }
 
