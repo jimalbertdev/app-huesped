@@ -7,6 +7,7 @@ import { LanguageProvider } from "./hooks/useLanguage";
 import { ReservationProvider } from "./hooks/useReservation";
 import { RegistrationFlowProvider } from "./hooks/useRegistrationFlow";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { ScrollToTop } from "./components/ScrollToTop";
 import Welcome from "./pages/Welcome";
 import Register from "./pages/Register";
 import RegisterPreferences from "./pages/RegisterPreferences";
@@ -33,6 +34,7 @@ const App = () => (
             v7_relativeSplatPath: true,
           }}
         >
+          <ScrollToTop />
           <ReservationProvider>
             <RegistrationFlowProvider>
               <Routes>

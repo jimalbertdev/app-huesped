@@ -493,7 +493,18 @@ const Register = () => {
 
           // Autocompletar campos con datos del cliente
           if (clientData.document_type) setDocumentType(clientData.document_type);
-          if (clientData.document_number) setDocumentNumber(clientData.document_number);
+
+          // Formatear número de documento: eliminar los 2 últimos caracteres después del underscore
+          if (clientData.document_number) {
+            let formattedDocNumber = clientData.document_number;
+            const underscoreIndex = formattedDocNumber.indexOf('_');
+            if (underscoreIndex !== -1) {
+              // Eliminar desde el underscore hasta el final
+              formattedDocNumber = formattedDocNumber.substring(0, underscoreIndex);
+            }
+            setDocumentNumber(formattedDocNumber);
+          }
+
           if (clientData.first_name) setFirstName(clientData.first_name);
           if (clientData.last_name) setLastName(clientData.last_name);
           if (clientData.second_last_name) setSecondLastName(clientData.second_last_name);
@@ -511,12 +522,40 @@ const Register = () => {
             const country = countries.find(c => c.code === clientData.residence_country);
             if (country) setResidenceCountrySearch(country.name);
           }
-          if (clientData.residence_postal_code) setResidencePostalCode(clientData.residence_postal_code);
-          if (clientData.residence_address) setResidenceAddress(clientData.residence_address);
+          if (clientData.residence_postal_code) setResidencePostalCode('');
+
+          // Limpiar dirección: eliminar guion por defecto
+          if (clientData.residence_address) {
+            let formattedAddress = clientData.residence_address.trim();
+            if (formattedAddress === '-') {
+              formattedAddress = '';
+            }
+            setResidenceAddress(formattedAddress);
+          }
 
           // Contacto
           if (clientData.phone_country_code) setPhoneCountryCode(clientData.phone_country_code);
-          if (clientData.phone) setPhone(clientData.phone);
+
+          // Formatear teléfono: eliminar código de país si está presente
+          if (clientData.phone) {
+            let formattedPhone = clientData.phone.trim();
+
+            // Si tenemos el código de país, eliminarlo del inicio del número
+            if (clientData.phone_country_code) {
+              const countryCode = clientData.phone_country_code.replace('+', '').trim();
+
+              // Si el número empieza con el código de país, eliminarlo
+              if (formattedPhone.startsWith(countryCode)) {
+                formattedPhone = formattedPhone.substring(countryCode.length);
+              }
+            }
+
+            // Limpiar espacios, guiones y paréntesis
+            formattedPhone = formattedPhone.replace(/[\s\-\(\)]/g, '');
+
+            setPhone(formattedPhone);
+          }
+
           if (clientData.email) setEmail(clientData.email);
 
           toast({

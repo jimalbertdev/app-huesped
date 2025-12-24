@@ -51,19 +51,8 @@ import { ShareDialog } from "@/components/ShareDialog";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { LiteYouTube } from "@/components/LiteYouTube";
 
-// Mapeo de categorías de información del alojamiento
-const ACCOMMODATION_INFO_CATEGORIES: { [key: string]: string } = {
-  '1': '🗺️ ¿Cómo llegar…?',
-  '2': '🏡 ¿Qué hay en el alojamiento?',
-  '3': '🔧 ¿Cómo funciona?',
-  '4': '🛠️ ¿Cómo hago?',
-  '5': '📞 ¿Cómo contacto?',
-  '6': '📋 Normas del alojamiento',
-  '7': '🔓 Apertura',
-};
-
 const Dashboard = () => {
-  const { language, setLanguage, t, getLanguageName } = useLanguage();
+  const { language, setLanguage, t, getLanguageName, translateCategory } = useLanguage();
   const { reservationData, loading, error, guests } = useReservation();
   const { buildPathWithReservation } = useReservationParams();
   const { toast } = useToast();
@@ -214,6 +203,22 @@ const Dashboard = () => {
       grouped[category].push(item);
     });
     return grouped;
+  };
+
+  // Función helper para obtener el nombre traducido de la categoría de información del alojamiento
+  const getAccommodationInfoCategoryName = (categoryId: string): string => {
+    const categoryKeys: { [key: string]: string } = {
+      '1': 'accommodationInfo.howToArrive',
+      '2': 'accommodationInfo.whatIsInAccommodation',
+      '3': 'accommodationInfo.howItWorks',
+      '4': 'accommodationInfo.howDoI',
+      '5': 'accommodationInfo.howToContact',
+      '6': 'accommodationInfo.accommodationRules',
+      '7': 'accommodationInfo.opening',
+    };
+
+    const key = categoryKeys[categoryId];
+    return key ? t(key) : '';
   };
 
   // Cargar preferencias cuando se carga la reserva
@@ -1251,15 +1256,43 @@ const Dashboard = () => {
                 <h2 className="text-xl font-bold">{t('dashboard.accommodationInfo')}</h2>
               </div>
               {accommodationInfo && accommodationInfo.length > 0 ? (
-                <Accordion type="single" collapsible className="w-full">
+                <Accordion
+                  type="single"
+                  collapsible
+                  className="w-full"
+                  onValueChange={(value) => {
+                    if (value) {
+                      // Timeout to allow the accordion to expand before scrolling
+                      setTimeout(() => {
+                        const element = document.getElementById(`accommodation-item-${value}`);
+                        if (element) {
+                          // Scroll to the top of the element
+                          const elementTop = element.getBoundingClientRect().top + window.scrollY;
+                          // Use a relative offset based on viewport height (9% of screen height)
+                          // This ensures proper positioning across different screen sizes
+                          const offset = window.innerHeight * 0.09;
+                          window.scrollTo({
+                            top: elementTop - offset,
+                            behavior: 'smooth'
+                          });
+                        }
+                      }, 200);
+                    }
+                  }}
+                >
                   {Object.entries(groupedAccommodationInfo()).map(([categoryId, items]) => {
                     // Solo mostrar categorías del 1 al 7 (8 es para videos)
-                    if (categoryId === '8' || !ACCOMMODATION_INFO_CATEGORIES[categoryId]) return null;
+                    const categoryName = getAccommodationInfoCategoryName(categoryId);
+                    if (categoryId === '8' || !categoryName) return null;
 
                     return (
-                      <AccordionItem key={categoryId} value={categoryId}>
+                      <AccordionItem
+                        key={categoryId}
+                        value={categoryId}
+                        id={`accommodation-item-${categoryId}`}
+                      >
                         <AccordionTrigger className="text-sm">
-                          {ACCOMMODATION_INFO_CATEGORIES[categoryId]}
+                          {categoryName}
                         </AccordionTrigger>
                         <AccordionContent className="space-y-3 text-sm prose prose-sm max-w-none">
                           {items.map((item: any) => (
@@ -1337,15 +1370,21 @@ const Dashboard = () => {
                   className="w-full"
                   onValueChange={(value) => {
                     if (value) {
-                      // Small timeout to allow the accordion to expand before scrolling
+                      // Timeout to allow the accordion to expand before scrolling
                       setTimeout(() => {
                         const element = document.getElementById(`guide-item-${value}`);
                         if (element) {
-                          const yOffset = -100; // Increased offset for fixed header
-                          const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
-                          window.scrollTo({ top: y, behavior: 'smooth' });
+                          // Scroll to the top of the element
+                          const elementTop = element.getBoundingClientRect().top + window.scrollY;
+                          // Use a relative offset based on viewport height (5% of screen height)
+                          // This ensures proper positioning across different screen sizes
+                          const offset = window.innerHeight * 0.09;
+                          window.scrollTo({
+                            top: elementTop - offset,
+                            behavior: 'smooth'
+                          });
                         }
-                      }, 150); // Slightly increased timeout
+                      }, 200);
                     }
                   }}
                 >
@@ -1358,7 +1397,7 @@ const Dashboard = () => {
                       <AccordionTrigger className="text-sm text-left [&[data-state=open]>svg]:rotate-180 sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 border-b">
                         <div className="flex items-center gap-2 text-left w-full">
                           <MapPin className="w-4 h-4 text-red-600 flex-shrink-0" />
-                          <span className="text-left">{category.title}</span>
+                          <span className="text-left">{translateCategory(category.title)}</span>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>
@@ -1386,7 +1425,7 @@ const Dashboard = () => {
                           {category.subcategories && category.subcategories.map((sub: any) => (
                             <div key={sub.id} className="space-y-2 pt-2 first:pt-0">
                               <h4 className="font-semibold text-sm text-primary/80 border-b pb-1 mb-2">
-                                {sub.title}
+                                {translateCategory(sub.title)}
                               </h4>
                               {sub.items && sub.items.map((item: any) => (
                                 <div key={item.id} className="p-2 bg-muted/50 rounded-lg text-left">
@@ -1434,26 +1473,16 @@ const Dashboard = () => {
                 </div>
                 <h2 className="text-xl font-bold">{t('dashboard.customerSupport')}</h2>
               </div>
-              <div className="grid md:grid-cols-3 gap-4">
-                {/* Botón 1: Anfitrión - Teléfono y Correo */}
-                <div className="space-y-2">
-                  <Button
-                    variant="outline"
-                    className="w-full gap-2"
-                    onClick={() => window.location.href = `tel:${hostPhone}`}
-                  >
-                    <Phone className="w-4 h-4" />
-                    {hostPhone}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full gap-2"
-                    onClick={() => window.location.href = `mailto:${hostEmail}`}
-                  >
-                    <Mail className="w-4 h-4" />
-                    {hostEmail}
-                  </Button>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Botón 1: Contacto - Abre el modal del anfitrión */}
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => setShowContactDialog(true)}
+                >
+                  <User className="w-4 h-4" />
+                  Contacto
+                </Button>
 
                 {/* Botón 2: Sugerencias o Quejas */}
                 <Button

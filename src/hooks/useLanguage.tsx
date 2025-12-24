@@ -7,6 +7,7 @@ interface LanguageContextType {
   setLanguage: (lang: Language) => void;
   t: (key: string) => string;
   getLanguageName: (lang: Language) => string;
+  translateCategory: (categoryTitle: string) => string;
 }
 
 const translations: Record<Language, Record<string, string>> = {
@@ -45,7 +46,7 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.accommodationInfo': 'Información del Alojamiento',
     'dashboard.welcomeVideo': 'Video',
     'dashboard.localGuide': 'Guía Local',
-    'dashboard.customerSupport': 'Atención al Cliente',
+    'dashboard.customerSupport': 'Información de Interés',
     'dashboard.completeToUnlock': 'Completa tu registro para desbloquear',
     'dashboard.sendMessage': '💬 Enviar mensaje',
     'dashboard.callNow': '📞 Llamar ahora',
@@ -126,14 +127,28 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.send': 'Enviar',
     'dashboard.visitVacanfly': 'Visitar Vacanfly.com',
 
-    // Local Guide
-    'localGuide.restaurants': '🍽️ Restaurantes',
-    'localGuide.cafes': '☕ Cafeterías',
-    'localGuide.supermarkets': '🛒 Supermercados',
-    'localGuide.transport': '🚇 Transporte público',
-    'localGuide.tourist': '🏛️ Lugares turísticos',
-    'localGuide.emergency': '🏥 Servicios de emergencia',
-    'localGuide.entertainment': '🎭 Ocio y entretenimiento',
+    // Accommodation Info Categories
+    'accommodationInfo.howToArrive': '🗺️ ¿Cómo llegar…?',
+    'accommodationInfo.whatIsInAccommodation': '🏡 ¿Qué hay en el alojamiento?',
+    'accommodationInfo.howItWorks': '🔧 ¿Cómo funciona?',
+    'accommodationInfo.howDoI': '🛠️ ¿Cómo hago?',
+    'accommodationInfo.howToContact': '📞 ¿Cómo contacto?',
+    'accommodationInfo.accommodationRules': '📋 Normas del alojamiento',
+    'accommodationInfo.opening': '🔓 Apertura',
+
+    // Local Guide Categories
+    'localGuide.restaurants': 'Restaurantes',
+    'localGuide.barsDiscosCasinos': 'Bares, Discotecas, Casinos',
+    'localGuide.museums': 'Museos, Centros de Exposiciones, Galerías',
+    'localGuide.parks': 'Parques Temáticos, Parques Naturales, Jardines',
+    'localGuide.monuments': 'Monumentos, Patrimonios de Interés',
+    'localGuide.beaches': 'Playas, Ríos, Lagos',
+    'localGuide.gymsFitness': 'Gimnasios, Centros de Entrenamiento Físico',
+    'localGuide.spas': 'Spas, Centros de Relajación, Sanación',
+    'localGuide.adventure': 'Aventura',
+    'localGuide.pharmacies': 'Farmacias',
+    'localGuide.supermarkets': 'Supermercados',
+    'localGuide.emergency': 'Servicios de Emergencias',
 
     // Contact
     'contact.title': 'Contactar Anfitrión',
@@ -429,7 +444,7 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.accommodationInfo': 'Accommodation Information',
     'dashboard.welcomeVideo': 'Video',
     'dashboard.localGuide': 'Local Guide',
-    'dashboard.customerSupport': 'Customer Support',
+    'dashboard.customerSupport': 'Useful Information',
     'dashboard.completeToUnlock': 'Complete your registration to unlock',
     'dashboard.sendMessage': '💬 Send message',
     'dashboard.callNow': '📞 Call now',
@@ -511,14 +526,28 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.send': 'Send',
     'dashboard.visitVacanfly': 'Visit Vacanfly.com',
 
-    // Local Guide
-    'localGuide.restaurants': '🍽️ Restaurants',
-    'localGuide.cafes': '☕ Cafes',
-    'localGuide.supermarkets': '🛒 Supermarkets',
-    'localGuide.transport': '🚇 Public Transport',
-    'localGuide.tourist': '🏛️ Tourist Attractions',
-    'localGuide.emergency': '🏥 Emergency Services',
-    'localGuide.entertainment': '🎭 Entertainment',
+    // Accommodation Info Categories
+    'accommodationInfo.howToArrive': '🗺️ How to get here…?',
+    'accommodationInfo.whatIsInAccommodation': '🏡 What is in the accommodation?',
+    'accommodationInfo.howItWorks': '🔧 How does it work?',
+    'accommodationInfo.howDoI': '🛠️ How do I...?',
+    'accommodationInfo.howToContact': '📞 How to contact?',
+    'accommodationInfo.accommodationRules': '📋 Accommodation rules',
+    'accommodationInfo.opening': '🔓 Opening',
+
+    // Local Guide Categories
+    'localGuide.restaurants': 'Restaurants',
+    'localGuide.barsDiscosCasinos': 'Bars, Nightclubs, Casinos',
+    'localGuide.museums': 'Museums, Exhibition Centers, Galleries',
+    'localGuide.parks': 'Theme Parks, Natural Parks, Gardens',
+    'localGuide.monuments': 'Monuments, Heritage Sites',
+    'localGuide.beaches': 'Beaches, Rivers, Lakes',
+    'localGuide.gymsFitness': 'Gyms, Fitness Training Centers',
+    'localGuide.spas': 'Spas, Relaxation Centers, Healing',
+    'localGuide.adventure': 'Adventure',
+    'localGuide.pharmacies': 'Pharmacies',
+    'localGuide.supermarkets': 'Supermarkets',
+    'localGuide.emergency': 'Emergency Services',
 
     // Contact
     'contact.title': 'Contact Host',
@@ -814,7 +843,7 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.accommodationInfo': 'Informació de l\'Allotjament',
     'dashboard.welcomeVideo': 'Vídeo',
     'dashboard.localGuide': 'Guia Local',
-    'dashboard.customerSupport': 'Atenció al Client',
+    'dashboard.customerSupport': 'Informació d\'Interès',
     'dashboard.completeToUnlock': 'Completa el teu registre per desbloquejar',
     'dashboard.sendMessage': '💬 Enviar missatge',
     'dashboard.callNow': '📞 Trucar ara',
@@ -896,14 +925,28 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.send': 'Enviar',
     'dashboard.visitVacanfly': 'Visitar Vacanfly.com',
 
-    // Local Guide
-    'localGuide.restaurants': '🍽️ Restaurants',
-    'localGuide.cafes': '☕ Cafeteries',
-    'localGuide.supermarkets': '🛒 Supermercats',
-    'localGuide.transport': '🚇 Transport públic',
-    'localGuide.tourist': '🏛️ Llocs turístics',
-    'localGuide.emergency': '🏥 Serveis d\'emergència',
-    'localGuide.entertainment': '🎭 Oci i entreteniment',
+    // Accommodation Info Categories
+    'accommodationInfo.howToArrive': '🗺️ Com arribar…?',
+    'accommodationInfo.whatIsInAccommodation': '🏡 Què hi ha en l\'allotjament?',
+    'accommodationInfo.howItWorks': '🔧 Com funciona?',
+    'accommodationInfo.howDoI': '🛠️ Com faig?',
+    'accommodationInfo.howToContact': '📞 Com contactar?',
+    'accommodationInfo.accommodationRules': '📋 Normes de l\'allotjament',
+    'accommodationInfo.opening': '🔓 Obertura',
+
+    // Local Guide Categories
+    'localGuide.restaurants': 'Restaurants',
+    'localGuide.barsDiscosCasinos': 'Bars, Discoteques, Casinos',
+    'localGuide.museums': 'Museus, Centres d\'Exposicions, Galeries',
+    'localGuide.parks': 'Parcs Temàtics, Parcs Naturals, Jardins',
+    'localGuide.monuments': 'Monuments, Patrimonis d\'Interès',
+    'localGuide.beaches': 'Platges, Rius, Llacs',
+    'localGuide.gymsFitness': 'Gimnasos, Centres d\'Entrenament Físic',
+    'localGuide.spas': 'Spas, Centres de Relaxació, Sanació',
+    'localGuide.adventure': 'Aventura',
+    'localGuide.pharmacies': 'Farmàcies',
+    'localGuide.supermarkets': 'Supermercats',
+    'localGuide.emergency': 'Serveis d\'Emergències',
 
     // Contact
     'contact.title': 'Contactar Amfitrió',
@@ -1190,7 +1233,7 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.accommodationInfo': 'Informations sur l\'Hébergement',
     'dashboard.welcomeVideo': 'Vidéos',
     'dashboard.localGuide': 'Guide Local',
-    'dashboard.customerSupport': 'Service Client',
+    'dashboard.customerSupport': 'Informations Utiles',
     'dashboard.completeToUnlock': 'Complétez votre inscription pour déverrouiller',
     'dashboard.sendMessage': '💬 Envoyer un message',
     'dashboard.callNow': '📞 Appeler maintenant',
@@ -1270,14 +1313,28 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.send': 'Envoyer',
     'dashboard.visitVacanfly': 'Visiter Vacanfly.com',
 
-    // Local Guide
-    'localGuide.restaurants': '🍽️ Restaurants',
-    'localGuide.cafes': '☕ Cafés',
-    'localGuide.supermarkets': '🛒 Supermarchés',
-    'localGuide.transport': '🚇 Transport public',
-    'localGuide.tourist': '🏛️ Attractions touristiques',
-    'localGuide.emergency': '🏥 Services d\'urgence',
-    'localGuide.entertainment': '🎭 Divertissement',
+    // Accommodation Info Categories
+    'accommodationInfo.howToArrive': '🗺️ Comment arriver…?',
+    'accommodationInfo.whatIsInAccommodation': '🏡 Que trouve-t-on dans le logement?',
+    'accommodationInfo.howItWorks': '🔧 Comment ça marche?',
+    'accommodationInfo.howDoI': '🛠️ Comment faire?',
+    'accommodationInfo.howToContact': '📞 Comment contacter?',
+    'accommodationInfo.accommodationRules': '📋 Règles du logement',
+    'accommodationInfo.opening': '🔓 Ouverture',
+
+    // Local Guide Categories
+    'localGuide.restaurants': 'Restaurants',
+    'localGuide.barsDiscosCasinos': 'Bars, Discothèques, Casinos',
+    'localGuide.museums': 'Musées, Centres d\'Exposition, Galeries',
+    'localGuide.parks': 'Parcs à Thème, Parcs Naturels, Jardins',
+    'localGuide.monuments': 'Monuments, Patrimoines d\'Intérêt',
+    'localGuide.beaches': 'Plages, Rivières, Lacs',
+    'localGuide.gymsFitness': 'Gymnases, Centres d\'Entraînement Physique',
+    'localGuide.spas': 'Spas, Centres de Relaxation, Guérison',
+    'localGuide.adventure': 'Aventure',
+    'localGuide.pharmacies': 'Pharmacies',
+    'localGuide.supermarkets': 'Supermarchés',
+    'localGuide.emergency': 'Services d\'Urgence',
     'contact.title': 'Contacter l\'Hôte',
     'contact.name': 'María García',
     'contact.phone': '+34 612 345 678',
@@ -1556,7 +1613,7 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.accommodationInfo': 'Unterkunftsinformationen',
     'dashboard.welcomeVideo': 'Willkommensvideo',
     'dashboard.localGuide': 'Lokaler Führer',
-    'dashboard.customerSupport': 'Kundenservice',
+    'dashboard.customerSupport': 'Nützliche Informationen',
     'dashboard.completeToUnlock': 'Schließen Sie Ihre Registrierung ab zum Entsperren',
     'dashboard.sendMessage': '💬 Nachricht senden',
     'dashboard.callNow': '📞 Jetzt anrufen',
@@ -1636,14 +1693,28 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.send': 'Senden',
     'dashboard.visitVacanfly': 'Besuchen Sie Vacanfly.com',
 
-    // Local Guide
-    'localGuide.restaurants': '🍽️ Restaurants',
-    'localGuide.cafes': '☕ Cafés',
-    'localGuide.supermarkets': '🛒 Supermärkte',
-    'localGuide.transport': '🚇 Öffentliche Verkehrsmittel',
-    'localGuide.tourist': '🏛️ Touristische Attraktionen',
-    'localGuide.emergency': '🏥 Notdienste',
-    'localGuide.entertainment': '🎭 Unterhaltung',
+    // Accommodation Info Categories
+    'accommodationInfo.howToArrive': '🗺️ Wie komme ich dort hin…?',
+    'accommodationInfo.whatIsInAccommodation': '🏡 Was gibt es in der Unterkunft?',
+    'accommodationInfo.howItWorks': '🔧 Wie funktioniert es?',
+    'accommodationInfo.howDoI': '🛠️ Wie mache ich?',
+    'accommodationInfo.howToContact': '📞 Wie kontaktiere ich?',
+    'accommodationInfo.accommodationRules': '📋 Unterkunftsregeln',
+    'accommodationInfo.opening': '🔓 Öffnung',
+
+    // Local Guide Categories
+    'localGuide.restaurants': 'Restaurants',
+    'localGuide.barsDiscosCasinos': 'Bars, Diskotheken, Kasinos',
+    'localGuide.museums': 'Museen, Ausstellungszentren, Galerien',
+    'localGuide.parks': 'Themenparks, Naturparks, Gärten',
+    'localGuide.monuments': 'Denkmäler, Kulturerbe',
+    'localGuide.beaches': 'Strände, Flüsse, Seen',
+    'localGuide.gymsFitness': 'Fitnessstudios, Fitnesstrainingszentren',
+    'localGuide.spas': 'Spas, Entspannungszentren, Heilung',
+    'localGuide.adventure': 'Abenteuer',
+    'localGuide.pharmacies': 'Apotheken',
+    'localGuide.supermarkets': 'Supermärkte',
+    'localGuide.emergency': 'Notdienste',
     'contact.title': 'Gastgeber kontaktieren',
     'contact.name': 'María García',
     'contact.phone': '+34 612 345 678',
@@ -1857,7 +1928,7 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.accommodationInfo': 'Accommodatie Informatie',
     'dashboard.welcomeVideo': 'Video',
     'dashboard.localGuide': 'Lokale Gids',
-    'dashboard.customerSupport': 'Klantenservice',
+    'dashboard.customerSupport': 'Nuttige Informatie',
     'dashboard.completeToUnlock': 'Voltooi uw registratie om te ontgrendelen',
     'dashboard.sendMessage': '💬 Bericht versturen',
     'dashboard.callNow': '📞 Nu bellen',
@@ -1937,14 +2008,28 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.send': 'Versturen',
     'dashboard.visitVacanfly': 'Bezoek Vacanfly.com',
 
-    // Local Guide
-    'localGuide.restaurants': '🍽️ Restaurants',
-    'localGuide.cafes': '☕ Cafés',
-    'localGuide.supermarkets': '🛒 Supermarkten',
-    'localGuide.transport': '🚇 Openbaar vervoer',
-    'localGuide.tourist': '🏛️ Toeristische attracties',
-    'localGuide.emergency': '🏥 Nooddiensten',
-    'localGuide.entertainment': '🎭 Entertainment',
+    // Accommodation Info Categories
+    'accommodationInfo.howToArrive': '🗺️ Hoe te komen…?',
+    'accommodationInfo.whatIsInAccommodation': '🏡 Wat is er in de accommodatie?',
+    'accommodationInfo.howItWorks': '🔧 Hoe werkt het?',
+    'accommodationInfo.howDoI': '🛠️ Hoe doe ik?',
+    'accommodationInfo.howToContact': '📞 Hoe contact opnemen?',
+    'accommodationInfo.accommodationRules': '📋 Accommodatieregels',
+    'accommodationInfo.opening': '🔓 Opening',
+
+    // Local Guide Categories
+    'localGuide.restaurants': 'Restaurants',
+    'localGuide.barsDiscosCasinos': 'Bars, Discotheken, Casino\'s',
+    'localGuide.museums': 'Museums, Tentoonstellingscentra, Galerijen',
+    'localGuide.parks': 'Themaparken, Natuurparken, Tuinen',
+    'localGuide.monuments': 'Monumenten, Erfgoed',
+    'localGuide.beaches': 'Stranden, Rivieren, Meren',
+    'localGuide.gymsFitness': 'Sportscholen, Fitnesscentra',
+    'localGuide.spas': 'Spa\'s, Ontspanningscentra, Genezing',
+    'localGuide.adventure': 'Avontuur',
+    'localGuide.pharmacies': 'Apotheken',
+    'localGuide.supermarkets': 'Supermarkten',
+    'localGuide.emergency': 'Nooddiensten',
 
     // Contact
     'contact.title': 'Gastheer contacteren',
@@ -2244,8 +2329,38 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     return languageNames[lang];
   };
 
+  // Función para traducir categorías dinámicas de la base de datos
+  const translateCategory = (categoryTitle: string): string => {
+    if (!categoryTitle) return categoryTitle;
+
+    // Mapeo de categorías conocidas (español mayúsculas -> clave de traducción)
+    const categoryMap: Record<string, string> = {
+      'RESTAURANTES': 'localGuide.restaurants',
+      'BARES, DISCOTECAS, CASINOS': 'localGuide.barsDiscosCasinos',
+      'MUSEOS, CENTROS DE EXPOSICIONES, GALERÍAS': 'localGuide.museums',
+      'PARQUES TEMÁTICOS, PARQUES NATURALES, JARDÍNES': 'localGuide.parks',
+      'PARQUES TEMÁTICOS, PARQUES NATURALES, JARDINES': 'localGuide.parks', // Variación sin tilde
+      'MONUMENTOS, PATRIMONIOS DE INTERÉS': 'localGuide.monuments',
+      'PLAYAS, RÍOS, LAGOS': 'localGuide.beaches',
+      'GIMNASIOS, CENTROS DE ENTRENAMIENTO FÍSICO': 'localGuide.gymsFitness',
+      'SPAS, CENTROS DE RELAJACIÓN, SANACIÓN': 'localGuide.spas',
+      'AVENTURA': 'localGuide.adventure',
+      'FARMACIAS': 'localGuide.pharmacies',
+      'SUPERMERCADOS': 'localGuide.supermarkets',
+      'SERVICIOS DE EMERGENCIAS': 'localGuide.emergency',
+    };
+
+    const translationKey = categoryMap[categoryTitle];
+    if (translationKey) {
+      return translations[language][translationKey] || categoryTitle;
+    }
+
+    // Si no hay traducción disponible, devolver el título original
+    return categoryTitle;
+  };
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, getLanguageName }}>
+    <LanguageContext.Provider value={{ language, setLanguage, t, getLanguageName, translateCategory }}>
       {children}
     </LanguageContext.Provider>
   );
