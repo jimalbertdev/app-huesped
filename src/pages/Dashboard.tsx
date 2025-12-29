@@ -68,8 +68,8 @@ const Dashboard = () => {
   // const contractPath = responsibleGuest?.contract_path; // Ya no se usa, usamos reservationData.contract_path
   // console.log(reservationData);
   // Obtener datos de la reserva - Sin valores por defecto, mostrar '?' si no hay datos
-  const totalGuests = reservationData?.total_guests || 0;
-  const registeredGuests = reservationData?.registered_guests || 0;
+  const totalGuests = Number(reservationData?.total_guests || 0);
+  const registeredGuests = Number(reservationData?.registered_guests || 0);
   const reservationCode = reservationData?.reservation_code || '?';
   const checkInDate = reservationData?.check_in_date || '?';
   const checkInTime = reservationData?.check_in_time || '?';
@@ -104,7 +104,6 @@ const Dashboard = () => {
   const [isRegistered] = useState(true);
   const allGuestsRegistered = totalGuests > 0 && registeredGuests === totalGuests;
   const hasResponsibleGuest = guests.some(guest => guest.is_responsible);
-
   // Validar si la reserva está activa (dentro del rango de fechas en zona horaria de España)
   const isReservationActive = useMemo(() => {
     if (!checkInDate || !checkInTime || !checkOutDate || !checkOutTime) {
@@ -671,7 +670,11 @@ const Dashboard = () => {
                   <h3 className="font-semibold text-sm mb-1">
                     {isRegistered
                       ? t('dashboard.missingGuests')
-                      : t('dashboard.completeToUnlock')}
+                      : (
+                        <Link to={buildPathWithReservation("/register")} className="underline hover:text-primary transition-colors">
+                          {t('dashboard.completeToUnlock')}
+                        </Link>
+                      )}
                   </h3>
                   <p className="text-xs text-muted-foreground mb-3">
                     {t('dashboard.someFeaturesLimited')}
@@ -722,7 +725,9 @@ const Dashboard = () => {
               <div className="absolute inset-0 bg-muted/80 backdrop-blur-sm z-10 flex items-center justify-center">
                 <div className="text-center">
                   <Lock className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm font-medium">{t('dashboard.completeToUnlock')}</p>
+                  <Link to={buildPathWithReservation("/register")} className="text-sm font-medium underline hover:text-primary transition-colors">
+                    {t('dashboard.completeToUnlock')}
+                  </Link>
                 </div>
               </div>
             )}
@@ -960,7 +965,9 @@ const Dashboard = () => {
               <div className="absolute inset-0 bg-muted/80 backdrop-blur-sm z-10 flex items-center justify-center">
                 <div className="text-center">
                   <Lock className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm font-medium">{t('dashboard.completeToUnlock')}</p>
+                  <Link to={buildPathWithReservation("/register")} className="text-sm font-medium underline hover:text-primary transition-colors">
+                    {t('dashboard.completeToUnlock')}
+                  </Link>
                 </div>
               </div>
             )}
