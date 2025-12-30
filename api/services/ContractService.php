@@ -120,10 +120,15 @@ class ContractService
                     r.localizador_canal as reservation_code,
                     a.nombre as accommodation_name,
                     a.direccion as address,
-                    ac.nombre_anfitrion as host_name
+                    ac.nombre_anfitrion as host_name,
+                    e.registrotur,
+                    e.nrua,
+                    ent.nombre as entidad_nombre
                 FROM reserva r
                 LEFT JOIN alojamiento a ON r.alojamiento_id = a.idalojamiento
                 LEFT JOIN alojamiento_caracteristica ac ON a.idalojamiento = ac.idalojamiento
+                LEFT JOIN establecimiento e ON r.establecimiento_id = e.idestablecimiento
+                LEFT JOIN entidad ent ON e.id_entidad = ent.identidad
                 WHERE r.id = ?";
         return $this->database->queryOne($sql, [$reservation_id]);
     }
@@ -153,24 +158,34 @@ class ContractService
     private function generateContractHTML($reservation, $guest, $preferences, $signature_path)
     {
         // Formatear fechas
-        $check_in = date('d-m-Y', strtotime($reservation['check_in']));
-        $check_out = date('d-m-Y', strtotime($reservation['check_out']));
+        $check_in = date('d-m-Y', strtotime($reservation['fecha_inicio']));
+        $check_out = date('d-m-Y', strtotime($reservation['fecha_fin']));
         $contract_date = date('d-m-Y');
 
         // Calcular número de huéspedes
-        $num_guests = $reservation['num_guests'] ?? $reservation['numero_huespedes'] ?? 'N/A';
+        $num_guests = $reservation['total_huespedes'] ?? 'N/A';
         
         // Precio total
-        $total_price = isset($reservation['precio_total']) ? number_format($reservation['precio_total'], 2, ',', '.') : '0,00';
+        $total_price = number_format($reservation['total'], 2, ',', '.');
         
         // Nombre del alojamiento
-        $property_name = $reservation['accommodation_name'] ?? $reservation['property_name'] ?? 'N/A';
+        $property_name = $reservation['accommodation_name'];
         
         // Nombre completo del huésped
         $guest_full_name = trim(($guest['n0mbr3s'] ?? '') . ' ' . ($guest['p3ll1d01'] ?? '') . ' ' . ($guest['p3ll1d02'] ?? ''));
         
         // Documento del huésped
         $guest_document = ($guest['tipo_documento'] ?? 'DNI') . ': ' . ($guest['nvm3r0_d0cvm3nt0'] ?? 'N/A');
+
+        // Registros turísticos desde la tabla establecimiento
+        $registro_turistico = $reservation['registrotur'] ?? 'Pendiente de registro';
+        $nrua_registro = $reservation['nrua'] ?? 'Pendiente de registro';
+        
+        // Nombre de la entidad explotadora desde la tabla entidad
+        $entidad_explotadora = $reservation['entidad_nombre'] ?? 'GESTIÓN DE INMUEBLES SSL';
+        
+        // TODO: Obtener este valor de la base de datos cuando el usuario indique la fuente
+        $fianza_amount = '300,00'; // Monto de la fianza
 
         // Ruta absoluta de la firma
         $signature_img = '';
@@ -236,6 +251,11 @@ class ContractService
             margin-top: 15px;
             margin-bottom: 8px;
         }
+        .section-subtitle {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 11pt;
+        }
         table.data-table {
             width: 100%;
             border-collapse: collapse;
@@ -294,7 +314,9 @@ class ContractService
 
     <h1>Contrato de Arrendamiento de Uso Turístico</h1>
 
-    <h2>Datos de la Reserva</h2>
+    <h2>Datos de la Reserva:</h2>
+    
+    <div class="section-subtitle">Detalles:</div>
     
     <table class="data-table">
         <tr>
@@ -302,12 +324,16 @@ class ContractService
             <td>{$property_name}</td>
         </tr>
         <tr>
-            <td class="label">Nº de Registro Turístico (NRVT/NRUA):</td>
-            <td>Pendiente de registro</td>
+            <td class="label">Nº de Registro Turístico:</td>
+            <td>{$registro_turistico}</td>
+        </tr>
+        <tr>
+            <td class="label">Nº de Registro Turístico (NRUA):</td>
+            <td>{$nrua_registro}</td>
         </tr>
         <tr>
             <td class="label">Entidad Explotadora:</td>
-            <td>GESTIÓN DE INMUEBLES SSL (Vacanfly)</td>
+            <td>{$entidad_explotadora}</td>
         </tr>
         <tr>
             <td class="label">Huésped Responsable:</td>
@@ -335,36 +361,41 @@ class ContractService
         </tr>
     </table>
 
-    <h2>Cláusulas Contractuales</h2>
+    <h2>CLÁUSULAS CONTRACTUALES</h2>
 
     <h3>1. Objeto y Naturaleza</h3>
     <div class="clause">
         El objeto del presente es el Arrendamiento de Temporada con destino a uso turístico/vacacional del inmueble. 
-        Este contrato no se destina a cubrir la necesidad de vivienda permanente del Huésped y, por lo tanto, 
+        Este contrato no se destina a cubrir la necesidad de vivienda permanente del huésped y, por lo tanto, 
         queda excluido del régimen de prórroga obligatoria de la LAU.
     </div>
 
     <h3>2. Duración y Extensión</h3>
     <div class="clause">
-        El período de arrendamiento es el estipulado en la tabla superior. El Huésped deberá abandonar la propiedad 
+        El período de arrendamiento es el estipulado en la tabla superior. El huésped deberá abandonar la propiedad 
         en la fecha y hora de salida.<br><br>
-        El Huésped renuncia a cualquier derecho de prórroga o renovación forzosa del contrato. No obstante, 
-        si El Huésped solicitara una extensión de la estadía, esta podrá ser concedida solo si La Arrendadora 
+        El huésped renuncia a cualquier derecho de prórroga o renovación forzosa del contrato. No obstante, 
+        si El huésped solicitara una extensión de la estadía, esta podrá ser concedida sólo si La Arrendadora 
         tiene disponibilidad y ambas partes firman un nuevo acuerdo de extensión con las condiciones económicas 
         y temporales pactadas.
     </div>
 
-    <h3>3. Precio y Fianza</h3>
+    <h3>3. Precio</h3>
     <div class="clause">
-        El precio total de la estancia es el indicado. El Huésped entrega una fianza para garantizar la conservación 
-        del inmueble y el cumplimiento de las obligaciones. La fianza será devuelta tras la salida, una vez 
-        comprobado el buen estado de la propiedad.
+        El precio total de la estancia es el indicado.
     </div>
 
-    <h3>4. Obligaciones del Huésped</h3>
+    <h3>4. Fianza</h3>
+    <div class="clause">
+        El Arrendador podrá reclamar una vez comprobado el estado del alojamiento en concepto de fianza el importe 
+        de hasta ({$fianza_amount}€) para cubrir posibles daños en la conservación del inmueble y el cumplimiento 
+        de las obligaciones.
+    </div>
+
+    <h3>5. Obligaciones del Huésped</h3>
     <div class="clause">
         <ul>
-            <li><strong>Responsabilidad por Daños:</strong> El Huésped es directa y totalmente responsable de los daños, 
+            <li><strong>Responsabilidad por Daños:</strong> El huésped es directa y totalmente responsable de los daños, 
             desperfectos, pérdidas o menoscabos causados en el inmueble, mobiliario o enseres, por él o por sus acompañantes.</li>
             
             <li><strong>Ocupación Máxima:</strong> El número de ocupantes no podrá exceder del máximo indicado. 
@@ -374,12 +405,12 @@ class ContractService
             <li><strong>Normas de Convivencia:</strong> Queda estrictamente prohibido realizar fiestas, actividades 
             molestas, insalubres o ilícitas, debiendo respetar el descanso vecinal, especialmente en horas nocturnas.</li>
             
-            <li><strong>Identificación:</strong> El Huésped se compromete a facilitar los datos de identificación de 
+            <li><strong>Identificación:</strong> El huésped se compromete a facilitar los datos de identificación de 
             todos los ocupantes, según lo exige la normativa española de seguridad ciudadana (Libro Registro).</li>
         </ul>
     </div>
 
-    <h3>5. Ley Aplicable y Jurisdicción</h3>
+    <h3>6. Ley Aplicable y Jurisdicción</h3>
     <div class="clause">
         Este contrato se interpreta y aplica conforme a la ley española. Para cualquier controversia, las partes 
         se someten expresamente a los Juzgados y Tribunales del lugar donde se ubica el inmueble, con renuncia 
@@ -394,10 +425,10 @@ class ContractService
                 <td width="50%" style="vertical-align: top;">
                     <div class="signature-box">
                         <div class="signature-title">La Arrendadora</div>
-                        <div>(GESTIÓN DE INMUEBLES SSL)</div>
-                        <div style="margin-top: 60px; border-top: 1px solid #000; padding-top: 5px;">
-                            Firmado digitalmente
-                        </div>
+                        <div>{$entidad_explotadora}</div>
+                        <!-- <div style="margin-top: 60px; border-top: 1px solid #000; padding-top: 5px;">
+                            Firmado: FIRMA DEL RESPONSABLE
+                        </div> -->
                     </div>
                 </td>
                 <td width="50%" style="vertical-align: top;">
@@ -418,9 +449,9 @@ class ContractService
     </div>
 
     <div class="footer-note">
-        <p>Este contrato incluye de forma prominente el Nº de Registro Turístico, esencial para operar legalmente 
+        <p>Este contrato incluye ahora de forma prominente el Nº de Registro Turístico, esencial para operar legalmente 
         y demostrar el cumplimiento de las normativas de turismo de las Comunidades Autónomas.</p>
-        <p>Generado automáticamente por VACANFLY </p>
+        <p>Generado automáticamente por VACANFLY</p>
     </div>
 </body>
 </html>

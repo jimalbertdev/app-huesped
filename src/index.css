@@ -218,3 +218,52 @@ All colors MUST be HSL.
 .dark .prose-xs a:hover {
   color: #60a5fa !important;
 }
+
+/* Estilos para términos y condiciones dinámicos */
+.terms-content h1,
+.terms-content h2,
+.terms-content h3,
+.terms-content h4,
+.terms-content h5,
+.terms-content h6 {
+  @apply font-semibold mb-2 text-foreground;
+}
+
+.terms-content h4 {
+  @apply text-base;
+}
+
+.terms-content p {
+  @apply text-muted-foreground mb-4 leading-relaxed;
+}
+
+.terms-content ul,
+.terms-content ol {
+  @apply list-disc list-inside space-y-1 text-muted-foreground mb-4;
+}
+
+.terms-content ol {
+  @apply list-decimal;
+}
+
+.terms-content li {
+  @apply text-muted-foreground;
+}
+
+.terms-content a {
+  @apply text-primary hover:underline;
+}
+
+.terms-content strong,
+.terms-content b {
+  @apply font-semibold text-foreground;
+}
+
+.terms-content em,
+.terms-content i {
+  @apply italic;
+}
+
+.terms-content div + div {
+  @apply mt-4;
+}

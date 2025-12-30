@@ -314,6 +314,18 @@ export const clientService = {
   getById: (id: number) => api.get(`/clients/${id}`),
 };
 
+// Términos y Condiciones
+export const termsService = {
+  /**
+   * Obtener términos y condiciones por alojamiento e idioma
+   * @param accommodationId - ID del alojamiento
+   * @param language - Código de idioma (es, en, ca, fr, de, nl)
+   * @returns Términos en HTML para el idioma solicitado
+   */
+  getByAccommodation: (accommodationId: number, language: string = 'es') =>
+    api.get(`/terms/${accommodationId}?lang=${language}`),
+};
+
 // Health Check
 export const healthCheck = () => api.get('/health');
 

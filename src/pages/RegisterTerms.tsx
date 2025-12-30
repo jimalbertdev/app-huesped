@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,14 +9,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { useReservationParams } from "@/hooks/useReservationParams";
 import { useRegistrationFlow } from "@/hooks/useRegistrationFlow";
 import { useReservation } from "@/hooks/useReservation";
-import { guestService, preferenceService, handleApiError } from "@/services/api";
+import { guestService, preferenceService, termsService, handleApiError, extractData } from "@/services/api";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import FloatingActionBar from "@/components/FloatingActionBar";
 import vacanflyLogo from "@/assets/vacanfly-logo.png";
 
 const RegisterTerms = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const { buildPathWithReservation } = useReservationParams();
   const { guestData, preferenceData, signatureData, setSignatureData, clearRegistrationData, isGuestDataComplete } = useRegistrationFlow();
@@ -28,6 +28,11 @@ const RegisterTerms = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasSignature, setHasSignature] = useState(false);
 
+  // Estados para términos dinámicos
+  const [termsContent, setTermsContent] = useState<string>('');
+  const [termsLoading, setTermsLoading] = useState(true);
+  const [termsError, setTermsError] = useState<string | null>(null);
+
   // Redirección automática al dashboard si todos los huéspedes están registrados
   const totalGuests = reservationData?.total_guests || 0;
   const registeredGuests = reservationData?.registered_guests || 0;
@@ -38,6 +43,47 @@ const RegisterTerms = () => {
       navigate(buildPathWithReservation('/dashboard'));
     }
   }, [allGuestsRegistered, totalGuests, navigate, buildPathWithReservation]);
+
+  // Cargar términos y condiciones desde la API
+  useEffect(() => {
+    const loadTerms = async () => {
+      if (!reservationData?.accommodation_id) {
+        return;
+      }
+
+      setTermsLoading(true);
+      setTermsError(null);
+
+      try {
+        const response = await termsService.getByAccommodation(
+          reservationData.accommodation_id,
+          language
+        );
+        const data = extractData<{
+          accommodation_id: number;
+          language: string;
+          terms_html: string;
+          available_languages: string[];
+        }>(response);
+
+        setTermsContent(data.terms_html);
+      } catch (error: any) {
+        const errorMessage = handleApiError(error);
+        console.error('Error al cargar términos:', errorMessage);
+
+        // Si no hay términos configurados, usar contenido por defecto
+        if (error.response?.status === 404) {
+          setTermsError('No hay términos configurados para este alojamiento. Por favor, contacta con el anfitrión.');
+        } else {
+          setTermsError('Error al cargar los términos y condiciones.');
+        }
+      } finally {
+        setTermsLoading(false);
+      }
+    };
+
+    loadTerms();
+  }, [reservationData?.accommodation_id, language]);
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement> | TouchEvent) => {
     const canvas = canvasRef.current;
@@ -336,53 +382,24 @@ const RegisterTerms = () => {
                   </a>
                 </div>
                 <ScrollArea className="h-[300px] w-full rounded-lg border p-4">
-                  <div className="space-y-4 text-sm">
-                    <div>
-                      <h4 className="font-semibold mb-2">{t('terms.keySummary')}</h4>
-                      <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                        <li>{t('terms.checkInTime')}</li>
-                        <li>{t('terms.checkOutTime')}</li>
-                        <li>{t('terms.noSmoking')}</li>
-                        <li>{t('terms.noPets')}</li>
-                        <li>{t('terms.maxCapacity')}</li>
-                      </ul>
+                  {termsLoading ? (
+                    <div className="flex items-center justify-center py-8 text-muted-foreground">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
+                      {t('register.loading')}
                     </div>
-
-                    <div>
-                      <h4 className="font-semibold mb-2">1. {t('terms.accommodationRules')}</h4>
-                      <p className="text-muted-foreground">
-                        El huésped se compromete a mantener el alojamiento en buen estado y hacer un uso responsable de las instalaciones. Está prohibido fumar en el interior del alojamiento. No se permiten fiestas ni eventos sin autorización previa. El ruido debe mantenerse a un nivel razonable, especialmente entre las 22:00 y las 08:00 horas.
+                  ) : termsError ? (
+                    <div className="text-center py-8">
+                      <p className="text-destructive mb-4">{termsError}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {t('contact.problemQuestion')}
                       </p>
                     </div>
-
-                    <div>
-                      <h4 className="font-semibold mb-2">2. {t('terms.cancellationPolicy')}</h4>
-                      <p className="text-muted-foreground">
-                        Las cancelaciones realizadas con más de 7 días de antelación tendrán reembolso completo. Cancelaciones entre 3 y 7 días: 50% de reembolso. Cancelaciones con menos de 3 días: sin reembolso. En caso de no presentarse sin cancelación previa, no habrá reembolso.
-                      </p>
-                    </div>
-
-                    <div>
-                      <h4 className="font-semibold mb-2">3. {t('terms.responsibilities')}</h4>
-                      <p className="text-muted-foreground">
-                        El huésped es responsable de cualquier daño causado al alojamiento durante su estancia. Se realizará inspección al check-out. Los daños serán cargados a la tarjeta de crédito proporcionada. El anfitrión no se hace responsable de pérdidas o robos de pertenencias personales.
-                      </p>
-                    </div>
-
-                    <div>
-                      <h4 className="font-semibold mb-2">4. {t('terms.dataProtection')}</h4>
-                      <p className="text-muted-foreground">
-                        Los datos personales proporcionados serán tratados conforme al RGPD y la legislación española de protección de datos. La información será utilizada exclusivamente para la gestión de la reserva y el cumplimiento de obligaciones legales, incluyendo el registro de viajeros obligatorio.
-                      </p>
-                    </div>
-
-                    <div>
-                      <h4 className="font-semibold mb-2">5. {t('terms.legalTerms')}</h4>
-                      <p className="text-muted-foreground">
-                        Este contrato se rige por la legislación española. El huésped acepta cumplir con todas las leyes locales durante su estancia. El anfitrión se reserva el derecho de cancelar la reserva en caso de incumplimiento de las normas.
-                      </p>
-                    </div>
-                  </div>
+                  ) : (
+                    <div
+                      className="terms-content space-y-4 text-sm"
+                      dangerouslySetInnerHTML={{ __html: termsContent }}
+                    />
+                  )}
                 </ScrollArea>
               </div>
 
