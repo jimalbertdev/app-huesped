@@ -7,7 +7,7 @@
  * Actualizado para soportar jerarquía explícita:
  * - Categoria-Padre: ...
  * - sub-categoria: ...
- * - sub-categoria-hija: ... (Item)
+ * - recomendaciones: ... (Item)
  * - Resumen: ... (Descripción de subcategoría)
  */
 
@@ -72,76 +72,96 @@ try {
             // 1. Detectar Keywords explícitos
             
             // CATEGORIA PADRE
-            if (preg_match('/^Categoria-Padre:\s*(.+)/i', $line, $matches)) {
-                // Cerrar contextos anteriores
-                finishCurrentContext($db, $accommodationId, $context, $currentItemName, $currentItemDesc, $currentSummary, $currentSubId, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
-                
-                $catName = trim($matches[1]);
-                $currentParentId = findOrCreateCategory($db, $catName, null, $categoryCache, $globalOrder, $dryRun);
-                $currentSubId = null;
-                $context = 'NONE';
-                $itemOrder = 0;
-                echo "    [PADRE] $catName (ID: $currentParentId)\n";
-                continue;
-            }
-            
-            // SUB CATEGORIA
-            if (preg_match('/^sub-categoria:\s*(.+)/i', $line, $matches)) {
-                finishCurrentContext($db, $accommodationId, $context, $currentItemName, $currentItemDesc, $currentSummary, $currentSubId, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
-                
-                $catName = trim($matches[1]);
-                if (!$currentParentId) {
-                    echo "    ! Advertencia: Subcategoría '$catName' encontrada sin Padre previo. Creando huérfana.\n";
-                }
-                $currentSubId = findOrCreateCategory($db, $catName, $currentParentId, $categoryCache, $globalOrder, $dryRun);
-                $context = 'NONE';
-                $itemOrder = 0;
-                echo "      [SUB] $catName (ID: $currentSubId)\n";
-                continue;
-            }
-            
-            // RESUMEN (Descripción de Subcategoría)
-            if (preg_match('/^Resumen:\s*(.+)?/i', $line, $matches)) {
-                 finishCurrentContext($db, $accommodationId, $context, $currentItemName, $currentItemDesc, $currentSummary, $currentSubId, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
-                 
-                 $context = 'SUMMARY';
-                 $currentSummary = isset($matches[1]) ? trim($matches[1]) : "";
-                 continue;
-            }
-            
-            // ITEM (Sub-categoria-hija OR Bullet Point)
-            $isItem = false;
-            $itemNameRaw = '';
-            
-            if (preg_match('/^sub-categoria-hija:\s*(.+)/i', $line, $matches)) {
-                $isItem = true;
-                $itemNameRaw = $matches[1];
-            } elseif (mb_strpos($line, '❖') !== false) {
+             if (preg_match('/^categoria-padre:\s*(.+)/i', $line, $matches)) {
+                  finishCurrentContext($db, $accommodationId, $context, $currentItemName, $currentItemDesc, $currentSummary, $currentSubId, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
+                  
+                  $catNameRaw = trim($matches[1]);
+                  $catNameWithTag = "<h4>$catNameRaw</h4>";
+                  $currentParentId = findOrCreateCategory($db, $catNameWithTag, null, $categoryCache, $globalOrder, $dryRun);
+                  $currentSubId = null;
+                  $context = 'NONE';
+                  $itemOrder = 0;
+                  echo "    [PADRE] $catNameWithTag (ID: $currentParentId)\n";
+                  continue;
+             }
+             
+             if (preg_match('/^sub-categoria:\s*(.+)/i', $line, $matches)) {
+                  finishCurrentContext($db, $accommodationId, $context, $currentItemName, $currentItemDesc, $currentSummary, $currentSubId, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
+                  
+                  $catNameRaw = trim($matches[1]);
+                  $catNameWithTag = "<h5>$catNameRaw</h5>";
+                  if (!$currentParentId) {
+                      echo "    ! Advertencia: Subcategoría '$catNameWithTag' encontrada sin Padre previo. Creando huérfana.\n";
+                  }
+                  $currentSubId = findOrCreateCategory($db, $catNameWithTag, $currentParentId, $categoryCache, $globalOrder, $dryRun);
+                  $context = 'NONE';
+                  $itemOrder = 0;
+                  echo "      [SUB] $catNameWithTag (ID: $currentSubId)\n";
+                  continue;
+             }
+
+             // RECOMENDACIONES (Auto-detectar como subcategoría)
+             // Detectamos explícitamente "recomendaciones:" (prefijo común) o "Nuestras recomendaciones"
+             if (preg_match('/^(?:recomendaciones:\s*|Nuestras recomendaciones)/iu', $line)) {
+                  finishCurrentContext($db, $accommodationId, $context, $currentItemName, $currentItemDesc, $currentSummary, $currentSubId, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
+                  
+                  // Limpiar el prefijo "recomendaciones:" si existe para dejar solo el título
+                  $catNameRaw = preg_replace('/^recomendaciones:\s*/iu', '', $line);
+                  $catNameRaw = trim($catNameRaw);
+                  $catNameRaw = str_replace(['❖', '❖ '], '', $catNameRaw);
+                  
+                  $catNameWithTag = "<h5>$catNameRaw</h5>";
+                  if (!$currentParentId) {
+                      echo "    ! Advertencia: Recomendación '$catNameWithTag' encontrada sin Padre previo. Creando huérfana.\n";
+                  }
+                  $currentSubId = findOrCreateCategory($db, $catNameWithTag, $currentParentId, $categoryCache, $globalOrder, $dryRun);
+                  $context = 'NONE';
+                  $itemOrder = 0;
+                  echo "      [SUB-AUTO] $catNameWithTag (ID: $currentSubId)\n";
+                  continue;
+             }
+             
+             // RESUMEN (Descripción de Subcategoría)
+             if (preg_match('/^Resumen:\s*(.+)?/i', $line, $matches)) {
+                  finishCurrentContext($db, $accommodationId, $context, $currentItemName, $currentItemDesc, $currentSummary, $currentSubId, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
+                  
+                  $context = 'SUMMARY';
+                  $currentSummary = isset($matches[1]) ? trim($matches[1]) : "";
+                  continue;
+             }
+             
+             // ITEM (recomendaciones OR Bullet Point)
+             $isItem = false;
+             $itemNameRaw = '';
+             
+             if (preg_match('/^recomendaciones:\s*(.+)/i', $line, $matches)) {
                  $isItem = true;
-                 $itemNameRaw = str_replace(['❖', '❖ '], '', $line);
-            }
-            
-            if ($isItem) {
-                 finishCurrentContext($db, $accommodationId, $context, $currentItemName, $currentItemDesc, $currentSummary, $currentSubId, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
-                 
-                 $context = 'ITEM';
-                 $currentItemName = trim($itemNameRaw);
-                 $currentItemDesc = "";
-                 $itemOrder++;
-                 continue;
-            }
-            
-            // 2. Procesar contenido según contexto
-            if ($context === 'SUMMARY') {
-                $currentSummary .= ($currentSummary ? "<br>" : "") . $line;
-            } elseif ($context === 'ITEM') {
-                 // Detectar y formatear enlaces/teléfonos en la descripción del item (lógica anterior reutilizada)
-                 $line = formatLine($line);
-                 $currentItemDesc .= $line . "<br>";
-            } else {
-                // Texto fuera de contexto explícito... podría ser basura o continuación de algo mal parseado.
-                // Ignorar o loguear.
-            }
+                 $itemNameRaw = $matches[1];
+             } elseif (mb_strpos($line, '❖') !== false) {
+                  $isItem = true;
+                  $itemNameRaw = str_replace(['❖', '❖ '], '', $line);
+             }
+             
+             if ($isItem) {
+                  finishCurrentContext($db, $accommodationId, $context, $currentItemName, $currentItemDesc, $currentSummary, $currentSubId, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
+                   $context = 'ITEM';
+                   $currentItemName = "<h6>" . trim($itemNameRaw) . "</h6>";
+                   $currentItemDesc = "";
+                   $itemOrder++;
+                   continue;
+             }
+             
+             // 2. Procesar contenido según contexto
+             if ($context === 'SUMMARY') {
+                 $currentSummary .= ($currentSummary ? "<br>" : "") . $line;
+             } elseif ($context === 'ITEM') {
+                  // Detectar y formatear enlaces/teléfonos en la descripción del item (lógica anterior reutilizada)
+                  $line = formatLine($line);
+                  $currentItemDesc .= $line . "<br>";
+             } else {
+                 // Texto fuera de contexto explícito... podría ser basura o continuación de algo mal parseado.
+                 // Ignorar o loguear.
+             }
         }
         
         // Cerrar último bloque al terminar archivo

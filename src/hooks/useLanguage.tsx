@@ -2339,6 +2339,9 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const translateCategory = (categoryTitle: string): string => {
     if (!categoryTitle) return categoryTitle;
 
+    // Quitar etiquetas HTML para la traducción (ej: <h4>RESTAURANTES</h4> -> RESTAURANTES)
+    const cleanTitle = categoryTitle.replace(/<\/?([^>]+)>/g, "");
+
     // Mapeo de categorías conocidas (español mayúsculas -> clave de traducción)
     const categoryMap: Record<string, string> = {
       'RESTAURANTES': 'localGuide.restaurants',
@@ -2356,9 +2359,15 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       'SERVICIOS DE EMERGENCIAS': 'localGuide.emergency',
     };
 
-    const translationKey = categoryMap[categoryTitle];
+    const translationKey = categoryMap[cleanTitle];
     if (translationKey) {
-      return translations[language][translationKey] || categoryTitle;
+      const translated = translations[language][translationKey] || cleanTitle;
+      // Re-envolver con la etiqueta original si existía
+      const tagMatch = categoryTitle.match(/^(<[^>]+>).*(<\/[^>]+>)$/);
+      if (tagMatch) {
+        return `${tagMatch[1]}${translated}${tagMatch[2]}`;
+      }
+      return translated;
     }
 
     // Si no hay traducción disponible, devolver el título original

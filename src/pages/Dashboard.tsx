@@ -522,7 +522,7 @@ const Dashboard = () => {
       });
     }
   };
-
+  console.log(accommodationGuide);
   const loadSuggestions = async () => {
     if (!reservationData?.id) return;
 
@@ -1411,18 +1411,24 @@ const Dashboard = () => {
                       <AccordionTrigger className="text-sm text-left [&[data-state=open]>svg]:rotate-180 sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 border-b">
                         <div className="flex items-center gap-2 text-left w-full">
                           <MapPin className="w-4 h-4 text-red-600 flex-shrink-0" />
-                          <span className="text-left">{translateCategory(category.title)}</span>
+                          <span
+                            className="text-left"
+                            dangerouslySetInnerHTML={{ __html: translateCategory(category.title) }}
+                          />
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>
-                        <div className="space-y-4">
+                        <div className="space-y-4 local-guide-content">
                           {/* Items directos (si los hay) */}
                           {category.items && category.items.length > 0 && (
                             <div className="space-y-2">
                               {category.items.map((item: any) => (
                                 <div key={item.id} className="p-2 bg-muted/50 rounded-lg text-left">
                                   {item.name && (
-                                    <h5 className="font-bold text-sm mb-1">{item.name}</h5>
+                                    <div
+                                      className="font-bold text-sm mb-1"
+                                      dangerouslySetInnerHTML={{ __html: item.name }}
+                                    />
                                   )}
                                   {item.description && (
                                     <div
@@ -1436,32 +1442,47 @@ const Dashboard = () => {
                           )}
 
                           {/* Subcategorías (Jerarquía) */}
-                          {category.subcategories && category.subcategories.map((sub: any) => (
-                            <div key={sub.id} className="space-y-2 pt-2 first:pt-0">
-                              <h4 className="font-semibold text-sm text-primary/80 border-b pb-1 mb-2">
-                                {translateCategory(sub.title)}
-                              </h4>
-                              {sub.items && sub.items.map((item: any) => (
-                                <div key={item.id} className="p-2 bg-muted/50 rounded-lg text-left">
-                                  {item.name && (
-                                    <h5 className="font-bold text-sm mb-1">{item.name}</h5>
-                                  )}
-                                  {item.description && (
-                                    <div
-                                      className="text-xs text-muted-foreground prose prose-xs max-w-none [&_h2]:font-semibold [&_h3]:font-semibold [&_h4]:font-semibold text-left [&_*]:!text-left"
-                                      dangerouslySetInnerHTML={{ __html: item.description }}
-                                    />
-                                  )}
-                                </div>
-                              ))}
-                              {sub.description && (
-                                <div
-                                  className="text-xs text-muted-foreground prose prose-xs max-w-none mt-2 mb-3 text-left [&_*]:!text-left italic bg-muted/20 p-2 rounded"
-                                  dangerouslySetInnerHTML={{ __html: sub.description }}
+                          {category.subcategories && category.subcategories.map((sub: any) => {
+                            // Detectar si es la subcategoría de "Recomendaciones"
+                            // Limpiamos etiquetas HTML primero para comparar el texto
+                            const cleanTitle = sub.title ? sub.title.replace(/<\/?[^>]+(>|$)/g, "").trim() : "";
+                            const isRecommendations = cleanTitle.toLowerCase().includes('recomendaciones') ||
+                              cleanTitle.toLowerCase().includes('recommendations');
+
+                            return (
+                              <div key={sub.id} className="space-y-2 pt-2 first:pt-0">
+                                <h4
+                                  className={`font-semibold text-sm border-b pb-1 mb-2 rounded px-2 py-1 ${isRecommendations ? 'bg-yellow-100/50 text-primary' : 'text-primary/80'}`}
+                                  dangerouslySetInnerHTML={{ __html: translateCategory(sub.title) }}
                                 />
-                              )}
-                            </div>
-                          ))}
+                                {sub.items && sub.items.map((item: any) => (
+                                  <div
+                                    key={item.id}
+                                    className={`p-2 rounded-lg text-left ${isRecommendations ? 'bg-yellow-100/50' : 'bg-muted/50'}`}
+                                  >
+                                    {item.name && (
+                                      <div
+                                        className={`font-bold text-sm mb-1 ${isRecommendations ? 'text-primary' : ''}`}
+                                        dangerouslySetInnerHTML={{ __html: item.name }}
+                                      />
+                                    )}
+                                    {item.description && (
+                                      <div
+                                        className="text-xs text-muted-foreground whitespace-pre-line"
+                                        dangerouslySetInnerHTML={{ __html: item.description }}
+                                      />
+                                    )}
+                                  </div>
+                                ))}
+                                {sub.description && (
+                                  <div
+                                    className="text-xs text-muted-foreground prose prose-xs max-w-none mt-2 mb-3 text-left [&_*]:!text-left italic bg-muted/20 p-2 rounded"
+                                    dangerouslySetInnerHTML={{ __html: sub.description }}
+                                  />
+                                )}
+                              </div>
+                            )
+                          })}
 
                           {/* Mensaje vacio si no hay nada */}
                           {(!category.items?.length && !category.subcategories?.length) && (
