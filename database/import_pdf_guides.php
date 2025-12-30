@@ -76,7 +76,7 @@ try {
                   finishCurrentContext($db, $accommodationId, $context, $currentItemName, $currentItemDesc, $currentSummary, $currentSubId, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
                   
                   $catNameRaw = trim($matches[1]);
-                  $catNameWithTag = "<h4>$catNameRaw</h4>";
+                  $catNameWithTag = $catNameRaw;
                   $currentParentId = findOrCreateCategory($db, $catNameWithTag, null, $categoryCache, $globalOrder, $dryRun);
                   $currentSubId = null;
                   $context = 'NONE';
@@ -89,7 +89,7 @@ try {
                   finishCurrentContext($db, $accommodationId, $context, $currentItemName, $currentItemDesc, $currentSummary, $currentSubId, ($currentSubId ?: $currentParentId), $dryRun, $itemOrder);
                   
                   $catNameRaw = trim($matches[1]);
-                  $catNameWithTag = "<h5>$catNameRaw</h5>";
+                  $catNameWithTag = $catNameRaw;
                   if (!$currentParentId) {
                       echo "    ! Advertencia: Subcategoría '$catNameWithTag' encontrada sin Padre previo. Creando huérfana.\n";
                   }
@@ -110,7 +110,7 @@ try {
                   $catNameRaw = trim($catNameRaw);
                   $catNameRaw = str_replace(['❖', '❖ '], '', $catNameRaw);
                   
-                  $catNameWithTag = "<h5>$catNameRaw</h5>";
+                  $catNameWithTag = $catNameRaw;
                   if (!$currentParentId) {
                       echo "    ! Advertencia: Recomendación '$catNameWithTag' encontrada sin Padre previo. Creando huérfana.\n";
                   }
