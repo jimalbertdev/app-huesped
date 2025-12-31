@@ -67,14 +67,25 @@ const Dashboard = () => {
   const responsibleGuest = guests.find(g => g.is_responsible);
   // const contractPath = responsibleGuest?.contract_path; // Ya no se usa, usamos reservationData.contract_path
   // console.log(reservationData);
+  // Helper para formatear fechas a DD-MM-YYYY
+  const formatDate = (dateString: string | undefined | null) => {
+    if (!dateString || dateString === '?') return '?';
+    // Asumimos que dateString viene en formato YYYY-MM-DD del backend
+    const [year, month, day] = dateString.split('-');
+    if (!day || !month || !year) return dateString;
+    return `${day}-${month}-${year}`;
+  };
+
   // Obtener datos de la reserva - Sin valores por defecto, mostrar '?' si no hay datos
   const totalGuests = Number(reservationData?.total_guests || 0);
   const registeredGuests = Number(reservationData?.registered_guests || 0);
   const reservationCode = reservationData?.reservation_code || '?';
-  const checkInDate = reservationData?.check_in_date || '?';
+  const rawCheckInDate = reservationData?.check_in_date || '?';
   const checkInTime = reservationData?.check_in_time || '?';
-  const checkOutDate = reservationData?.check_out_date || '?';
+  const rawCheckOutDate = reservationData?.check_out_date || '?';
   const checkOutTime = reservationData?.check_out_time || '?';
+  const checkInDate = formatDate(rawCheckInDate);
+  const checkOutDate = formatDate(rawCheckOutDate);
   const hostName = reservationData?.host_name || '?';
   const hostPhone = reservationData?.host_phone || '?';
   const hostEmail = reservationData?.host_email || '?';
@@ -106,11 +117,11 @@ const Dashboard = () => {
   const hasResponsibleGuest = guests.some(guest => guest.is_responsible);
   // Validar si la reserva está activa (dentro del rango de fechas en zona horaria de España)
   const isReservationActive = useMemo(() => {
-    if (!checkInDate || !checkInTime || !checkOutDate || !checkOutTime) {
+    if (!rawCheckInDate || !checkInTime || !rawCheckOutDate || !checkOutTime) {
       return false;
     }
 
-    if (checkInDate === '?' || checkInTime === '?' || checkOutDate === '?' || checkOutTime === '?') {
+    if (rawCheckInDate === '?' || checkInTime === '?' || rawCheckOutDate === '?' || checkOutTime === '?') {
       return false;
     }
 
@@ -122,8 +133,8 @@ const Dashboard = () => {
       const currentDateTime = new Date(nowInSpain);
 
       // Construir fechas de check-in y check-out
-      const checkInDateTime = new Date(`${checkInDate}T${checkInTime}`);
-      const checkOutDateTime = new Date(`${checkOutDate}T${checkOutTime}`);
+      const checkInDateTime = new Date(`${rawCheckInDate}T${checkInTime}`);
+      const checkOutDateTime = new Date(`${rawCheckOutDate}T${checkOutTime}`);
 
       // Validar que estamos dentro del rango
       return currentDateTime >= checkInDateTime && currentDateTime <= checkOutDateTime;
@@ -136,12 +147,12 @@ const Dashboard = () => {
   // Calcular si estamos antes o después del rango para mostrar mensaje apropiado
   const reservationTimeStatus = useMemo(() => {
     if (isReservationActive) return 'active';
-    if (!checkInDate || !checkInTime || checkInDate === '?' || checkInTime === '?') return 'unknown';
+    if (!rawCheckInDate || !checkInTime || rawCheckInDate === '?' || checkInTime === '?') return 'unknown';
 
     try {
       const nowInSpain = new Date().toLocaleString('en-US', { timeZone: 'Europe/Madrid' });
       const currentDateTime = new Date(nowInSpain);
-      const checkInDateTime = new Date(`${checkInDate}T${checkInTime}`);
+      const checkInDateTime = new Date(`${rawCheckInDate}T${checkInTime}`);
 
       return currentDateTime < checkInDateTime ? 'before' : 'after';
     } catch (error) {
@@ -1224,6 +1235,62 @@ const Dashboard = () => {
                   <MessageSquare className="w-4 h-4" />
                   {hostEmail}
                 </Button> */}
+
+                {/* Super Host Accordion Trigger */}
+                {superHostName && (
+                  <div className="pt-4 border-t border-border mt-4">
+                    <button
+                      onClick={() => setShowSuperHost(!showSuperHost)}
+                      className="w-full flex items-center justify-between py-2 text-sm text-primary font-medium hover:underline group"
+                    >
+                      <span className="text-left leading-tight">{t('contact.problemQuestion')}</span>
+                      {showSuperHost ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />}
+                    </button>
+
+                    {/* Collapsible Content */}
+                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showSuperHost ? 'max-h-[500px] opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
+                      <div className="bg-muted/40 rounded-2xl p-4 space-y-4 border border-border/50">
+                        <p className="text-xs text-muted-foreground leading-relaxed italic">
+                          {t('contact.superHostMessage').replace('{hostName}', hostName)}
+                        </p>
+
+                        <div className="flex items-center gap-3 pt-1">
+                          {superHostPhotoUrl ? (
+                            <img
+                              src={getImageUrl(superHostPhotoUrl)}
+                              alt={superHostName}
+                              className="w-12 h-12 rounded-full object-cover border-2 border-white/50"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-xl shadow-sm">
+                              👤
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-bold text-sm">{superHostName}</p>
+                            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                              {t('contact.superHostTitle')}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-2">
+                          {superHostPhone && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full justify-start gap-3 h-10 bg-background/50 border-border/40 hover:bg-background"
+                              onClick={() => window.location.href = `tel:${superHostPhone}`}
+                            >
+                              <Phone className="w-3 h-3 text-muted-foreground" />
+                              <span className="text-xs font-medium">{superHostPhone}</span>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </Card>

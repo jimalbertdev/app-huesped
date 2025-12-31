@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Picker from "react-mobile-picker";
 import {
     Drawer,
@@ -13,8 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { format, parse, getDaysInMonth, isValid } from "date-fns";
-import { es } from "date-fns/locale";
+import { format, getDaysInMonth, isValid } from "date-fns";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface MobileDatePickerProps {
     value: string; // YYYY-MM-DD
@@ -26,11 +26,6 @@ interface MobileDatePickerProps {
     required?: boolean;
 }
 
-const months = [
-    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-];
-
 const MobileDatePicker: React.FC<MobileDatePickerProps> = ({
     value,
     onChange,
@@ -40,7 +35,14 @@ const MobileDatePicker: React.FC<MobileDatePickerProps> = ({
     className,
     required
 }) => {
+    const { t } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
+
+    const months = useMemo(() => [
+        t('months.january'), t('months.february'), t('months.march'), t('months.april'),
+        t('months.may'), t('months.june'), t('months.july'), t('months.august'),
+        t('months.september'), t('months.october'), t('months.november'), t('months.december')
+    ], [t]);
 
     // Parse initial value or use current date
     const initialDate = value && isValid(new Date(value)) ? new Date(value) : new Date();
@@ -61,20 +63,22 @@ const MobileDatePicker: React.FC<MobileDatePickerProps> = ({
                 year: date.getFullYear().toString(),
             });
         }
-    }, [value]);
+    }, [value, months]);
 
     const currentYear = new Date().getFullYear();
     const years = Array.from({ length: 101 }, (_, i) => (currentYear - 80 + i).toString());
 
     // Get days for selected month/year
     const monthIndex = months.indexOf(pickerValue.month);
-    const daysInMonth = getDaysInMonth(new Date(parseInt(pickerValue.year), monthIndex));
+    const daysInMonth = getDaysInMonth(new Date(parseInt(pickerValue.year), monthIndex === -1 ? 0 : monthIndex));
     const days = Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString());
 
     const handleConfirm = () => {
         const monthIdx = months.indexOf(pickerValue.month);
         const day = parseInt(pickerValue.day);
         const year = parseInt(pickerValue.year);
+
+        if (monthIdx === -1) return;
 
         // Ensure day is valid for the selected month (e.g. Feb 30 -> Feb 28/29)
         const maxDays = getDaysInMonth(new Date(year, monthIdx));
@@ -106,8 +110,8 @@ const MobileDatePicker: React.FC<MobileDatePickerProps> = ({
                 </DrawerTrigger>
                 <DrawerContent>
                     <DrawerHeader>
-                        <DrawerTitle>{label || "Seleccionar fecha"}</DrawerTitle>
-                        <DrawerDescription>Desliza para cambiar el día, mes y año.</DrawerDescription>
+                        <DrawerTitle>{label || t('register.selectDate')}</DrawerTitle>
+                        <DrawerDescription>{t('register.swipeToChange')}</DrawerDescription>
                     </DrawerHeader>
 
                     <div className="px-4 py-8">
@@ -150,10 +154,10 @@ const MobileDatePicker: React.FC<MobileDatePickerProps> = ({
 
                     <DrawerFooter className="flex-row gap-3">
                         <DrawerClose asChild>
-                            <Button variant="outline" className="flex-1">Cancelar</Button>
+                            <Button variant="outline" className="flex-1">{t('register.cancel')}</Button>
                         </DrawerClose>
                         <Button className="flex-1 bg-gradient-primary" onClick={handleConfirm}>
-                            Confirmar
+                            {t('register.confirm')}
                         </Button>
                     </DrawerFooter>
                 </DrawerContent>

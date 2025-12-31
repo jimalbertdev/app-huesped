@@ -644,9 +644,10 @@ const Register = () => {
         return false;
       }
 
-      // 2. Caracteres restringidos (., -, *)
-      if (/[\.\-\*]/.test(value)) {
-        focusField(fieldName, "No se permiten caracteres especiales (., -, *)");
+      // 2. Permitir caracteres especiales pero no si solo son 1 o 2 caracteres especiales seguidos
+      // Si el valor consiste solo de . - * y tiene longitud <= 2, rechazar
+      if (/^[\.\-\*]{1,2}$/.test(value)) {
+        focusField(fieldName, "Por favor, ingresa un valor válido");
         return false;
       }
 

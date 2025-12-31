@@ -62,13 +62,13 @@ export const ShareDialog = ({ open, onOpenChange }: ShareDialogProps) => {
           >
             💬 {t('share.whatsapp')}
           </Button>
-          <Button
+          {/* <Button
             variant="outline"
             className="w-full justify-start gap-2"
             onClick={handleEmail}
           >
             📧 {t('share.email')}
-          </Button>
+          </Button> */}
         </div>
       </DialogContent>
     </Dialog>

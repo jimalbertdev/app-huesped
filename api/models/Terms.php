@@ -24,21 +24,10 @@ class Terms {
         try {
             // Normalizar código de idioma
             $language = strtolower($language);
+            $actualLanguage = $language;
             
-            // Mapeo de idiomas a campos en la base de datos
-            // Asumiendo estructura: terminos_condiciones_app_huesped_{idioma}
-            $languageFields = [
-                'es' => 'terminos_condiciones_app_huesped',
-                'en' => 'terminos_condiciones_app_huesped_en',
-                'ca' => 'terminos_condiciones_app_huesped_ca',
-                'fr' => 'terminos_condiciones_app_huesped_fr',
-                'de' => 'terminos_condiciones_app_huesped_de',
-                'nl' => 'terminos_condiciones_app_huesped_nl',
-            ];
-
-            // Si el idioma no está soportado, usar español por defecto
-            $fieldName = $languageFields[$language] ?? $languageFields['es'];
-            $actualLanguage = isset($languageFields[$language]) ? $language : 'es';
+            // Siempre consultamos el campo base (español)
+            $fieldName = 'terminos_condiciones_app_huesped';
 
             // Consultar términos
             $query = "
@@ -57,32 +46,28 @@ class Terms {
 
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if (!$result) {
+            if (!$result || empty($result['terms_html'])) {
                 return null;
             }
 
-            // Si el campo de términos está vacío, intentar con español como fallback
-            if (empty($result['terms_html']) && $actualLanguage !== 'es') {
-                $query = "
-                    SELECT 
-                        ac.idalojamiento,
-                        ac.terminos_condiciones_app_huesped as terms_html,
-                        a.nombre as accommodation_name
-                    FROM alojamiento_caracteristica ac
-                    INNER JOIN alojamiento a ON ac.idalojamiento = a.idalojamiento
-                    WHERE ac.idalojamiento = :accommodation_id
-                ";
+            $termsHtml = $result['terms_html'];
 
-                $stmt = $this->conn->prepare($query);
-                $stmt->bindParam(':accommodation_id', $accommodationId, PDO::PARAM_INT);
-                $stmt->execute();
-
-                $result = $stmt->fetch(PDO::FETCH_ASSOC);
-                $actualLanguage = 'es';
+            // Si el idioma no es español, traducir usando Gemini
+            if ($language !== 'es') {
+                require_once __DIR__ . '/../includes/GeminiService.php';
+                $gemini = new GeminiService();
+                $translated = $gemini->translate($termsHtml, $language);
+                
+                if ($translated) {
+                    $termsHtml = $translated;
+                } else {
+                    // Si falla la traducción, marcamos que devolvemos español como fallback
+                    $actualLanguage = 'es';
+                }
             }
 
             // Sanitizar HTML
-            $sanitizedHtml = $this->sanitizeHtml($result['terms_html'] ?? '');
+            $sanitizedHtml = $this->sanitizeHtml($termsHtml);
 
             return [
                 'accommodation_id' => (int)$result['idalojamiento'],
@@ -105,58 +90,12 @@ class Terms {
      * @return array Lista de códigos de idioma disponibles
      */
     public function getAvailableLanguages($accommodationId) {
-        try {
-            $query = "
-                SELECT 
-                    terminos_condiciones_app_huesped,
-                    terminos_condiciones_app_huesped_en,
-                    terminos_condiciones_app_huesped_ca,
-                    terminos_condiciones_app_huesped_fr,
-                    terminos_condiciones_app_huesped_de,
-                    terminos_condiciones_app_huesped_nl
-                FROM alojamiento_caracteristica
-                WHERE idalojamiento = :accommodation_id
-            ";
-
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':accommodation_id', $accommodationId, PDO::PARAM_INT);
-            $stmt->execute();
-
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$result) {
-                return ['es']; // Por defecto español
-            }
-
-            $available = [];
-            
-            // Verificar qué campos tienen contenido
-            if (!empty($result['terminos_condiciones_app_huesped'])) {
-                $available[] = 'es';
-            }
-            if (!empty($result['terminos_condiciones_app_huesped_en'])) {
-                $available[] = 'en';
-            }
-            if (!empty($result['terminos_condiciones_app_huesped_ca'])) {
-                $available[] = 'ca';
-            }
-            if (!empty($result['terminos_condiciones_app_huesped_fr'])) {
-                $available[] = 'fr';
-            }
-            if (!empty($result['terminos_condiciones_app_huesped_de'])) {
-                $available[] = 'de';
-            }
-            if (!empty($result['terminos_condiciones_app_huesped_nl'])) {
-                $available[] = 'nl';
-            }
-
-            // Si no hay ningún idioma disponible, devolver español por defecto
-            return empty($available) ? ['es'] : $available;
-
-        } catch (PDOException $e) {
-            error_log("Error en Terms::getAvailableLanguages: " . $e->getMessage());
-            return ['es'];
+        // Como ahora traducimos automáticamente a todos los idiomas soportados,
+        // devolvemos la lista completa si el alojamiento tiene términos en español.
+        if ($this->hasTerms($accommodationId)) {
+            return ['es', 'en', 'ca', 'fr', 'de', 'nl'];
         }
+        return ['es'];
     }
 
     /**

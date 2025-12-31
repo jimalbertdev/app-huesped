@@ -283,14 +283,14 @@ const RegisterConfirmation = () => {
                     {t('confirmation.shareWhatsApp')}
                   </Button>
 
-                  <Button
+                  {/* <Button
                     variant="outline"
                     className="w-full justify-start gap-3 h-12"
                     onClick={handleEmail}
                   >
                     <Mail className="w-5 h-5" />
                     {t('confirmation.shareEmail')}
-                  </Button>
+                  </Button> */}
 
                 </div>
               </Card>
