@@ -1215,7 +1215,7 @@ const Dashboard = () => {
                   <Phone className="w-4 h-4" />
                   {hostPhone}
                 </Button>
-                <Button
+                {/* <Button
                   variant="outline"
                   className="w-full gap-2"
                   size="sm"
@@ -1223,7 +1223,7 @@ const Dashboard = () => {
                 >
                   <MessageSquare className="w-4 h-4" />
                   {hostEmail}
-                </Button>
+                </Button> */}
               </div>
             </div>
           </Card>
@@ -1782,14 +1782,14 @@ const Dashboard = () => {
                   <Phone className="w-4 h-4 text-primary" />
                   <span className="font-medium">{hostPhone}</span>
                 </Button>
-                <Button
+                {/* <Button
                   variant="outline"
                   className="w-full justify-start gap-3 h-12 border-border hover:bg-muted/50"
                   onClick={() => window.location.href = `mailto:${hostEmail}`}
                 >
                   <Mail className="w-4 h-4 text-primary" />
                   <span className="font-medium truncate">{hostEmail}</span>
-                </Button>
+                </Button> */}
               </div>
             </div>
 
@@ -1843,7 +1843,7 @@ const Dashboard = () => {
                           <span className="text-xs font-medium">{superHostPhone}</span>
                         </Button>
                       )}
-                      {superHostEmail && (
+                      {/* {superHostEmail && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -1853,7 +1853,7 @@ const Dashboard = () => {
                           <Mail className="w-3 h-3 text-muted-foreground" />
                           <span className="text-xs font-medium truncate">{superHostEmail}</span>
                         </Button>
-                      )}
+                      )} */}
                     </div>
                   </div>
                 </div>
