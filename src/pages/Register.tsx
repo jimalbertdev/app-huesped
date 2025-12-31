@@ -21,6 +21,7 @@ import type { Country, Municipality } from "@/schemas/guestSchema";
 import { PhoneCountryCodeSelect } from "@/components/PhoneCountryCodeSelect";
 import FloatingActionBar from "@/components/FloatingActionBar";
 import { useClickOutside } from "@/hooks/useClickOutside";
+import MobileDatePicker from "@/components/MobileDatePicker";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -1102,22 +1103,22 @@ const Register = () => {
                       )}
                       <div className="space-y-2">
                         <Label htmlFor="issueDate">{t('register.issueDate')}</Label>
-                        <Input
+                        <MobileDatePicker
                           id="issueDate"
-                          type="date"
-                          className="h-12"
                           value={issueDate}
-                          onChange={(e) => setIssueDate(e.target.value)}
+                          onChange={setIssueDate}
+                          label={t('register.issueDate')}
+                          placeholder="DD/MM/YYYY"
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="expiryDate">{t('register.expiryDate')}</Label>
-                        <Input
+                        <MobileDatePicker
                           id="expiryDate"
-                          type="date"
-                          className="h-12"
                           value={expiryDate}
-                          onChange={(e) => setExpiryDate(e.target.value)}
+                          onChange={setExpiryDate}
+                          label={t('register.expiryDate')}
+                          placeholder="DD/MM/YYYY"
                         />
                       </div>
                     </div>
@@ -1219,12 +1220,12 @@ const Register = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="birthDate">{t('register.birthDate')} <span className="text-destructive">*</span></Label>
-                        <Input
+                        <MobileDatePicker
                           id="birthDate"
-                          type="date"
-                          className="h-12"
                           value={birthDate}
-                          onChange={(e) => setBirthDate(e.target.value)}
+                          onChange={setBirthDate}
+                          label={t('register.birthDate')}
+                          placeholder="DD/MM/YYYY"
                           required
                         />
                         {age !== null && (
