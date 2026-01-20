@@ -781,21 +781,60 @@ const Dashboard = () => {
                 </div>
               </div>
               <div className="space-y-3">
-                {/* Mostrar mensaje si no hay cerraduras Raixer configuradas */}
+                {/* Mostrar códigos de acceso o mensaje si no hay cerraduras Raixer configuradas */}
                 {doorInfoLoaded && doorInfo?.has_locks === false ? (
-                  <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <MessageSquare className="w-8 h-8 text-green-600 dark:text-green-400" />
-                      <div>
-                        <h5 className="font-semibold text-green-900 dark:text-green-100 mb-1">
-                          {t('dashboard.noRaixerTitle')}
-                        </h5>
-                        <p className="text-sm text-green-800 dark:text-green-200">
-                          {t('dashboard.noRaixerMessage')}
-                        </p>
+                  <>
+                    {doorInfo?.access_codes && doorInfo.access_codes.length > 0 ? (
+                      <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center">
+                            <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                            </svg>
+                          </div>
+                          <div className="text-center w-full">
+                            <h5 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                              {t('dashboard.accessCodesTitle')}
+                            </h5>
+                            <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
+                              {t('dashboard.accessCodesMessage')}
+                            </p>
+                            <div className="space-y-2">
+                              {doorInfo.access_codes.map((code: any, index: number) => (
+                                <div
+                                  key={index}
+                                  className="bg-white dark:bg-blue-900/30 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-3 flex items-center justify-center"
+                                >
+                                  <div className="text-center">
+                                    <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">
+                                      {t('dashboard.code')}
+                                    </div>
+                                    <div className="text-3xl font-bold text-blue-900 dark:text-blue-100 tracking-wider">
+                                      {code.codigo}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    ) : (
+                      <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
+                        <div className="flex flex-col items-center gap-3">
+                          <MessageSquare className="w-8 h-8 text-green-600 dark:text-green-400" />
+                          <div>
+                            <h5 className="font-semibold text-green-900 dark:text-green-100 mb-1">
+                              {t('dashboard.noRaixerTitle')}
+                            </h5>
+                            <p className="text-sm text-green-800 dark:text-green-200">
+                              {t('dashboard.noRaixerMessage')}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 ) : doorInfoLoaded && doorInfo?.has_locks === true ? (
                   <>
                     {/* Botones de apertura Raixer */}
@@ -1530,91 +1569,91 @@ const Dashboard = () => {
                   </div>
                 </div>
               ) : accommodationGuide.length > 0 ? (
-                <Accordion
-                  type="single"
-                  collapsible
-                  className="w-full"
-                  onValueChange={(value) => {
-                    if (value) {
-                      // Timeout to allow the accordion to expand before scrolling
-                      setTimeout(() => {
-                        const element = document.getElementById(`guide-item-${value}`);
-                        if (element) {
-                          // Scroll to the top of the element
-                          const elementTop = element.getBoundingClientRect().top + window.scrollY;
-                          // Use a relative offset based on viewport height (5% of screen height)
-                          // This ensures proper positioning across different screen sizes
-                          const offset = window.innerHeight * 0.09;
-                          window.scrollTo({
-                            top: elementTop - offset,
-                            behavior: 'smooth'
-                          });
-                        }
-                      }, 200);
-                    }
-                  }}
-                >
-                  {accommodationGuide.map((category) => (
-                    <AccordionItem
-                      key={category.id}
-                      value={category.id}
-                      id={`guide-item-${category.id}`}
-                    >
-                      <AccordionTrigger className="text-sm text-left [&[data-state=open]>svg]:rotate-180 sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 border-b">
-                        <div className="flex items-center gap-2 text-left w-full">
-                          <MapPin className="w-4 h-4 text-red-600 flex-shrink-0" />
-                          <span
-                            className="text-left"
-                            dangerouslySetInnerHTML={{ __html: translateCategory(category.title) }}
-                          />
+                <>
+                  {/* Featured Link: Fiestas Patronales */}
+                  <a
+                    href="https://www.portalfiestas.com/fiestas-cerca-de-mi.php"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block mb-4"
+                  >
+                    <div className="bg-gradient-to-r from-yellow-400 via-orange-400 to-amber-500 rounded-lg p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border-2 border-yellow-300/50">
+                      <div className="flex items-start gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-white/30 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                          </svg>
                         </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="space-y-4 local-guide-content">
-                          {/* Items directos (si los hay) */}
-                          {category.items && category.items.length > 0 && (
-                            <div className="space-y-2">
-                              {category.items.map((item: any) => (
-                                <div key={item.id} className="p-2 bg-muted/50 rounded-lg text-left">
-                                  {item.name && (
-                                    <div
-                                      className="font-bold text-sm mb-1"
-                                      dangerouslySetInnerHTML={{ __html: item.name }}
-                                    />
-                                  )}
-                                  {item.description && (
-                                    <div
-                                      className="text-xs text-muted-foreground prose prose-xs max-w-none [&_h2]:font-semibold [&_h3]:font-semibold [&_h4]:font-semibold text-left [&_*]:!text-left"
-                                      dangerouslySetInnerHTML={{ __html: item.description }}
-                                    />
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                        <div className="flex-1">
+                          <h3 className="font-bold text-white text-base mb-1 flex items-center gap-2">
+                            {t('dashboard.festivalsNearby')}
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </h3>
+                          <p className="text-white/95 text-xs mb-3 leading-relaxed">
+                            {t('dashboard.festivalsNearbyDescription')}
+                          </p>
+                          <div className="inline-flex items-center gap-2 bg-white/25 backdrop-blur-sm px-3 py-1.5 rounded-full text-white text-xs font-semibold hover:bg-white/35 transition-colors">
+                            <span>{t('dashboard.visitFestivalsPage')}</span>
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </a>
 
-                          {/* Subcategorías (Jerarquía) */}
-                          {category.subcategories && category.subcategories.map((sub: any) => {
-                            // Detectar si es la subcategoría de "Recomendaciones"
-                            // Limpiamos etiquetas HTML primero para comparar el texto
-                            const cleanTitle = sub.title ? sub.title.replace(/<\/?[^>]+(>|$)/g, "").trim() : "";
-                            const isRecommendations = cleanTitle.toLowerCase().includes('recomendaciones') ||
-                              cleanTitle.toLowerCase().includes('recommendations');
-
-                            return (
-                              <div key={sub.id} className="space-y-2 pt-2 first:pt-0">
-                                <h4
-                                  className={`font-semibold text-sm border-b pb-1 mb-2 rounded px-2 py-1 ${isRecommendations ? 'bg-yellow-100/50 text-primary' : 'text-primary/80'}`}
-                                  dangerouslySetInnerHTML={{ __html: translateCategory(sub.title) }}
-                                />
-                                {sub.items && sub.items.map((item: any) => (
-                                  <div
-                                    key={item.id}
-                                    className={`p-2 rounded-lg text-left ${isRecommendations ? 'bg-yellow-100/50' : 'bg-muted/50'}`}
-                                  >
+                  <Accordion
+                    type="single"
+                    collapsible
+                    className="w-full"
+                    onValueChange={(value) => {
+                      if (value) {
+                        // Timeout to allow the accordion to expand before scrolling
+                        setTimeout(() => {
+                          const element = document.getElementById(`guide-item-${value}`);
+                          if (element) {
+                            // Scroll to the top of the element
+                            const elementTop = element.getBoundingClientRect().top + window.scrollY;
+                            // Use a relative offset based on viewport height (5% of screen height)
+                            // This ensures proper positioning across different screen sizes
+                            const offset = window.innerHeight * 0.09;
+                            window.scrollTo({
+                              top: elementTop - offset,
+                              behavior: 'smooth'
+                            });
+                          }
+                        }, 200);
+                      }
+                    }}
+                  >
+                    {accommodationGuide.map((category) => (
+                      <AccordionItem
+                        key={category.id}
+                        value={category.id}
+                        id={`guide-item-${category.id}`}
+                      >
+                        <AccordionTrigger className="text-sm text-left [&[data-state=open]>svg]:rotate-180 sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 border-b">
+                          <div className="flex items-center gap-2 text-left w-full">
+                            <MapPin className="w-4 h-4 text-red-600 flex-shrink-0" />
+                            <span
+                              className="text-left"
+                              dangerouslySetInnerHTML={{ __html: translateCategory(category.title) }}
+                            />
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-4 local-guide-content">
+                            {/* Items directos (si los hay) */}
+                            {category.items && category.items.length > 0 && (
+                              <div className="space-y-2">
+                                {category.items.map((item: any) => (
+                                  <div key={item.id} className="p-2 bg-muted/50 rounded-lg text-left">
                                     {item.name && (
                                       <div
-                                        className={`font-bold text-sm mb-1 ${isRecommendations ? 'text-primary' : ''}`}
+                                        className="font-bold text-sm mb-1"
                                         dangerouslySetInnerHTML={{ __html: item.name }}
                                       />
                                     )}
@@ -1626,25 +1665,62 @@ const Dashboard = () => {
                                     )}
                                   </div>
                                 ))}
-                                {sub.description && (
-                                  <div
-                                    className="text-xs text-muted-foreground prose prose-xs max-w-none mt-2 mb-3 text-left [&_*]:!text-left italic bg-muted/20 p-2 rounded"
-                                    dangerouslySetInnerHTML={{ __html: sub.description }}
-                                  />
-                                )}
                               </div>
-                            )
-                          })}
+                            )}
 
-                          {/* Mensaje vacio si no hay nada */}
-                          {(!category.items?.length && !category.subcategories?.length) && (
-                            <p className="text-xs text-muted-foreground">No hay información disponible</p>
-                          )}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
+                            {/* Subcategorías (Jerarquía) */}
+                            {category.subcategories && category.subcategories.map((sub: any) => {
+                              // Detectar si es la subcategoría de "Recomendaciones"
+                              // Limpiamos etiquetas HTML primero para comparar el texto
+                              const cleanTitle = sub.title ? sub.title.replace(/<\/?[^>]+(>|$)/g, "").trim() : "";
+                              const isRecommendations = cleanTitle.toLowerCase().includes('recomendaciones') ||
+                                cleanTitle.toLowerCase().includes('recommendations');
+
+                              return (
+                                <div key={sub.id} className="space-y-2 pt-2 first:pt-0">
+                                  <h4
+                                    className={`font-semibold text-sm border-b pb-1 mb-2 rounded px-2 py-1 ${isRecommendations ? 'bg-yellow-100/50 text-primary' : 'text-primary/80'}`}
+                                    dangerouslySetInnerHTML={{ __html: translateCategory(sub.title) }}
+                                  />
+                                  {sub.items && sub.items.map((item: any) => (
+                                    <div
+                                      key={item.id}
+                                      className={`p-2 rounded-lg text-left ${isRecommendations ? 'bg-yellow-100/50' : 'bg-muted/50'}`}
+                                    >
+                                      {item.name && (
+                                        <div
+                                          className={`font-bold text-sm mb-1 ${isRecommendations ? 'text-primary' : ''}`}
+                                          dangerouslySetInnerHTML={{ __html: item.name }}
+                                        />
+                                      )}
+                                      {item.description && (
+                                        <div
+                                          className="text-xs text-muted-foreground prose prose-xs max-w-none [&_h2]:font-semibold [&_h3]:font-semibold [&_h4]:font-semibold text-left [&_*]:!text-left"
+                                          dangerouslySetInnerHTML={{ __html: item.description }}
+                                        />
+                                      )}
+                                    </div>
+                                  ))}
+                                  {sub.description && (
+                                    <div
+                                      className="text-xs text-muted-foreground prose prose-xs max-w-none mt-2 mb-3 text-left [&_*]:!text-left italic bg-muted/20 p-2 rounded"
+                                      dangerouslySetInnerHTML={{ __html: sub.description }}
+                                    />
+                                  )}
+                                </div>
+                              )
+                            })}
+
+                            {/* Mensaje vacio si no hay nada */}
+                            {(!category.items?.length && !category.subcategories?.length) && (
+                              <p className="text-xs text-muted-foreground">No hay información disponible</p>
+                            )}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground">Cargando guía local...</p>
               )}

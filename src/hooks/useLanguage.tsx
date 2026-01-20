@@ -69,6 +69,9 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.doorOpenedDescription': 'La puerta se ha abierto correctamente',
     'dashboard.noRaixerTitle': '¡Estamos para ayudarte!',
     'dashboard.noRaixerMessage': 'Por favor, contacta con tu anfitrión para obtener los códigos de acceso y la ubicación de los cajetines',
+    'dashboard.accessCodesTitle': 'Códigos del Cajetín',
+    'dashboard.accessCodesMessage': 'Usa estos códigos para abrir el cajetín y retirar las llaves del alojamiento',
+    'dashboard.code': 'Código',
     'dashboard.accessNotYetAvailable': 'Acceso aún no disponible',
     'dashboard.accessFinished': 'Acceso finalizado',
     'dashboard.accessAvailableFrom': 'El acceso a las puertas estará disponible a partir del',
@@ -129,6 +132,9 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.messageHistory': 'Historial de mensajes',
     'dashboard.send': 'Enviar',
     'dashboard.visitVacanfly': 'Visitar Vacanfly.com',
+    'dashboard.festivalsNearby': 'Fiestas Patronales y Municipales',
+    'dashboard.festivalsNearbyDescription': 'Esta página web muestra información actualizada de las fiestas patronales y municipales más cercanas en cada fecha, vaya al apartado "Fiestas cerca de mí"',
+    'dashboard.visitFestivalsPage': 'Ver Fiestas Cercanas',
 
     // Accommodation Info Categories
     'accommodationInfo.howToArrive': '🗺️ ¿Cómo llegar…?',
@@ -494,6 +500,9 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.doorOpenedDescription': 'The door has been opened successfully',
     'dashboard.noRaixerTitle': 'We\'re here to help!',
     'dashboard.noRaixerMessage': 'Please contact your host to obtain access codes and key box locations',
+    'dashboard.accessCodesTitle': 'Key Box Codes',
+    'dashboard.accessCodesMessage': 'Use these codes to open the key box and retrieve the accommodation keys',
+    'dashboard.code': 'Code',
     'dashboard.accessNotYetAvailable': 'Access not yet available',
     'dashboard.accessFinished': 'Access finished',
     'dashboard.accessAvailableFrom': 'Door access will be available from',
@@ -554,6 +563,9 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.messageHistory': 'Message History',
     'dashboard.send': 'Send',
     'dashboard.visitVacanfly': 'Visit Vacanfly.com',
+    'dashboard.festivalsNearby': 'Patron Saint and Municipal Festivals',
+    'dashboard.festivalsNearbyDescription': 'This website shows updated information about the nearest patron saint and municipal festivals on each date, go to the "Festivals near me" section',
+    'dashboard.visitFestivalsPage': 'View Nearby Festivals',
 
     // Accommodation Info Categories
     'accommodationInfo.howToArrive': '🗺️ How to get here…?',
@@ -919,6 +931,9 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.doorOpenedDescription': 'La porta s\'ha obert correctament',
     'dashboard.noRaixerTitle': 'Estem per ajudar-te!',
     'dashboard.noRaixerMessage': 'Si us plau, contacta amb el teu amfitrió per obtenir els codis d\'accés i la ubicació dels cajetins',
+    'dashboard.accessCodesTitle': 'Codis del Cajetí',
+    'dashboard.accessCodesMessage': 'Utilitza aquests codis per obrir el cajetí i retirar les claus de l\'allotjament',
+    'dashboard.code': 'Codi',
     'dashboard.accessNotYetAvailable': 'Accés encara no disponible',
     'dashboard.accessFinished': 'Accés finalitzat',
     'dashboard.accessAvailableFrom': 'L\'accés a les portes estarà disponible a partir del',
@@ -979,6 +994,9 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.messageHistory': 'Historial de missatges',
     'dashboard.send': 'Enviar',
     'dashboard.visitVacanfly': 'Visitar Vacanfly.com',
+    'dashboard.festivalsNearby': 'Festes Patronals i Municipals',
+    'dashboard.festivalsNearbyDescription': 'Aquesta pàgina web mostra informació actualitzada de les festes patronals i municipals més properes en cada data, aneu a l\'apartat "Festes prop meu"',
+    'dashboard.visitFestivalsPage': 'Veure Festes Properes',
 
     // Accommodation Info Categories
     'accommodationInfo.howToArrive': '🗺️ Com arribar…?',
@@ -1333,7 +1351,10 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.doorOpened': 'Porte ouverte!',
     'dashboard.doorOpenedDescription': 'La porte a été ouverte avec succès',
     'dashboard.noRaixerTitle': 'Nous sommes là pour vous aider!',
-    'dashboard.noRaixerMessage': 'Veuillez contacter votre hôte pour obtenir les codes d\'accès et l\'emplacement des boîtiers à clés',
+    'dashboard.noRaixerMessage': 'Veuillez contacter votre hôte pour obtenir les codes d\'accès et l\'emplacement des boîtes à clés',
+    'dashboard.accessCodesTitle': 'Codes de la Boîte à Clés',
+    'dashboard.accessCodesMessage': 'Utilisez ces codes pour ouvrir la boîte à clés et récupérer les clés du logement',
+    'dashboard.code': 'Code',
     'dashboard.accessNotYetAvailable': 'Accès pas encore disponible',
     'dashboard.accessFinished': 'Accès terminé',
     'dashboard.accessAvailableFrom': 'L\'accès aux portes sera disponible à partir du',
@@ -1393,6 +1414,9 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.messageHistory': 'Historique des messages',
     'dashboard.send': 'Envoyer',
     'dashboard.visitVacanfly': 'Visiter Vacanfly.com',
+    'dashboard.festivalsNearby': 'Fêtes Patronales et Municipales',
+    'dashboard.festivalsNearbyDescription': 'Ce site web affiche des informations mises à jour sur les fêtes patronales et municipales les plus proches à chaque date, allez dans la section "Fêtes près de moi"',
+    'dashboard.visitFestivalsPage': 'Voir les Fêtes Proches',
 
     // Accommodation Info Categories
     'accommodationInfo.howToArrive': '🗺️ Comment arriver…?',
@@ -1747,6 +1771,9 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.doorOpenedDescription': 'Die Tür wurde erfolgreich geöffnet',
     'dashboard.noRaixerTitle': 'Wir sind hier, um zu helfen!',
     'dashboard.noRaixerMessage': 'Bitte kontaktieren Sie Ihren Gastgeber, um Zugangscodes und Schlüsselkastenstandorte zu erhalten',
+    'dashboard.accessCodesTitle': 'Schlüsselkasten-Codes',
+    'dashboard.accessCodesMessage': 'Verwenden Sie diese Codes, um den Schlüsselkasten zu öffnen und die Unterkunftsschlüssel zu entnehmen',
+    'dashboard.code': 'Code',
     'dashboard.accessNotYetAvailable': 'Zugang noch nicht verfügbar',
     'dashboard.accessFinished': 'Zugang beendet',
     'dashboard.accessAvailableFrom': 'Der Türzugang wird verfügbar sein ab',
@@ -1806,6 +1833,9 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.messageHistory': 'Nachrichtenverlauf',
     'dashboard.send': 'Senden',
     'dashboard.visitVacanfly': 'Besuchen Sie Vacanfly.com',
+    'dashboard.festivalsNearby': 'Schutzpatron- und Stadtfeste',
+    'dashboard.festivalsNearbyDescription': 'Diese Website zeigt aktualisierte Informationen über die nächstgelegenen Schutzpatron- und Stadtfeste zu jedem Datum, gehen Sie zum Abschnitt "Feste in meiner Nähe"',
+    'dashboard.visitFestivalsPage': 'Feste in der Nähe Ansehen',
 
     // Accommodation Info Categories
     'accommodationInfo.howToArrive': '🗺️ Wie komme ich dort hin…?',
@@ -2094,7 +2124,10 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.doorOpened': 'Deur geopend!',
     'dashboard.doorOpenedDescription': 'De deur is succesvol geopend',
     'dashboard.noRaixerTitle': 'We zijn er om te helpen!',
-    'dashboard.noRaixerMessage': 'Neem contact op met uw gastheer voor toegangscodes en sleutelkastlocaties',
+    'dashboard.noRaixerMessage': 'Neem contact op met uw gastheer om toegangscodes en sleutelkastlocaties te verkrijgen',
+    'dashboard.accessCodesTitle': 'Sleutelkast Codes',
+    'dashboard.accessCodesMessage': 'Gebruik deze codes om de sleutelkast te openen en de accommodatiesleutels op te halen',
+    'dashboard.code': 'Code',
     'dashboard.accessNotYetAvailable': 'Toegang nog niet beschikbaar',
     'dashboard.accessFinished': 'Toegang beëindigd',
     'dashboard.accessAvailableFrom': 'Deurtoegang is beschikbaar vanaf',
@@ -2154,6 +2187,9 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.messageHistory': 'Berichtengeschiedenis',
     'dashboard.send': 'Versturen',
     'dashboard.visitVacanfly': 'Bezoek Vacanfly.com',
+    'dashboard.festivalsNearby': 'Patroonheilige en Gemeentelijke Festivals',
+    'dashboard.festivalsNearbyDescription': 'Deze website toont bijgewerkte informatie over de dichtstbijzijnde patroonheilige en gemeentelijke festivals op elke datum, ga naar het gedeelte "Festivals bij mij in de buurt"',
+    'dashboard.visitFestivalsPage': 'Bekijk Festivals in de Buurt',
 
     // Accommodation Info Categories
     'accommodationInfo.howToArrive': '🗺️ Hoe te komen…?',

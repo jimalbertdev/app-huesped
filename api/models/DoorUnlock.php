@@ -142,12 +142,33 @@ class DoorUnlock {
         $accommodation = $this->db->queryOne($sql, [$reservation_id]);
 
         if (!$accommodation || !$accommodation['id_cerradura_raixer']) {
+            // Query codigos_cajetin for active access codes
+            $access_codes = [];
+            if ($accommodation) {
+                // Get accommodation ID from reservation
+                $accomSql = "SELECT alojamiento_id FROM reserva WHERE id = ?";
+                $reserva = $this->db->queryOne($accomSql, [$reservation_id]);
+                
+                if ($reserva) {
+                    $codeQuery = "
+                        SELECT codigo, tipo, fecha
+                        FROM codigos_cajetin
+                        WHERE id_alojamiento = ?
+                        AND estatus = 1
+                        ORDER BY fecha DESC
+                    ";
+                    
+                    $access_codes = $this->db->query($codeQuery, [$reserva['alojamiento_id']]);
+                }
+            }
+            
             return [
                 'has_locks' => false,
                 'portal' => null,
                 'casa' => null,
                 'portal_info' => $accommodation['informacion_portal'] ?? '',
-                'casa_info' => $accommodation['informacion_casa'] ?? ''
+                'casa_info' => $accommodation['informacion_casa'] ?? '',
+                'access_codes' => $access_codes
             ];
         }
 

@@ -27,12 +27,29 @@ class DoorDevice {
             $accommodation = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$accommodation || !$accommodation['id_cerradura_raixer']) {
+                // Query codigos_cajetin for active access codes
+                $access_codes = [];
+                if ($accommodation) {
+                    $codeQuery = "
+                        SELECT codigo, tipo, fecha
+                        FROM codigos_cajetin
+                        WHERE id_alojamiento = :accommodation_id
+                        AND estatus = 1
+                        ORDER BY fecha DESC
+                    ";
+                    
+                    $codeStmt = $this->db->prepare($codeQuery);
+                    $codeStmt->execute(['accommodation_id' => $accommodation_id]);
+                    $access_codes = $codeStmt->fetchAll(PDO::FETCH_ASSOC);
+                }
+                
                 return [
                     'has_locks' => false,
                     'portal' => null,
                     'casa' => null,
                     'portal_info' => $accommodation['informacion_portal'] ?? '',
-                    'casa_info' => $accommodation['informacion_casa'] ?? ''
+                    'casa_info' => $accommodation['informacion_casa'] ?? '',
+                    'access_codes' => $access_codes
                 ];
             }
 
@@ -90,7 +107,8 @@ class DoorDevice {
                 'portal' => null,
                 'casa' => null,
                 'portal_info' => '',
-                'casa_info' => ''
+                'casa_info' => '',
+                'access_codes' => []
             ];
         }
     }
