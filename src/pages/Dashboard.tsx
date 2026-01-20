@@ -27,6 +27,8 @@ import {
   Link as LinkIcon,
   ChevronDown,
   ChevronUp,
+  Wifi,
+  Copy,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
@@ -206,6 +208,7 @@ const Dashboard = () => {
   const [accommodationVideos, setAccommodationVideos] = useState<any[]>([]);
   const [accommodationGuide, setAccommodationGuide] = useState<any[]>([]);
   const [accommodationLoaded, setAccommodationLoaded] = useState(false);
+  const [loadingAccommodation, setLoadingAccommodation] = useState(false);
 
   // Agrupar información del alojamiento por categoría
   const groupedAccommodationInfo = () => {
@@ -291,30 +294,36 @@ const Dashboard = () => {
     loadBedAvailability();
   }, [reservationData?.accommodation_id]);
 
-  // Cargar información del alojamiento cuando se carga la reserva
+  // Cargar información del alojamiento cuando se carga la reserva o cambia el idioma
   useEffect(() => {
     const loadAccommodationInfo = async () => {
-      if (!reservationData?.accommodation_id || accommodationLoaded) return;
+      if (!reservationData?.accommodation_id) return;
+
+      setLoadingAccommodation(true);
 
       try {
-        const response = await accommodationService.getAll(reservationData.accommodation_id);
+        const response = await accommodationService.getAll(reservationData.accommodation_id, language);
         const data = response.data.data;
 
         if (data) {
+          // Log para depuración
+          //console.log(`Cargada información para idioma: ${language}`, data.info);
+
           setAccommodationInfo(data.info);
           setAccommodationVideos(data.videos || []);
           setAccommodationGuide(data.guide || []);
         }
         setAccommodationLoaded(true);
       } catch (error) {
-        console.error("Error al cargar información del alojamiento:", error);
-        // No mostrar error al usuario, los datos hardcodeados se mantendrán
+        //console.error("Error al cargar información del alojamiento:", error);
         setAccommodationLoaded(true);
+      } finally {
+        setLoadingAccommodation(false);
       }
     };
 
     loadAccommodationInfo();
-  }, [reservationData?.accommodation_id, accommodationLoaded]);
+  }, [reservationData?.accommodation_id, language]);
 
   // Cargar sugerencias/quejas de la reserva
   useEffect(() => {
@@ -533,7 +542,7 @@ const Dashboard = () => {
       });
     }
   };
-  console.log(accommodationGuide);
+  //console.log(accommodationGuide);
   const loadSuggestions = async () => {
     if (!reservationData?.id) return;
 
@@ -1304,7 +1313,15 @@ const Dashboard = () => {
                 </div>
                 <h2 className="text-xl font-bold">{t('dashboard.welcomeVideo')}</h2>
               </div>
-              {accommodationVideos.length > 0 ? (
+              {loadingAccommodation ? (
+                <div className="flex flex-col items-center justify-center py-10 space-y-4">
+                  <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                  <div className="text-center space-y-1">
+                    <p className="text-sm font-medium text-primary animate-pulse">Traduciendo contenido...</p>
+                    <p className="text-xs text-muted-foreground">Esto puede tardar un momento la primera vez</p>
+                  </div>
+                </div>
+              ) : accommodationVideos.length > 0 ? (
                 <div className="space-y-4">
                   {accommodationVideos.map((video) => (
                     <div key={video.id} className="space-y-2">
@@ -1336,7 +1353,67 @@ const Dashboard = () => {
                 </div>
                 <h2 className="text-xl font-bold">{t('dashboard.accommodationInfo')}</h2>
               </div>
-              {accommodationInfo && accommodationInfo.length > 0 ? (
+
+              {/* WiFi Info */}
+              {(reservationData?.wifi_ssid || reservationData?.wifi_password) && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Wifi className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <h3 className="font-semibold text-sm mb-1">{t('dashboard.wifiNetwork')}</h3>
+                        <div className="flex items-center justify-between bg-background/50 rounded-lg px-3 py-2 border border-border/50">
+                          <code className="text-sm font-mono text-primary">{reservationData.wifi_ssid || '-'}</code>
+                          {reservationData.wifi_ssid && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => {
+                                navigator.clipboard.writeText(reservationData.wifi_ssid || '');
+                                toast({ description: "Nombre de red copiado" });
+                              }}
+                            >
+                              <Copy className="w-3 h-3 text-muted-foreground" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="font-semibold text-sm mb-1">{t('dashboard.wifiPassword')}</h3>
+                        <div className="flex items-center justify-between bg-background/50 rounded-lg px-3 py-2 border border-border/50">
+                          <code className="text-sm font-mono text-primary">{reservationData.wifi_password || '-'}</code>
+                          {reservationData.wifi_password && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => {
+                                navigator.clipboard.writeText(reservationData.wifi_password || '');
+                                toast({ description: "Contraseña copiada" });
+                              }}
+                            >
+                              <Copy className="w-3 h-3 text-muted-foreground" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {loadingAccommodation ? (
+                <div className="flex flex-col items-center justify-center py-10 space-y-4">
+                  <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                  <div className="text-center space-y-1">
+                    <p className="text-sm font-medium text-primary animate-pulse">Traduciendo contenido...</p>
+                    <p className="text-xs text-muted-foreground">Esto puede tardar un momento la primera vez</p>
+                  </div>
+                </div>
+              ) : accommodationInfo && accommodationInfo.length > 0 ? (
                 <Accordion
                   type="single"
                   collapsible
@@ -1444,7 +1521,15 @@ const Dashboard = () => {
                 </div>
                 <h2 className="text-xl font-bold">{t('dashboard.localGuide')}</h2>
               </div>
-              {accommodationGuide.length > 0 ? (
+              {loadingAccommodation ? (
+                <div className="flex flex-col items-center justify-center py-10 space-y-4">
+                  <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                  <div className="text-center space-y-1">
+                    <p className="text-sm font-medium text-primary animate-pulse">Traduciendo contenido...</p>
+                    <p className="text-xs text-muted-foreground">Esto puede tardar un momento la primera vez</p>
+                  </div>
+                </div>
+              ) : accommodationGuide.length > 0 ? (
                 <Accordion
                   type="single"
                   collapsible

@@ -209,8 +209,8 @@ export const accommodationService = {
   /**
    * Obtener toda la información del alojamiento (info, videos, guía)
    */
-  getAll: (accommodationId: number) =>
-    api.get(`/accommodation/${accommodationId}`),
+  getAll: (accommodationId: number, lang: string = 'es') =>
+    api.get(`/accommodation/${accommodationId}?lang=${lang}`, { timeout: 60000 }),
 
   /**
    * Obtener solo información general del alojamiento

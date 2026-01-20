@@ -46,6 +46,7 @@ try {
             ? (int)$uri_parts[$api_index + 2]
             : null;
         $endpoint = $uri_parts[$api_index + 3] ?? 'all'; // all, info, videos, guide, beds
+        $language = $_GET['lang'] ?? 'es';
 
         if (!$accommodationId) {
             Response::error('Se requiere el ID del alojamiento', 400);
@@ -70,7 +71,7 @@ try {
         // (todo excepto videos)
         // ============================================
         if ($endpoint === 'all' || $endpoint === 'info') {
-            $info = $accommodationInfoModel->getGeneralInfo($accommodationId);
+            $info = $accommodationInfoModel->getGeneralInfo($accommodationId, $language);
             $result['info'] = $info;
         }
 
@@ -78,7 +79,7 @@ try {
         // Obtener videos (categoria = 8)
         // ============================================
         if ($endpoint === 'all' || $endpoint === 'videos') {
-            $videos = $accommodationInfoModel->getVideos($accommodationId);
+            $videos = $accommodationInfoModel->getVideos($accommodationId, $language);
             $result['videos'] = $videos;
         }
 

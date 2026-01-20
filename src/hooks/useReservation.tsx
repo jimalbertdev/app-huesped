@@ -26,6 +26,8 @@ interface ReservationData {
   super_host_phone?: string;
   super_host_photo_url?: string;
   contract_path?: string;
+  wifi_ssid?: string;
+  wifi_password?: string;
 }
 
 interface GuestData {
