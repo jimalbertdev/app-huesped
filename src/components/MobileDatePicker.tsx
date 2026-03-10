@@ -114,8 +114,8 @@ const MobileDatePicker: React.FC<MobileDatePickerProps> = ({
                         <DrawerDescription>{t('register.swipeToChange')}</DrawerDescription>
                     </DrawerHeader>
 
-                    <div className="px-4 py-8">
-                        <Picker value={pickerValue} onChange={setPickerValue} wheelMode="natural">
+                    <div className="px-4 py-8" data-vaul-no-drag>
+                        <Picker value={pickerValue} onChange={(newValue) => setPickerValue(newValue as typeof pickerValue)} wheelMode="natural">
                             <Picker.Column name="day">
                                 {days.map(day => (
                                     <Picker.Item key={day} value={day}>

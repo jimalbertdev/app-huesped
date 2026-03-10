@@ -34,3 +34,4 @@ composer.lock
 *.njsproj
 *.sln
 *.sw?
+sync-to-apache.sh

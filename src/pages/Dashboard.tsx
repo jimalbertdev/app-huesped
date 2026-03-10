@@ -865,52 +865,54 @@ const Dashboard = () => {
                 )}
 
                 {/* Ver Historial de Aperturas */}
-                <Dialog open={showUnlockHistoryDialog} onOpenChange={setShowUnlockHistoryDialog}>
-                  <Button
-                    variant="outline"
-                    className="w-full text-xs"
-                    onClick={() => setShowUnlockHistoryDialog(true)}
-                  >
-                    {t('dashboard.unlockHistory')}
-                  </Button>
-                  <DialogContent className="max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>{t('dashboard.unlockHistory')}</DialogTitle>
-                      <DialogDescription>
-                        Registro de aperturas desde la app
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-2 max-h-96 overflow-y-auto">
-                      {unlockHistory.length === 0 ? (
-                        <p className="text-center text-muted-foreground py-8">
-                          No hay aperturas registradas
-                        </p>
-                      ) : (
-                        unlockHistory.map((entry, index) => (
-                          <div
-                            key={index}
-                            className={`p-3 rounded-lg flex items-center justify-between ${entry.success
-                              ? 'bg-success/10 border border-success/20'
-                              : 'bg-destructive/10 border border-destructive/20'
-                              }`}
-                          >
-                            <div className="flex-1">
-                              <p className={`font-semibold text-sm ${entry.success ? 'text-success' : 'text-destructive'}`}>
-                                {entry.description || entry.door}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {entry.date} a las {entry.time}
-                              </p>
+                {doorInfoLoaded && (doorInfo?.has_locks || (doorInfo?.access_codes && doorInfo.access_codes.length > 0)) && (
+                  <Dialog open={showUnlockHistoryDialog} onOpenChange={setShowUnlockHistoryDialog}>
+                    <Button
+                      variant="outline"
+                      className="w-full text-xs"
+                      onClick={() => setShowUnlockHistoryDialog(true)}
+                    >
+                      {t('dashboard.unlockHistory')}
+                    </Button>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>{t('dashboard.unlockHistory')}</DialogTitle>
+                        <DialogDescription>
+                          Registro de aperturas desde la app
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {unlockHistory.length === 0 ? (
+                          <p className="text-center text-muted-foreground py-8">
+                            No hay aperturas registradas
+                          </p>
+                        ) : (
+                          unlockHistory.map((entry, index) => (
+                            <div
+                              key={index}
+                              className={`p-3 rounded-lg flex items-center justify-between ${entry.success
+                                ? 'bg-success/10 border border-success/20'
+                                : 'bg-destructive/10 border border-destructive/20'
+                                }`}
+                            >
+                              <div className="flex-1">
+                                <p className={`font-semibold text-sm ${entry.success ? 'text-success' : 'text-destructive'}`}>
+                                  {entry.description || entry.door}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {entry.date} a las {entry.time}
+                                </p>
+                              </div>
+                              <span className={`text-2xl ml-3 ${entry.success ? 'text-success' : 'text-destructive'}`}>
+                                {entry.success ? '✓' : '✗'}
+                              </span>
                             </div>
-                            <span className={`text-2xl ml-3 ${entry.success ? 'text-success' : 'text-destructive'}`}>
-                              {entry.success ? '✓' : '✗'}
-                            </span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                          ))
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
 
                 {/* Descargar Contrato */}
                 {reservationData?.contract_path && (
@@ -1113,101 +1115,107 @@ const Dashboard = () => {
                     </div>
 
                     {/* Necesita cuna */}
-                    <div className="flex items-center space-x-3 p-3 rounded-lg bg-muted/50">
-                      <Checkbox
-                        id="needsCrib"
-                        checked={needsCrib}
-                        onCheckedChange={(checked) => setNeedsCrib(checked === true)}
-                        disabled={bedAvailability !== null && !bedAvailability.crib}
-                      />
-                      <Label htmlFor="needsCrib" className={`cursor-pointer flex items-center gap-2 ${bedAvailability !== null && !bedAvailability.crib ? 'opacity-50' : ''}`}>
-                        {t('preferences.needsCrib')}
-                        {bedAvailability !== null && bedAvailability.crib && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                            {t('preferences.freeOfCharge')}
-                          </span>
-                        )}
-                        {bedAvailability !== null && !bedAvailability.crib && <span className="text-xs text-muted-foreground">({t('preferences.notAvailable')})</span>}
-                      </Label>
-                    </div>
+                    {(bedAvailability === null || bedAvailability.crib === true) && (
+                      <div className="flex items-center space-x-3 p-3 rounded-lg bg-muted/50">
+                        <Checkbox
+                          id="needsCrib"
+                          checked={needsCrib}
+                          onCheckedChange={(checked) => setNeedsCrib(checked === true)}
+                        />
+                        <Label htmlFor="needsCrib" className="cursor-pointer flex items-center gap-2">
+                          {t('preferences.needsCrib')}
+                          {bedAvailability !== null && bedAvailability.crib && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                              {t('preferences.freeOfCharge')}
+                            </span>
+                          )}
+                        </Label>
+                      </div>
+                    )}
 
                     {/* Tiene mascotas */}
-                    <div className="flex items-center space-x-3 p-3 rounded-lg bg-muted/50">
-                      <Checkbox
-                        id="hasPets"
-                        checked={hasPets}
-                        onCheckedChange={(checked) => setHasPets(checked === true)}
-                        disabled={bedAvailability !== null && !bedAvailability.pets}
-                      />
-                      <Label htmlFor="hasPets" className={`cursor-pointer flex items-center gap-2 ${bedAvailability !== null && !bedAvailability.pets ? 'opacity-50' : ''}`}>
-                        {t('preferences.hasPets') || 'Viajo con mascotas'}
-                        {bedAvailability !== null && bedAvailability.pets && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                            {t('preferences.freeOfCharge')}
-                          </span>
-                        )}
-                        {bedAvailability !== null && !bedAvailability.pets && <span className="text-xs text-muted-foreground">({t('preferences.notAvailable') || 'No permitido'})</span>}
-                      </Label>
-                    </div>
+                    {(bedAvailability === null || bedAvailability.pets === true) && (
+                      <div className="flex items-center space-x-3 p-3 rounded-lg bg-muted/50">
+                        <Checkbox
+                          id="hasPets"
+                          checked={hasPets}
+                          onCheckedChange={(checked) => setHasPets(checked === true)}
+                        />
+                        <Label htmlFor="hasPets" className="cursor-pointer flex items-center gap-2">
+                          {t('preferences.hasPets') || 'Viajo con mascotas'}
+                          {bedAvailability !== null && bedAvailability.pets && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                              {t('preferences.freeOfCharge')}
+                            </span>
+                          )}
+                        </Label>
+                      </div>
+                    )}
 
                     {/* Configuración de camas */}
-                    <div className="space-y-3">
-                      <h4 className="font-semibold">{t('preferences.bedConfiguration')}</h4>
-                      {loadingBedAvailability ? (
-                        <p className="text-sm text-muted-foreground">{t('preferences.loadingAvailability')}</p>
-                      ) : (
-                        <>
-                          <div className="grid grid-cols-2 gap-4">
-                            <Counter
-                              label={`${t('preferences.doubleBeds')} ${bedAvailability && bedAvailability.double_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.double_beds})` : ''}`}
-                              value={doubleBeds}
-                              onChange={setDoubleBeds}
-                              max={bedAvailability?.double_beds || 5}
-                              disabled={bedAvailability !== null && bedAvailability.double_beds === 0}
-                            />
-                            <Counter
-                              label={`${t('preferences.singleBeds')} ${bedAvailability && bedAvailability.single_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.single_beds})` : ''}`}
-                              value={singleBeds}
-                              onChange={setSingleBeds}
-                              max={bedAvailability?.single_beds || 10}
-                              disabled={bedAvailability !== null && bedAvailability.single_beds === 0}
-                            />
-                            <Counter
-                              label={`${t('preferences.sofaBeds')} ${bedAvailability && bedAvailability.sofa_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.sofa_beds})` : ''}`}
-                              value={sofaBeds}
-                              onChange={setSofaBeds}
-                              max={bedAvailability?.sofa_beds || 3}
-                              disabled={bedAvailability !== null && bedAvailability.sofa_beds === 0}
-                            />
-                            <Counter
-                              label={`${t('preferences.bunkBeds')} ${bedAvailability && bedAvailability.bunk_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.bunk_beds})` : ''}`}
-                              value={bunkBeds}
-                              onChange={setBunkBeds}
-                              max={bedAvailability?.bunk_beds || 5}
-                              disabled={bedAvailability !== null && bedAvailability.bunk_beds === 0}
-                            />
-                          </div>
+                    {(bedAvailability === null || bedAvailability.double_beds > 0 || bedAvailability.single_beds > 0 || bedAvailability.sofa_beds > 0 || bedAvailability.bunk_beds > 0) && (
+                      <div className="space-y-3">
+                        <h4 className="font-semibold">{t('preferences.bedConfiguration')}</h4>
+                        {loadingBedAvailability ? (
+                          <p className="text-sm text-muted-foreground">{t('preferences.loadingAvailability')}</p>
+                        ) : (
+                          <>
+                            <div className="grid grid-cols-2 gap-4">
+                              {(bedAvailability === null || bedAvailability.double_beds > 0) && (
+                                <Counter
+                                  label={`${t('preferences.doubleBeds')} ${bedAvailability && bedAvailability.double_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.double_beds})` : ''}`}
+                                  value={doubleBeds}
+                                  onChange={setDoubleBeds}
+                                  max={bedAvailability?.double_beds || 5}
+                                />
+                              )}
+                              {(bedAvailability === null || bedAvailability.single_beds > 0) && (
+                                <Counter
+                                  label={`${t('preferences.singleBeds')} ${bedAvailability && bedAvailability.single_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.single_beds})` : ''}`}
+                                  value={singleBeds}
+                                  onChange={setSingleBeds}
+                                  max={bedAvailability?.single_beds || 10}
+                                />
+                              )}
+                              {(bedAvailability === null || bedAvailability.sofa_beds > 0) && (
+                                <Counter
+                                  label={`${t('preferences.sofaBeds')} ${bedAvailability && bedAvailability.sofa_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.sofa_beds})` : ''}`}
+                                  value={sofaBeds}
+                                  onChange={setSofaBeds}
+                                  max={bedAvailability?.sofa_beds || 3}
+                                />
+                              )}
+                              {(bedAvailability === null || bedAvailability.bunk_beds > 0) && (
+                                <Counter
+                                  label={`${t('preferences.bunkBeds')} ${bedAvailability && bedAvailability.bunk_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.bunk_beds})` : ''}`}
+                                  value={bunkBeds}
+                                  onChange={setBunkBeds}
+                                  max={bedAvailability?.bunk_beds || 5}
+                                />
+                              )}
+                            </div>
 
-                          {/* Alerta de exceso de camas */}
-                          {isExceedingGuests() && (
-                            <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-950/30 border-2 border-yellow-500/50 rounded-lg">
-                              <div className="flex items-start gap-3">
-                                <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
-                                <div className="flex-1">
-                                  <h5 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
-                                    {t('preferences.extraBedsTitle')}
-                                  </h5>
-                                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                                    {t('preferences.bedsRequestMessage1')} <strong>{calculateTotalBeds()} {t('preferences.beds')}</strong> {t('preferences.bedsRequestMessage2')} <strong>{totalGuests} {totalGuests !== 1 ? t('preferences.guests') : t('preferences.guest')}</strong>.
-                                    {' '}{t('preferences.bedsRequestMessage3')}
-                                  </p>
+                            {/* Alerta de exceso de camas */}
+                            {isExceedingGuests() && (
+                              <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-950/30 border-2 border-yellow-500/50 rounded-lg">
+                                <div className="flex items-start gap-3">
+                                  <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
+                                  <div className="flex-1">
+                                    <h5 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
+                                      {t('preferences.extraBedsTitle')}
+                                    </h5>
+                                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                                      {t('preferences.bedsRequestMessage1')} <strong>{calculateTotalBeds()} {t('dashboard.beds')}</strong> {t('preferences.bedsRequestMessage2')} <strong>{totalGuests} {totalGuests !== 1 ? t('dashboard.guests') : t('dashboard.guest')}</strong>.
+                                      {' '}{t('preferences.bedsRequestMessage3')}
+                                    </p>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
 
                     {/* Información adicional */}
                     <div className="space-y-2">
