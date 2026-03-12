@@ -37,6 +37,7 @@ class Reservation {
                     CONCAT(a.direccion, ', ', a.codpostal) as city,
                     ac.redwifi as wifi_ssid,
                     ac.clavewifi as wifi_password,
+                    ac.info_cajetin_app_huesped,
                     NULL as portal_code,
                     NULL as door_code,
                     pi.identificador as host_document,
@@ -92,15 +93,19 @@ class Reservation {
 
         // Construir URL completa del contrato
         if (!empty($result['contract_path'])) {
-            $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-            // Asegurar que contract_path empiece con /
-            $path = '/' . ltrim($result['contract_path'], '/');
-            // Agregar prefijo del proyecto si no está presente
-            if (strpos($path, '/app_huesped') !== 0) {
-                $path = '/app_huesped' . $path;
+            // Si ya es una URL completa (comienza con http:// o https://), no modificarla
+            if (strpos($result['contract_path'], 'http://') === 0 || strpos($result['contract_path'], 'https://') === 0) {
+                // Ya es URL completa, no hacer nada
+            } else {
+                // Es una ruta relativa, construir URL
+                $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+                $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+                $path = '/' . ltrim($result['contract_path'], '/');
+                if (strpos($path, '/app_huesped') !== 0) {
+                    $path = '/app_huesped' . $path;
+                }
+                $result['contract_path'] = $protocol . "://" . $host . $path;
             }
-            $result['contract_path'] = $protocol . "://" . $host . $path;
         }
 
         return $result;
@@ -212,7 +217,7 @@ class Reservation {
      * Obtener información del alojamiento de la reserva
      */
     public function getAccommodationInfo($reservation_id) {
-        $sql = "SELECT 
+        $sql = "SELECT
                     a.*,
                     pi.identificador as host_document,
                     COALESCE(CONCAT(pi.nombres, ' ', pi.apellidos), ac.nombre_anfitrion) as host_name,
@@ -298,7 +303,7 @@ class Reservation {
      */
     public function updateContract($reservation_id, $contract_path, $contract_date = null) {
         error_log("RESERVATION MODEL: updateContract called with reservation_id=" . $reservation_id . ", contract_path=" . $contract_path . ", contract_date=" . ($contract_date ?? 'NULL'));
-        
+
         if ($contract_date === null) {
             $sql = "UPDATE reserva SET contrato = ?, fecha_contrato = NOW() WHERE id = ?";
             error_log("RESERVATION MODEL: Executing SQL (with NOW()): " . $sql);
@@ -308,7 +313,7 @@ class Reservation {
             error_log("RESERVATION MODEL: Executing SQL (with date): " . $sql);
             $result = $this->db->execute($sql, [$contract_path, $contract_date, $reservation_id]);
         }
-        
+
         error_log("RESERVATION MODEL: Update result: " . ($result ? "SUCCESS" : "FAILED"));
         return $result;
     }

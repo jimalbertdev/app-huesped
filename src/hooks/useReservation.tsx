@@ -28,6 +28,7 @@ interface ReservationData {
   contract_path?: string;
   wifi_ssid?: string;
   wifi_password?: string;
+  info_cajetin_app_huesped?: string;
 }
 
 interface GuestData {
