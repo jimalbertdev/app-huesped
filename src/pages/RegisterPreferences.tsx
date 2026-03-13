@@ -333,34 +333,36 @@ const RegisterPreferences = () => {
                   ) : (
                     <>
                       <div className="grid md:grid-cols-2 gap-6">
-                        <Counter
-                          label={`${t('preferences.doubleBeds')} ${bedAvailability && bedAvailability.double_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.double_beds})` : ''}`}
-                          value={doubleBeds}
-                          onChange={setDoubleBeds}
-                          max={bedAvailability?.double_beds || 5}
-                          disabled={bedAvailability !== null && bedAvailability.double_beds === 0}
-                        />
-                        <Counter
-                          label={`${t('preferences.singleBeds')} ${bedAvailability && bedAvailability.single_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.single_beds})` : ''}`}
-                          value={singleBeds}
-                          onChange={setSingleBeds}
-                          max={bedAvailability?.single_beds || 10}
-                          disabled={bedAvailability !== null && bedAvailability.single_beds === 0}
-                        />
-                        <Counter
-                          label={`${t('preferences.sofaBeds')} ${bedAvailability && bedAvailability.sofa_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.sofa_beds})` : ''}`}
-                          value={sofaBeds}
-                          onChange={setSofaBeds}
-                          max={bedAvailability?.sofa_beds || 3}
-                          disabled={bedAvailability !== null && bedAvailability.sofa_beds === 0}
-                        />
+                        {(bedAvailability === null || bedAvailability.double_beds > 0) && (
+                          <Counter
+                            label={`${t('preferences.doubleBeds')} ${bedAvailability && bedAvailability.double_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.double_beds})` : ''}`}
+                            value={doubleBeds}
+                            onChange={setDoubleBeds}
+                            max={bedAvailability?.double_beds || 5}
+                          />
+                        )}
+                        {(bedAvailability === null || bedAvailability.single_beds > 0) && (
+                          <Counter
+                            label={`${t('preferences.singleBeds')} ${bedAvailability && bedAvailability.single_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.single_beds})` : ''}`}
+                            value={singleBeds}
+                            onChange={setSingleBeds}
+                            max={bedAvailability?.single_beds || 10}
+                          />
+                        )}
+                        {(bedAvailability === null || bedAvailability.sofa_beds > 0) && (
+                          <Counter
+                            label={`${t('preferences.sofaBeds')} ${bedAvailability && bedAvailability.sofa_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.sofa_beds})` : ''}`}
+                            value={sofaBeds}
+                            onChange={setSofaBeds}
+                            max={bedAvailability?.sofa_beds || 3}
+                          />
+                        )}
                         {(bedAvailability === null || bedAvailability.bunk_beds > 0) && (
                           <Counter
                             label={`${t('preferences.bunkBeds')} ${bedAvailability && bedAvailability.bunk_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.bunk_beds})` : ''}`}
                             value={bunkBeds}
                             onChange={setBunkBeds}
                             max={bedAvailability?.bunk_beds || 5}
-                            disabled={bedAvailability !== null && bedAvailability.bunk_beds === 0}
                           />
                         )}
                       </div>
