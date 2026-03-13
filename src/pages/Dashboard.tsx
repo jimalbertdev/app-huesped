@@ -949,24 +949,28 @@ const Dashboard = () => {
                 ) : doorInfoLoaded && doorInfo?.has_locks === true ? (
                   <>
                     {/* Botones de apertura Raixer */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        className="gap-2 bg-gradient-primary hover:opacity-90"
-                        disabled={!allGuestsRegistered || !isReservationActive}
-                        onClick={() => handleOpenDoorClick("portal")}
-                      >
-                        <Unlock className="w-4 h-4" />
-                        {t("dashboard.openPortal")}
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        className="gap-2"
-                        disabled={!allGuestsRegistered || !isReservationActive}
-                        onClick={() => handleOpenDoorClick("accommodation")}
-                      >
-                        <Unlock className="w-4 h-4" />
-                        {t("dashboard.openAccommodation")}
-                      </Button>
+                    <div className={`grid ${doorInfo?.portal && doorInfo?.casa ? 'grid-cols-2' : 'grid-cols-1'} gap-2`}>
+                      {doorInfo?.portal && (
+                        <Button
+                          className="gap-2 bg-gradient-primary hover:opacity-90"
+                          disabled={!allGuestsRegistered || !isReservationActive}
+                          onClick={() => handleOpenDoorClick("portal")}
+                        >
+                          <Unlock className="w-4 h-4" />
+                          {t("dashboard.openPortal")}
+                        </Button>
+                      )}
+                      {doorInfo?.casa && (
+                        <Button
+                          variant="secondary"
+                          className="gap-2"
+                          disabled={!allGuestsRegistered || !isReservationActive}
+                          onClick={() => handleOpenDoorClick("accommodation")}
+                        >
+                          <Unlock className="w-4 h-4" />
+                          {t("dashboard.openAccommodation")}
+                        </Button>
+                      )}
                     </div>
                   </>
                 ) : (

@@ -85,8 +85,8 @@ class DoorUnlock {
      */
     private function isReservationActive($reservation_id) {
         $sql = "SELECT 
-                    CONCAT(fecha_inicio, ' ', hora_entrada) as check_in,
-                    CONCAT(fecha_fin, ' ', hora_salida) as check_out
+                    CONCAT(DATE(fecha_inicio), ' ', hora_entrada) as check_in,
+                    CONCAT(DATE(fecha_fin), ' ', hora_salida) as check_out
                 FROM reserva
                 WHERE id = ?";
         
