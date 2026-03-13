@@ -279,100 +279,112 @@ const RegisterPreferences = () => {
               </div>
 
               {/* Necesita cuna */}
-              <div className="flex items-center space-x-3 p-4 rounded-lg bg-muted/50">
-                <Checkbox
-                  id="needsCrib"
-                  checked={needsCrib}
-                  onCheckedChange={(checked) => setNeedsCrib(checked as boolean)}
-                  disabled={bedAvailability !== null && !bedAvailability.crib}
-                />
-                <Label htmlFor="needsCrib" className={`cursor-pointer flex items-center gap-2 ${bedAvailability !== null && !bedAvailability.crib ? 'opacity-50' : ''}`}>
-                  {t('preferences.needsCrib')}
-                  {bedAvailability !== null && bedAvailability.crib && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                      {t('preferences.freeOfCharge')}
-                    </span>
-                  )}
-                  {bedAvailability !== null && !bedAvailability.crib && <span className="text-xs text-muted-foreground">({t('preferences.notAvailable')})</span>}
-                </Label>
-              </div>
+              {(bedAvailability === null || bedAvailability.crib === true) && (
+                <div className="flex items-center space-x-3 p-4 rounded-lg bg-muted/50">
+                  <Checkbox
+                    id="needsCrib"
+                    checked={needsCrib}
+                    onCheckedChange={(checked) => setNeedsCrib(checked as boolean)}
+                    disabled={bedAvailability !== null && !bedAvailability.crib}
+                  />
+                  <Label htmlFor="needsCrib" className={`cursor-pointer flex items-center gap-2 ${bedAvailability !== null && !bedAvailability.crib ? 'opacity-50' : ''}`}>
+                    {t('preferences.needsCrib')}
+                    {bedAvailability !== null && bedAvailability.crib && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                        {t('preferences.freeOfCharge')}
+                      </span>
+                    )}
+                    {bedAvailability !== null && !bedAvailability.crib && <span className="text-xs text-muted-foreground">({t('preferences.notAvailable')})</span>}
+                  </Label>
+                </div>
+              )}
 
               {/* Tiene mascotas */}
-              <div className="flex items-center space-x-3 p-4 rounded-lg bg-muted/50 mt-4">
-                <Checkbox
-                  id="hasPets"
-                  checked={hasPets}
-                  onCheckedChange={(checked) => setHasPets(checked as boolean)}
-                  disabled={bedAvailability !== null && !bedAvailability.pets}
-                />
-                <Label htmlFor="hasPets" className={`cursor-pointer flex items-center gap-2 ${bedAvailability !== null && !bedAvailability.pets ? 'opacity-50' : ''}`}>
-                  {t('preferences.hasPets') || 'Viajo con mascotas'}
-                  {bedAvailability !== null && bedAvailability.pets && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                      {t('preferences.freeOfCharge')}
-                    </span>
-                  )}
-                  {bedAvailability !== null && !bedAvailability.pets && <span className="text-xs text-muted-foreground">({t('preferences.notAvailable') || 'No permitido'})</span>}
-                </Label>
-              </div>
+              {(bedAvailability === null || bedAvailability.pets === true) && (
+                <div className="flex items-center space-x-3 p-4 rounded-lg bg-muted/50 mt-4">
+                  <Checkbox
+                    id="hasPets"
+                    checked={hasPets}
+                    onCheckedChange={(checked) => setHasPets(checked as boolean)}
+                    disabled={bedAvailability !== null && !bedAvailability.pets}
+                  />
+                  <Label htmlFor="hasPets" className={`cursor-pointer flex items-center gap-2 ${bedAvailability !== null && !bedAvailability.pets ? 'opacity-50' : ''}`}>
+                    {t('preferences.hasPets') || 'Viajo con mascotas'}
+                    {bedAvailability !== null && bedAvailability.pets && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                        {t('preferences.freeOfCharge')}
+                      </span>
+                    )}
+                    {bedAvailability !== null && !bedAvailability.pets && <span className="text-xs text-muted-foreground">({t('preferences.notAvailable') || 'No permitido'})</span>}
+                  </Label>
+                </div>
+              )}
 
               {/* Configuración de camas */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">{t('preferences.bedConfiguration')}</h3>
-                {loadingAvailability ? (
-                  <p className="text-sm text-muted-foreground">{t('preferences.loadingAvailability')}</p>
-                ) : (
-                  <>
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <Counter
-                        label={`${t('preferences.doubleBeds')} ${bedAvailability && bedAvailability.double_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.double_beds})` : ''}`}
-                        value={doubleBeds}
-                        onChange={setDoubleBeds}
-                        max={bedAvailability?.double_beds || 5}
-                        disabled={bedAvailability !== null && bedAvailability.double_beds === 0}
-                      />
-                      <Counter
-                        label={`${t('preferences.singleBeds')} ${bedAvailability && bedAvailability.single_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.single_beds})` : ''}`}
-                        value={singleBeds}
-                        onChange={setSingleBeds}
-                        max={bedAvailability?.single_beds || 10}
-                        disabled={bedAvailability !== null && bedAvailability.single_beds === 0}
-                      />
-                      <Counter
-                        label={`${t('preferences.sofaBeds')} ${bedAvailability && bedAvailability.sofa_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.sofa_beds})` : ''}`}
-                        value={sofaBeds}
-                        onChange={setSofaBeds}
-                        max={bedAvailability?.sofa_beds || 3}
-                        disabled={bedAvailability !== null && bedAvailability.sofa_beds === 0}
-                      />
-                      <Counter
-                        label={`${t('preferences.bunkBeds')} ${bedAvailability && bedAvailability.bunk_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.bunk_beds})` : ''}`}
-                        value={bunkBeds}
-                        onChange={setBunkBeds}
-                        max={bedAvailability?.bunk_beds || 5}
-                        disabled={bedAvailability !== null && bedAvailability.bunk_beds === 0}
-                      />
-                    </div>
+              {(bedAvailability === null ||
+                (bedAvailability.double_beds > 0 ||
+                  bedAvailability.single_beds > 0 ||
+                  bedAvailability.sofa_beds > 0 ||
+                  bedAvailability.bunk_beds > 0)) && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">{t('preferences.bedConfiguration')}</h3>
+                  {loadingAvailability ? (
+                    <p className="text-sm text-muted-foreground">{t('preferences.loadingAvailability')}</p>
+                  ) : (
+                    <>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <Counter
+                          label={`${t('preferences.doubleBeds')} ${bedAvailability && bedAvailability.double_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.double_beds})` : ''}`}
+                          value={doubleBeds}
+                          onChange={setDoubleBeds}
+                          max={bedAvailability?.double_beds || 5}
+                          disabled={bedAvailability !== null && bedAvailability.double_beds === 0}
+                        />
+                        <Counter
+                          label={`${t('preferences.singleBeds')} ${bedAvailability && bedAvailability.single_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.single_beds})` : ''}`}
+                          value={singleBeds}
+                          onChange={setSingleBeds}
+                          max={bedAvailability?.single_beds || 10}
+                          disabled={bedAvailability !== null && bedAvailability.single_beds === 0}
+                        />
+                        <Counter
+                          label={`${t('preferences.sofaBeds')} ${bedAvailability && bedAvailability.sofa_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.sofa_beds})` : ''}`}
+                          value={sofaBeds}
+                          onChange={setSofaBeds}
+                          max={bedAvailability?.sofa_beds || 3}
+                          disabled={bedAvailability !== null && bedAvailability.sofa_beds === 0}
+                        />
+                        {(bedAvailability === null || bedAvailability.bunk_beds > 0) && (
+                          <Counter
+                            label={`${t('preferences.bunkBeds')} ${bedAvailability && bedAvailability.bunk_beds > 0 ? `(${t('preferences.max')}: ${bedAvailability.bunk_beds})` : ''}`}
+                            value={bunkBeds}
+                            onChange={setBunkBeds}
+                            max={bedAvailability?.bunk_beds || 5}
+                            disabled={bedAvailability !== null && bedAvailability.bunk_beds === 0}
+                          />
+                        )}
+                      </div>
 
-                    {/* Alerta de exceso de camas */}
-                    {isExceedingGuests() && (
-                      <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-950/30 border-2 border-yellow-500/50 rounded-lg">
-                        <div className="flex items-start gap-3">
-                          <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
-                          <div className="flex-1">
-                            <h5 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
-                              {t('preferences.additionalBedsRequest')}
-                            </h5>
-                            <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                              {t('preferences.bedsRequestMessage1')} <strong>{calculateTotalBeds()} {t('preferences.beds')}</strong> {t('preferences.bedsRequestMessage2')} <strong>{reservationData?.total_guests || 0} {t('preferences.guest')}{(reservationData?.total_guests || 0) !== 1 ? t('preferences.guestPlural') : ''}</strong>. {t('preferences.bedsRequestMessage3')}
-                            </p>
+                      {/* Alerta de exceso de camas */}
+                      {isExceedingGuests() && (
+                        <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-950/30 border-2 border-yellow-500/50 rounded-lg">
+                          <div className="flex items-start gap-3">
+                            <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                              <h5 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
+                                {t('preferences.additionalBedsRequest')}
+                              </h5>
+                              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                                {t('preferences.bedsRequestMessage1')} <strong>{calculateTotalBeds()} {t('preferences.beds')}</strong> {t('preferences.bedsRequestMessage2')} <strong>{reservationData?.total_guests || 0} {t('preferences.guest')}{(reservationData?.total_guests || 0) !== 1 ? t('preferences.guestPlural') : ''}</strong>. {t('preferences.bedsRequestMessage3')}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* Información adicional */}
               <div className="space-y-2">
