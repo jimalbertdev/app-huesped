@@ -36,6 +36,9 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.registeredGuests": "Huéspedes registrados",
     "dashboard.pendingGuest": "Huésped pendiente",
     "dashboard.copyLink": "Compartir enlace",
+    "dashboard.responsibleWarningTitle": "¡Importante!",
+    "dashboard.responsibleWarning":
+      "No olvides registrarte como el usuario responsable respondiendo a la pregunta \"¿Eres tú quien realizó la reserva?\". Sin un responsable definido, no tendrás acceso a las funciones de Apertura de Puertas.",
     "dashboard.myStay": "Mi Estancia",
     "dashboard.myReservation": "Mi Reserva",
     "dashboard.accommodation": "Alojamiento",
@@ -221,6 +224,7 @@ const translations: Record<Language, Record<string, string>> = {
     "confirmation.of": "de",
     "confirmation.responsible": "Responsable",
     "confirmation.registered": "Registrado",
+    "confirmation.adultNotResponsible": "No has marcado que eres el responsable de la reserva. ¿Estás seguro de continuar sin ser el responsable?",
     "confirmation.pending": "Pendiente",
     "confirmation.registerNext": "Registrar siguiente huésped",
     "confirmation.pendingPlural": "pendientes",
@@ -291,6 +295,12 @@ const translations: Record<Language, Record<string, string>> = {
     "register.relationshipWithHolder": "Parentesco con el Responsable",
     "register.responsibleAlreadyExists":
       "Ya hay un huésped responsable registrado para esta reserva",
+    "register.responsibleHint":
+      "No se ha asignado un huésped responsable. Por ello, no tendrías acceso a las funciones de apertura de puerta hasta que se complete el registro.",
+    "register.responsibleDialogTitle": "¿Eres tú quien realizó la reserva?",
+    "register.responsibleDialogDescription": "Si eres el responsable, tendrás acceso completo al portal incluyendo la apertura de puertas.",
+    "register.responsibleDialogCancel": "No, continuar sin ser responsable",
+    "register.responsibleDialogConfirm": "Sí, soy el responsable",
     "register.firstNamesPlaceholder": "Nombre(s)",
     "register.optional": "(opcional)",
     "register.secondSurnamePlaceholder": "Apellido materno",
@@ -318,6 +328,7 @@ const translations: Record<Language, Record<string, string>> = {
     "register.expiryDate": "Fecha de Caducidad",
     "register.supportNumber": "Número de Soporte",
     "register.supportPlaceholder": "Ej: AAA000000",
+    "register.documentAlreadyExists": "Este documento ya está registrado en esta reserva",
 
     // Register - Personal Data Section
     "register.personalSection": "Datos Personales",
@@ -377,6 +388,7 @@ const translations: Record<Language, Record<string, string>> = {
     "register.documentExpired": "El documento ha caducado",
     "register.futureDate": "La fecha no puede ser futura",
     "register.minorAge": "Debes ser mayor de edad",
+    "register.minorCannotBeResponsible": "Los menores de edad no pueden ser responsables de la reserva",
 
     // Register - Steps
     "register.step": "Paso",
@@ -427,6 +439,9 @@ const translations: Record<Language, Record<string, string>> = {
     "preferences.bedsRequestMessage2": "para",
     "preferences.bedsRequestMessage3":
       "El anfitrión será notificado sobre esta solicitud especial.",
+    "preferences.beds": "camas",
+    "preferences.guest": "huésped",
+    "preferences.guests": "huéspedes",
     "preferences.guestPlural": "es",
 
     // RegisterTerms
@@ -498,6 +513,9 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.registeredGuests": "Registered guests",
     "dashboard.pendingGuest": "Pending guest",
     "dashboard.copyLink": "Share link",
+    "dashboard.responsibleWarningTitle": "Important!",
+    "dashboard.responsibleWarning":
+      "Don't forget to register as the responsible user by answering the question \"Are you the one who made the reservation?\". Without a defined responsible, you won't have access to the Door Opening functions.",
     "dashboard.myStay": "My Stay",
     "dashboard.myReservation": "My Reservation",
     "dashboard.accommodation": "Accommodation",
@@ -682,6 +700,7 @@ const translations: Record<Language, Record<string, string>> = {
     "confirmation.of": "of",
     "confirmation.responsible": "Responsible",
     "confirmation.registered": "Registered",
+    "confirmation.adultNotResponsible": "You have not indicated that you are the responsible for the reservation. Are you sure you want to continue without being the responsible?",
     "confirmation.pending": "Pending",
     "confirmation.registerNext": "Register next guest",
     "confirmation.pendingPlural": "pending",
@@ -752,7 +771,13 @@ const translations: Record<Language, Record<string, string>> = {
     "register.relationshipWithHolder": "Relationship with Holder",
     "register.responsibleAlreadyExists":
       "There is already a responsible guest registered for this reservation",
-    "register.firstNamesPlaceholder": "First name(s)",
+    "register.responsibleHint":
+      "No responsible guest has been assigned. Therefore, you would not have access to door opening functions until the registration is completed.",
+    "register.responsibleDialogTitle": "Are you the one who made the reservation?",
+    "register.responsibleDialogDescription": "If you are the responsible, you will have full access to the portal including door opening.",
+    "register.responsibleDialogCancel": "No, continue without being responsible",
+    "register.responsibleDialogConfirm": "Yes, I am the responsible",
+    firstNamesPlaceholder: "First name(s)",
     "register.optional": "(optional)",
     "register.secondSurnamePlaceholder": "Mother's surname",
     "register.minorRequiredRelationship": "⚠️ Required for minors under 18",
@@ -778,6 +803,7 @@ const translations: Record<Language, Record<string, string>> = {
     "register.expiryDate": "Expiry Date",
     "register.supportNumber": "Support Number",
     "register.supportPlaceholder": "E.g: AAA000000",
+    "register.documentAlreadyExists": "This document is already registered in this reservation",
 
     // Register - Personal Data Section
     "register.personalSection": "Personal Data",
@@ -837,6 +863,7 @@ const translations: Record<Language, Record<string, string>> = {
     "register.documentExpired": "The document has expired",
     "register.futureDate": "The date cannot be in the future",
     "register.minorAge": "You must be of legal age",
+    "register.minorCannotBeResponsible": "Minors cannot be responsible for the reservation. Only an adult can be the responsible.",
 
     // Register - Steps
     "register.step": "Step",
@@ -886,6 +913,9 @@ const translations: Record<Language, Record<string, string>> = {
     "preferences.bedsRequestMessage2": "for",
     "preferences.bedsRequestMessage3":
       "The host will be notified about this special request.",
+    "preferences.beds": "beds",
+    "preferences.guest": "guest",
+    "preferences.guests": "guests",
     "preferences.guestPlural": "s",
 
     // RegisterTerms
@@ -959,6 +989,9 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.registeredGuests": "Hostes registrats",
     "dashboard.pendingGuest": "Hoste pendent",
     "dashboard.copyLink": "Compartir enllaç",
+    "dashboard.responsibleWarningTitle": "Important!",
+    "dashboard.responsibleWarning":
+      "No oblidis registrar-te com a usuari responsable responent a la pregunta \"Ets tu qui va fer la reserva?\". Sense un responsable definit, no tindràs accés a les funcions d'Obertura de Portes.",
     "dashboard.myStay": "La Meva Estada",
     "dashboard.myReservation": "La Meva Reserva",
     "dashboard.accommodation": "Allotjament",
@@ -1139,6 +1172,7 @@ const translations: Record<Language, Record<string, string>> = {
     "confirmation.of": "de",
     "confirmation.responsible": "Responsable",
     "confirmation.registered": "Registrat",
+    "confirmation.adultNotResponsible": "No has indicat que ets el responsable de la reserva. Estàs segur que vols continuar sense ser el responsable?",
     "confirmation.pending": "Pendent",
     "confirmation.registerNext": "Registrar següent hoste",
     "confirmation.pendingPlural": "pendents",
@@ -1209,6 +1243,12 @@ const translations: Record<Language, Record<string, string>> = {
     "register.relationshipWithHolder": "Parentiu amb el Responsable",
     "register.responsibleAlreadyExists":
       "Ja hi ha un hoste responsable registrat per aquesta reserva",
+    "register.responsibleHint":
+      "No s'ha assignat un hoste responsable. Per tant, no tindràs accés a les funcions d'obertura de porta fins que es completi el registre.",
+    "register.responsibleDialogTitle": "Ets tu qui va fer la reserva?",
+    "register.responsibleDialogDescription": "Si ets el responsable, tindràs accés complet al portal incloent l'obertura de portes.",
+    "register.responsibleDialogCancel": "No, continuar sense ser responsable",
+    "register.responsibleDialogConfirm": "Sí, sóc el responsable",
     "register.firstNamesPlaceholder": "Nom(s)",
     "register.optional": "(opcional)",
     "register.secondSurnamePlaceholder": "Cognom matern",
@@ -1236,6 +1276,9 @@ const translations: Record<Language, Record<string, string>> = {
     "register.expiryDate": "Data de Caducitat",
     "register.supportNumber": "Número de Suport",
     "register.supportPlaceholder": "Ex: AAA000000",
+    "register.documentAlreadyExists": "Aquest document ja està registrat en aquesta reserva",
+
+    // Register - Personal Data Section
 
     // Register - Personal Data Section
     "register.personalSection": "Dades Personals",
@@ -1295,6 +1338,7 @@ const translations: Record<Language, Record<string, string>> = {
     "register.documentExpired": "El document ha caducat",
     "register.futureDate": "La data no pot ser futura",
     "register.minorAge": "Has de ser major d'edat",
+    "register.minorCannotBeResponsible": "Els menors d'edat no poden ser responsables de la reserva. Només un adult pot ser el responsable.",
 
     // Register - Steps
     "register.step": "Pas",
@@ -1410,6 +1454,9 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.registeredGuests": "Invités enregistrés",
     "dashboard.pendingGuest": "Invité en attente",
     "dashboard.copyLink": "Partager le lien",
+    "dashboard.responsibleWarningTitle": "Important !",
+    "dashboard.responsibleWarning":
+      "N'oubliez pas de vous enregistrer en tant qu'utilisateur responsable en répondant à la question \"Êtes-vous celui qui a effectué la réservation ?\". Sans responsable défini, vous n'aurez pas accès aux fonctions d'ouverture de portes.",
     "dashboard.myStay": "Mon Séjour",
     "dashboard.myReservation": "Ma Réservation",
     "dashboard.accommodation": "Hébergement",
@@ -1588,6 +1635,7 @@ const translations: Record<Language, Record<string, string>> = {
     "confirmation.of": "de",
     "confirmation.responsible": "Responsable",
     "confirmation.registered": "Enregistré",
+    "confirmation.adultNotResponsible": "Vous n'avez pas indiqué que vous êtes le responsable de la réservation. Êtes-vous sûr de vouloir continuer sans être le responsable?",
     "confirmation.pending": "En attente",
     "confirmation.registerNext": "Enregistrer l'invité suivant",
     "confirmation.pendingPlural": "en attente",
@@ -1663,6 +1711,12 @@ const translations: Record<Language, Record<string, string>> = {
     "register.relationshipWithHolder": "Lien avec le Titulaire",
     "register.responsibleAlreadyExists":
       "Il y a déjà un invité responsable enregistré pour cette réservation",
+    "register.responsibleHint":
+      "Aucun invité responsable n'a été assigné. Par conséquent, vous n'aurez pas accès aux fonctions d'ouverture de porte avant la fin de l'inscription.",
+    "register.responsibleDialogTitle": "Êtes-vous celui qui a effectué la réservation?",
+    "register.responsibleDialogDescription": "Si vous êtes le responsable, vous aurez un accès complet au portail, y compris l'ouverture des portes.",
+    "register.responsibleDialogCancel": "Non, continuer sans être responsable",
+    "register.responsibleDialogConfirm": "Oui, je suis le responsable",
     "register.firstNamesPlaceholder": "Prénom(s)",
     "register.optional": "(optionnel)",
     "register.secondSurnamePlaceholder": "Nom de famille maternel",
@@ -1690,6 +1744,7 @@ const translations: Record<Language, Record<string, string>> = {
     "register.expiryDate": "Date d'Expiration",
     "register.supportNumber": "Numéro de Support",
     "register.supportPlaceholder": "Ex: AAA000000",
+    "register.documentAlreadyExists": "Ce document est déjà enregistré dans cette réservation",
 
     // Register - Personal Data Section
     "register.personalSection": "Données Personnelles",
@@ -1749,6 +1804,7 @@ const translations: Record<Language, Record<string, string>> = {
     "register.documentExpired": "Le document a expiré",
     "register.futureDate": "La date ne peut pas être dans le futur",
     "register.minorAge": "Vous devez être majeur",
+    "register.minorCannotBeResponsible": "Les mineurs ne peuvent pas être responsables de la réservation. Seul un adulte peut être le responsable.",
 
     // Register - Steps
     "register.step": "Étape",
@@ -1871,6 +1927,9 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.registeredGuests": "Registrierte Gäste",
     "dashboard.pendingGuest": "Ausstehender Gast",
     "dashboard.copyLink": "Link teilen",
+    "dashboard.responsibleWarningTitle": "Wichtig!",
+    "dashboard.responsibleWarning":
+      "Vergessen Sie nicht, sich als verantwortlicher Benutzer zu registrieren, indem Sie die Frage \"Sind Sie die Person, die die Reservierung vorgenommen hat?\" beantworten. Ohne definierten Verantwortlichen haben Sie keinen Zugang zu Türöffnungsfunktionen.",
     "dashboard.myStay": "Mein Aufenthalt",
     "dashboard.myReservation": "Meine Reservierung",
     "dashboard.accommodation": "Unterkunft",
@@ -2046,6 +2105,7 @@ const translations: Record<Language, Record<string, string>> = {
     "confirmation.of": "von",
     "confirmation.responsible": "Verantwortlich",
     "confirmation.registered": "Registriert",
+    "confirmation.adultNotResponsible": "Sie haben nicht angegeben, dass Sie für die Reservierung verantwortlich sind. Sind Sie sicher, dass Sie ohne Verantwortlicher fortfahren möchten?",
     "confirmation.pending": "Ausstehend",
     "confirmation.registerNext": "Nächsten Gast registrieren",
     "confirmation.pendingPlural": "ausstehend",
@@ -2115,133 +2175,13 @@ const translations: Record<Language, Record<string, string>> = {
     "register.identityDocument": "Ausweisdokument",
     "register.dniFormatCorrect": "DNI-Format korrekt",
     "register.nieFormatCorrect": "NIE-Format korrekt",
+    "register.supportNumber": "Unterstützungsnummer",
+    "register.supportPlaceholder": "z.B: AAA000000",
     "register.supportNumberHint": "📌 Erscheint oben auf dem DNI/NIE",
-    "register.personalData": "Persönliche Daten",
-    "register.firstNames": "Vornamen",
-    "register.age": "Alter",
-    "register.years": "Jahre",
-    "register.select": "Auswählen",
-    "register.relationshipWithHolder": "Beziehung zum Inhaber",
-    "register.responsibleAlreadyExists":
-      "Es ist bereits ein verantwortlicher Gast für diese Reservierung registriert",
-    "register.firstNamesPlaceholder": "Vorname(n)",
-    "register.optional": "(optional)",
-    "register.secondSurnamePlaceholder": "Mütterlicher Nachname",
-    "register.minorRequiredRelationship":
-      "⚠️ Erforderlich für Minderjährige unter 18 Jahren",
-    "register.searching": "Suche...",
-    "register.autoCompletesMunicipality":
-      "Wird automatisch ausgefüllt, wenn die Gemeinde ausgewählt wird",
-    "register.cityNamePlaceholder": "Stadtname",
-    "register.addressPlaceholder": "Straße, Nummer, Etage, Tür...",
-    "register.residenceData": "Wohnsitzdaten",
-    "register.postalCode": "Postleitzahl",
-    "register.postalCodePlaceholder": "Postleitzahl",
-    "register.selectPostalCode": "Postleitzahl auswählen",
-    "register.availablePostalCodes": "verfügbare Postleitzahlen",
-    "register.loading": "Laden...",
-    "register.contactInfo": "Kontaktinformationen",
-    "register.autoSave": "💾 Ihr Fortschritt wird automatisch gespeichert",
-
-    // RegisterPreferences
-    "preferences.title": "Aufenthaltspräferenzen",
-    "preferences.updateTitle": "Aufenthaltspräferenzen Aktualisieren",
-    "preferences.subtitle":
-      "Als Reservierungsinhaber passen Sie die Unterkunftsdetails an",
-    "preferences.responsible": "Reservierungsinhaber",
-    "preferences.arrivalTime": "Geschätzte Ankunftszeit",
-    "preferences.arrivalHelp": "Hilft uns, Ihre Unterkunft vorzubereiten",
-    "preferences.needsCrib": "Benötigen Sie ein Kinderbett?",
-    "preferences.hasPets": "Reisen Sie mit Haustieren?",
-    "preferences.notAvailable": "Nicht verfügbar",
-    "preferences.bedConfiguration": "Bettenkonfiguration",
-    "preferences.loadingAvailability": "Verfügbarkeit wird geladen...",
-    "preferences.doubleBeds": "Doppelbetten",
-    "preferences.singleBeds": "Einzelbetten",
-    "preferences.sofaBeds": "Schlafsofas",
-    "preferences.bunkBeds": "Etagenbetten",
-    "preferences.max": "Max",
-    "preferences.notAvailableAccommodation":
-      "Nicht verfügbar in dieser Unterkunft",
-    "preferences.extraBedsTitle": "Anfrage für zusätzliche Betten",
-    "preferences.extraBedsMessage": "Sie fordern an",
-    "preferences.beds": "Betten",
-    "preferences.for": "für",
-    "preferences.guest": "Gast",
-    "preferences.guests": "Gäste",
-    "preferences.extraBedsNotification":
-      "Der Gastgeber wird über diese spezielle Anfrage informiert.",
-    "preferences.additionalInfo": "Zusätzliche Informationen (Optional)",
-    "preferences.additionalInfoPlaceholder": "Besondere Wünsche, Kommentare...",
-    "preferences.characters": "Zeichen",
-    "preferences.back": "Zurück",
-    "preferences.continue": "Weiter",
-    "preferences.autoSave": "💾 Ihr Fortschritt wird automatisch gespeichert",
-    "preferences.step": "Schritt",
-    "preferences.of": "von",
-    "preferences.warning": "Warnung",
-    "preferences.bedLoadError":
-      "Die Bettverfügbarkeit konnte nicht geladen werden. Sie können fortfahren, es kann jedoch Einschränkungen geben.",
-    "preferences.additionalBedsRequest": "Anfrage für zusätzliche Betten",
-    "preferences.bedsRequestMessage1": "Sie fordern",
-    "preferences.bedsRequestMessage2": "für",
-    "preferences.bedsRequestMessage3":
-      "Der Gastgeber wird über diese spezielle Anfrage benachrichtigt.",
-    "preferences.guestPlural": "ä",
-
-    // RegisterTerms
-    "terms.title": "Beherbergungsvertrag",
-    "terms.subtitle":
-      "Lesen und akzeptieren Sie die Bedingungen, um Ihre Registrierung abzuschließen",
-    "terms.termsAndConditions": "Geschäftsbedingungen",
-    "terms.keySummary": "Zusammenfassung der Hauptpunkte",
-    "terms.checkInTime": "Check-in-Zeit: 15:00 - 20:00",
-    "terms.checkOutTime": "Check-out-Zeit: bis 11:00",
-    "terms.noSmoking": "Rauchen im Innenbereich verboten",
-    "terms.noPets": "Keine Haustiere erlaubt",
-    "terms.maxCapacity": "Maximale Kapazität: gemäß Reservierung",
-    "terms.accommodationRules": "Unterkunftsregeln",
-    "terms.cancellationPolicy": "Stornierungsbedingungen",
-    "terms.responsibilities": "Verantwortlichkeiten",
-    "terms.dataProtection": "Datenschutz",
-    "terms.legalTerms": "Rechtliche Bedingungen",
-    "terms.acceptCheckbox":
-      "Ich habe den Beherbergungsvertrag und die Geschäftsbedingungen gelesen und akzeptiere sie",
-    "terms.signHere": "Hier unterschreiben:",
-    "terms.clear": "Löschen",
-    "terms.signatureHelp":
-      "Zeichnen Sie Ihre Unterschrift mit der Maus oder Ihrem Finger auf Touchscreens",
-    "terms.back": "Zurück",
-    "terms.complete": "Registrierung Abschließen",
-    "terms.saving": "Speichern...",
-    "terms.step": "Schritt",
-    "terms.of": "von",
-
-    // Months
-    "months.january": "Januar",
-    "months.february": "Februar",
-    "months.march": "März",
-    "months.april": "April",
-    "months.may": "Mai",
-    "months.june": "Juni",
-    "months.july": "Juli",
-    "months.august": "August",
-    "months.september": "September",
-    "months.october": "Oktober",
-    "months.november": "November",
-    "months.december": "Dezember",
-
-    // MobileDatePicker
-    "register.selectDate": "Datum auswählen",
-    "register.swipeToChange": "Wischen Sie, um Tag, Monat und Jahr zu ändern.",
-    "register.confirm": "Bestätigen",
-
-    // NotFound
-    "notFound.title": "Seite nicht gefunden",
-    "notFound.message": "Entschuldigung, die gesuchte Seite existiert nicht",
-    "notFound.goHome": "Zur Startseite",
+    "register.documentAlreadyExists": "Dieses Dokument ist bereits in dieser Reservierung registriert",
   },
   nl: {
+    // Welcome
     "welcome.title": "Casa Vista Hermosa",
     "welcome.subtitle": "Welkom! Uw verblijf begint hier ✨",
     "welcome.guestsRegistered": "Geregistreerde gasten",
@@ -2250,290 +2190,48 @@ const translations: Record<Language, Record<string, string>> = {
     "welcome.share": "Link delen",
     "welcome.viewAccommodation": "Accommodatie bekijken",
     "welcome.dataProtected": "🔒 Uw gegevens zijn beschermd en versleuteld",
-    "welcome.compliance": "We voldoen aan de AVG en Spaanse regelgeving",
+    "welcome.compliance": "Wij voldoen aan de AVG en Spaanse regelgeving",
     "welcome.timeEstimate": "📋 Voltooi uw registratie in slechts 3 minuten",
     "welcome.contact": "Contact",
 
     // Dashboard - Reservation Card
     "dashboard.guestManagement": "Gastenbeheer",
     "dashboard.registeredGuests": "Geregistreerde gasten",
-    "dashboard.pendingGuest": "In afwachting van gast",
+    "dashboard.pendingGuest": "Openstaande gast",
     "dashboard.copyLink": "Link delen",
-    "dashboard.myStay": "Mijn Verblijf",
-    "dashboard.myReservation": "Mijn Reservering",
+    "dashboard.important": "Belangrijk!",
+    "dashboard.noResponsibleWarning": "Vergeet niet uzelf te registreren als verantwoordelijke gebruiker door de vraag \"Bent u de persoon die de reservering heeft gemaakt?\" te beantwoorden. Zonder gedefinieerde verantwoordelijke heeft u geen toegang tot deuropeningsfuncties.",
+    "dashboard.myStay": "Mijn verblijf",
+    "dashboard.myReservation": "Mijn reservering",
     "dashboard.accommodation": "Accommodatie",
     "dashboard.reservationId": "ID",
     "dashboard.checkIn": "Check-in",
     "dashboard.checkOut": "Check-out",
-    "dashboard.openPortal": "Portal Openen",
+    "dashboard.openPortal": "Portaal openen",
     "dashboard.openAccommodation": "Accommodatie openen",
-    "dashboard.downloadContract": "Contract PDF downloaden",
-    "dashboard.downloadContractModel": "Contractsjabloon downloaden",
 
     // Dashboard - General
     "dashboard.preferences": "Verblijfsvoorkeuren",
-    "dashboard.yourHost": "Uw Gastheer",
-    "dashboard.accommodationInfo": "Accommodatie Informatie",
-    "dashboard.wifiNetwork": "WiFi-netwerk",
-    "dashboard.wifiPassword": "WiFi-wachtwoord",
-    "dashboard.welcomeVideo": "Video",
-    "dashboard.localGuide": "Lokale Gids",
-    "dashboard.customerSupport": "Nuttige Informatie",
-    "dashboard.completeToUnlock": "Voltooi uw registratie om te ontgrendelen",
-    "dashboard.sendMessage": "💬 Bericht versturen",
-    "dashboard.callNow": "📞 Nu bellen",
-    "dashboard.sendEmail": "📧 E-mail versturen",
-    "dashboard.missingGuests": "Ontbrekende gasten om te registreren",
-    "dashboard.someFeaturesLimited":
-      "Sommige functies zijn beperkt totdat alle gasten zich registreren",
+    "dashboard.yourHost": "Uw host",
+    "dashboard.accommodationInfo": "Accommodatie-informatie",
+    "dashboard.wifiNetwork": "WIFI-netwerk",
+    "dashboard.wifiPassword": "WIFI-wachtwoord",
+    "dashboard.localGuide": "Lokale gids",
+    "dashboard.incidents": "Incidenten",
+    "dashboard.newIncident": "Nieuw incident",
+    "dashboard.services": "Diensten",
+    "dashboard.seeAll": "Alles zien",
+    "dashboard.information": "Informatie",
+    "dashboard.access": "Toegang",
 
-    // Dashboard - Doors & Unlock
-    "dashboard.portal": "Portal",
-    "dashboard.unlockHistory": "Openingsgeschiedenis",
-    "dashboard.unlockSuccess": "Deur succesvol geopend",
-    "dashboard.unlockFailed": "Fout bij het openen van de deur",
-    "dashboard.noUnlockHistory": "Geen openingsrecords",
-    "dashboard.unlockHistoryDescription": "Openingsrecords van de app",
-    "dashboard.confirmUnlock": "Deur openen?",
-    "dashboard.confirmUnlockDescription": "Bevestig dat u de deur wilt openen",
-    "dashboard.doorOpened": "Deur geopend!",
-    "dashboard.doorOpenedDescription": "De deur is succesvol geopend",
-    "dashboard.noRaixerTitle": "We zijn er om te helpen!",
-    "dashboard.noRaixerMessage":
-      "Neem contact op met uw gastheer om toegangscodes en sleutelkastlocaties te verkrijgen",
-    "dashboard.accessCodesTitle": "Sleutelkast Codes",
-    "dashboard.accessCodesMessage":
-      "Gebruik deze codes om de sleutelkast te openen en de accommodatiesleutels op te halen",
-    "dashboard.cajetinInfo": "Sleutelkast Informatie",
-    "dashboard.code": "Code",
-    "dashboard.accessNotYetAvailable": "Toegang nog niet beschikbaar",
-    "dashboard.accessFinished": "Toegang beëindigd",
-    "dashboard.accessAvailableFrom": "Deurtoegang is beschikbaar vanaf",
-    "dashboard.accessFinishedOn": "Deurtoegang eindigde op",
-    "dashboard.spainTime": "Spaanse tijd",
-    "dashboard.loadingAccessInfo": "Toegangsinformatie laden...",
-
-    // Dashboard - Preferences
-    "dashboard.arrival": "Aankomst",
-    "dashboard.doubleBed": "tweepersoonsbed",
-    "dashboard.doubleBeds": "tweepersoonsbedden",
-    "dashboard.singleBed": "eenpersoonsbed",
-    "dashboard.singleBeds": "eenpersoonsbedden",
-    "dashboard.sofaBed": "slaapbank",
-    "dashboard.sofaBeds": "slaapbanken",
-    "dashboard.bunkBed": "stapelbed",
-    "dashboard.bunkBeds": "stapelbedden",
-    "dashboard.cribRequested": "Kinderbedje aangevraagd",
-    "dashboard.noPreferences": "Geen voorkeuren ingesteld",
-    "dashboard.editPreferences": "Voorkeuren bewerken",
-    "dashboard.saveChanges": "Wijzigingen opslaan",
-    "dashboard.cancel": "Annuleren",
-    "dashboard.preferencesUpdated": "Voorkeuren bijgewerkt!",
-    "dashboard.preferencesSaved": "Uw voorkeuren zijn succesvol opgeslagen.",
-    "dashboard.preferencesWithExtraBeds":
-      "Uw voorkeuren zijn opgeslagen. De gastheer wordt op de hoogte gebracht van uw verzoek om extra bedden.",
-    "dashboard.extraBedsRequest": "Verzoek om extra bedden",
-    "dashboard.extraBedsWarning": "U vraagt",
-    "dashboard.beds": "bedden",
-    "dashboard.for": "voor",
-    "dashboard.guest": "gast",
-    "dashboard.guests": "gasten",
-    "dashboard.estimatedArrival": "Geschatte aankomsttijd",
-    "dashboard.additionalInfo": "Aanvullende informatie",
-    "dashboard.needsCrib": "Heeft u een babybedje nodig?",
-    "dashboard.hasPets": "Reist u met huisdieren?",
-    "dashboard.notAvailable": "Niet beschikbaar in deze accommodatie",
-
-    // Dashboard - Incidents
-    "dashboard.reportIncident": "Incident melden",
-    "dashboard.reportIncidentTitle": "Een Incident Melden",
-    "dashboard.incidentType": "Type incident",
-    "dashboard.complaint": "Klacht",
-    "dashboard.suggestion": "Suggestie",
-    "dashboard.incidentSubject": "Onderwerp",
-    "dashboard.incidentDescription": "Beschrijving",
-    "dashboard.incidentSubmit": "Rapport versturen",
-    "dashboard.incidentCancel": "Annuleren",
-    "dashboard.incidentSent": "verzonden",
-    "dashboard.incidentRegistered": "Uw bericht is succesvol geregistreerd",
-    "dashboard.yourIncidents": "Uw incidenten",
-    "dashboard.noIncidents": "U heeft geen incidenten gemeld",
-    "dashboard.suggestionsComplaints": "Suggesties of Klachten",
-    "dashboard.yourOpinionHelps": "Uw mening helpt ons te verbeteren",
-    "dashboard.type": "Type",
-    "dashboard.subjectPlaceholder": "Waar gaat uw bericht over?",
-    "dashboard.descriptionPlaceholder": "Beschrijf uw suggestie of klacht...",
-    "dashboard.messageHistory": "Berichtengeschiedenis",
-    "dashboard.send": "Versturen",
-    "dashboard.visitVacanfly": "Bezoek Vacanfly.com",
-    "dashboard.festivalsNearby": "Patroonheilige en Gemeentelijke Festivals",
-    "dashboard.festivalsNearbyDescription":
-      'Deze website toont bijgewerkte informatie over de dichtstbijzijnde patroonheilige en gemeentelijke festivals op elke datum, ga naar het gedeelte "Festivals bij mij in de buurt"',
-    "dashboard.visitFestivalsPage": "Bekijk Festivals in de Buurt",
-
-    // Accommodation Info Categories
-    "accommodationInfo.howToArrive": "🗺️ Hoe te komen…?",
-    "accommodationInfo.whatIsInAccommodation":
-      "🏡 Wat is er in de accommodatie?",
-    "accommodationInfo.howItWorks": "🔧 Hoe werkt het?",
-    "accommodationInfo.howDoI": "🛠️ Hoe doe ik?",
-    "accommodationInfo.howToContact": "📞 Hoe contact opnemen?",
-    "accommodationInfo.accommodationRules": "📋 Accommodatieregels",
-    "accommodationInfo.opening": "🔓 Opening",
-
-    // Local Guide Categories
-    "localGuide.restaurants": "Restaurants",
-    "localGuide.barsDiscosCasinos": "Bars, Discotheken, Casino's",
-    "localGuide.museums": "Museums, Tentoonstellingscentra, Galerijen",
-    "localGuide.parks": "Themaparken, Natuurparken, Tuinen",
-    "localGuide.monuments": "Monumenten, Erfgoed",
-    "localGuide.beaches": "Stranden, Rivieren, Meren",
-    "localGuide.gymsFitness": "Sportscholen, Fitnesscentra",
-    "localGuide.spas": "Spa's, Ontspanningscentra, Genezing",
-    "localGuide.adventure": "Avontuur",
-    "localGuide.pharmacies": "Apotheken",
-    "localGuide.supermarkets": "Supermarkten",
-    "localGuide.emergency": "Nooddiensten",
-    "localGuide.entertainmentCenter":
-      "Bioscopen, Theaters, Entertainmentcentra",
-    "localGuide.foodSpanish": "Spaans Eten",
-    "localGuide.recommendationsPairs": "Onze aanbevelingen voor koppels",
-    "localGuide.recommendationsFamilies":
-      "Onze aanbevelingen voor families of groepen met kinderen",
-    "localGuide.recommendationsFriends":
-      "Onze aanbevelingen voor vriendengroepen",
-    "localGuide.foodAsian": "Aziatisch Eten",
-    "localGuide.pizzeria": "Pizzeria",
-    "localGuide.franchises": "Franchises",
-    "localGuide.foodVegetarian": "Vegetarisch Eten",
-    "localGuide.burgers": "Burgers",
-    "localGuide.cafes": "Cafetaria's",
-    "localGuide.recommendationsEvents":
-      "Onze aanbevelingen op basis van data und schema's",
-    "localGuide.restaurantViews": "Restaurant met uitzicht",
-
-    // Contact
-    "contact.title": "Gastheer contacteren",
-    "contact.name": "María García",
-    "contact.phone": "+34 612 345 678",
-    "contact.email": "maria@casavistahermosa.com",
-    "contact.available": "Beschikbaar 24/7 voor noodgevallen",
-
-    // Share
-    "share.title": "Registratielink delen",
-    "share.message": "Voltooi uw registratie voor Casa Vista Hermosa",
-    "share.copy": "Link kopiëren",
-    "share.whatsapp": "Delen via WhatsApp",
-    "share.email": "Delen via e-mail",
-    "share.copied": "Link gekopieerd!",
-
-    // Confirmation
-    "confirmation.title": "Registratie Voltooid!",
-    "confirmation.thankYou": "Bedankt",
-    "confirmation.dataSaved": "Uw informatie is correct opgeslagen",
-    "confirmation.groupStatus": "Groepsstatus",
-    "confirmation.of": "van",
-    "confirmation.responsible": "Verantwoordelijk",
-    "confirmation.registered": "Geregistreerd",
-    "confirmation.pending": "In behandeling",
-    "confirmation.registerNext": "Volgende gast registreren",
-    "confirmation.pendingPlural": "in behandeling",
-    "confirmation.pendingSingular": "in behandeling",
-    "confirmation.allRegistered":
-      "Alle gasten hebben hun registratie voltooid!",
-    "confirmation.allGuestsComplete": "Alle gasten geregistreerd!",
-    "confirmation.fullAccessUnlocked": "Volledige toegang ontgrendeld",
-    "confirmation.goToDashboard": "Ga naar Mijn Verblijf",
-    "confirmation.shareRegistration": "Registratie Delen",
-    "confirmation.shareDescription":
-      "Stuur deze link naar andere gasten zodat ze hun registratie kunnen voltooien",
-    "confirmation.copyLink": "Registratielink delen",
-    "confirmation.shareWhatsApp": "Delen via WhatsApp",
-    "confirmation.shareEmail": "Versturen via e-mail",
-    "confirmation.showQR": "QR-code tonen",
-    "confirmation.continueToApp": "Doorgaan naar app",
-    "confirmation.limitedFeatures":
-      "Sommige functies zijn beperkt totdat alle gasten hun registratie voltooien",
-    "confirmation.progressSaved": "Uw voortgang is correct opgeslagen",
-
-    // Register - Method Selection
-    "register.title": "Gastregistratie",
-    "register.howToRegister": "Kies hoe u uw gegevens wilt invoeren",
-    "register.methodTitle": "Registratiemethode",
-    "register.scanDocument": "Document Scannen",
-    "register.fastAutomatic": "Snel en automatisch",
-    "register.recommended": "Aanbevolen",
-    "register.aiExtraction": "Automatische gegevensextractie met AI",
-    "register.scanDescription": "Scan uw ID/NIE/Paspoort",
-    "register.enterManually": "Handmatig invoeren",
-    "register.preferWrite": "Ik schrijf liever",
-    "register.guidedForm": "Stapsgewijs geleid formulier",
-    "register.manualForm": "Handmatig Formulier",
-    "register.manualDescription": "Vul het formulier handmatig in",
-    "register.tip": "Tip",
-    "register.scanTip": "Scannen is sneller en voorkomt fouten",
-
-    // Register - Upload Step
-    "register.uploadDocument": "Document Uploaden",
-    "register.uploadPhotoId": "Upload een foto van uw identiteitsdocument",
-    "register.scanningDocument": "Document scannen...",
-    "register.extractingData": "Gegevens extraheren met AI. Even geduld.",
-    "register.selectOrTakePhoto": "Selecteer of maak een foto",
-    "register.fileFormats": "PNG, JPG of JPEG (Max. 10MB)",
-    "register.selectFile": "Bestand selecteren",
-    "register.preview": "Voorbeeld",
-    "register.back": "Terug",
-    "register.processing": "Verwerken...",
-    "register.continue": "Doorgaan",
-
-    // Register - Personal Info Form
-    "register.personalInfo": "Persoonlijke Informatie",
-    "register.reviewExtractedData":
-      "Controleer en voltooi de geëxtraheerde gegevens",
-    "register.completeYourData": "Voltooi uw registratiegegevens",
-    "register.imBookingHolder":
-      "Bent u degene die de reservering heeft gemaakt?",
-    "register.bookingHolderInfo":
-      "Vink dit vakje aan als u de persoon bent die de reservering heeft gemaakt. Uw gegevens worden automatisch geladen.",
+    // Register - Document Section
     "register.identityDocument": "Identiteitsdocument",
     "register.dniFormatCorrect": "DNI-formaat correct",
     "register.nieFormatCorrect": "NIE-formaat correct",
-    "register.supportNumberHint": "📌 Verschijnt bovenaan het DNI/NIE",
-    "register.personalData": "Persoonlijke Gegevens",
-    "register.firstNames": "Voornamen",
-    "register.age": "Leeftijd",
-    "register.years": "jaar",
-    "register.select": "Selecteren",
-    "register.relationshipWithHolder": "Relatie met Houder",
-    "register.responsibleAlreadyExists":
-      "Er is al een verantwoordelijke gast geregistreerd voor deze reservering",
-    "register.firstNamesPlaceholder": "Voorna(a)m(en)",
-    "register.optional": "(optioneel)",
-    "register.secondSurnamePlaceholder": "Moeders achternaam",
-    "register.minorRequiredRelationship":
-      "⚠️ Verplicht voor minderjarigen onder 18",
-    "register.searching": "Zoeken...",
-    "register.autoCompletesMunicipality":
-      "Wordt automatisch ingevuld bij het selecteren van gemeente",
-    "register.cityNamePlaceholder": "Stadsnaam",
-    "register.addressPlaceholder": "Straat, nummer, verdieping, deur...",
-    "register.residenceData": "Verblijfsgegevens",
-    "register.contactInfo": "Contactinformatie",
-    "register.autoSave": "💾 Uw voortgang wordt automatisch opgeslagen",
-
-    // Register - Document Section
-    "register.documentSection": "Identiteitsdocument",
-    "register.documentType": "Documenttype",
-    "register.documentNumber": "Documentnummer",
-    "register.selectType": "Type selecteren",
-    "register.documentPlaceholder": "Documentnummer",
-    "register.dniPlaceholder": "Bijv.: 12345678Z",
-    "register.niePlaceholder": "Bijv.: X1234567L",
-    "register.passportPlaceholder": "Bijv.: ABC123456",
-    "register.issueDate": "Uitgiftedatum",
-    "register.expiryDate": "Vervaldatum",
     "register.supportNumber": "Ondersteuningsnummer",
     "register.supportPlaceholder": "Bijv.: AAA000000",
+    "register.supportNumberHint": "📌 Verschijnt bovenaan het DNI/NIE",
+    "register.documentAlreadyExists": "Dit document is al geregistreerd in deze reservering",
 
     // Register - Personal Data Section
     "register.personalSection": "Persoonlijke Gegevens",

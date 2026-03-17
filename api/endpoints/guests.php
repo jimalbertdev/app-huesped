@@ -86,6 +86,16 @@ try {
             }
         }
 
+        // VALIDACIÓN: Documento único por reserva (permite mismo documento en reservas diferentes)
+        $documentExistsInReservation = $viajeroModel->existsByDocumentInReservation(
+            $data['document_number'],
+            $data['reservation_id']
+        );
+
+        if ($documentExistsInReservation) {
+            Response::error("Este documento ya está registrado en esta reserva. Cada huésped debe tener un documento único.", 400);
+        }
+
         // VALIDACIÓN 1: DNI requiere segundo apellido obligatorio
         if ($data['document_type'] === 'DNI') {
             if (empty($data['second_last_name']) || trim($data['second_last_name']) === '') {
@@ -124,6 +134,11 @@ try {
         // Menores de 18 requieren parentesco
         if ($age < 18 && (empty($data['relationship']) || trim($data['relationship']) === '')) {
             Response::error("El campo parentesco es obligatorio para menores de 18 años", 400);
+        }
+
+        // VALIDACIÓN: Solo mayores de edad pueden ser responsables
+        if ($age < 18 && $is_responsible) {
+            Response::error("Los menores de edad no pueden ser responsables de la reserva. Solo un adulto puede ser el responsable.", 400);
         }
 
         // VALIDACIÓN 3: Fechas de documento
@@ -224,6 +239,24 @@ try {
 
         // Asegurar que is_responsible sea un entero (0 o 1) para MySQL
         $data['is_responsible'] = $is_responsible ? 1 : 0;
+
+        // SOLUCIÓN 2: Validación en servidor - Verificar si es último huésped sin responsable
+        $reservationModel = new Reservation($database);
+        $reservation = $reservationModel->getById($data['reservation_id']);
+        
+        if ($reservation) {
+            $totalGuests = (int)($reservation['total_guests'] ?? 0);
+            $registeredCount = (int)($reservation['registered_guests'] ?? 0);
+            $isLastGuest = ($totalGuests === ($registeredCount + 1));
+            
+            // Verificar si ya hay un responsable registrado
+            $hasResponsible = $viajeroModel->getResponsibleByReservation($data['reservation_id']);
+            
+            // Si es el último huésped, no hay responsable existente, y no se está marcando como responsable → ERROR
+            if ($isLastGuest && !$hasResponsible && !$is_responsible) {
+                Response::error("Eres el último huésped en registrarte. Debes marcar que eres el responsable de la reserva para continuar.", 400);
+            }
+        }
 
         // Procesar firma si viene en el request
         $signature_path = null;

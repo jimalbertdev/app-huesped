@@ -311,4 +311,18 @@ class Viajero {
         $result = $this->db->queryOne($sql, [$reservation_id]);
         return $result['total'] ?? 0;
     }
+
+    /**
+     * Verificar si un documento ya existe en una reserva específica
+     * Permite mismo documento en reservas diferentes
+     */
+    public function existsByDocumentInReservation($document_number, $reservation_id) {
+        $sql = "SELECT v.id 
+                FROM viajeros v
+                INNER JOIN checkin c ON c.viajero_id = v.id
+                WHERE v.nvm3r0_d0cvm3nt0 = ? AND c.reserva_id = ?
+                LIMIT 1";
+        
+        return $this->db->queryOne($sql, [$document_number, $reservation_id]) !== false;
+    }
 }

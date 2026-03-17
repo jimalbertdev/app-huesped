@@ -24,6 +24,9 @@ export const COUNTRY_CODES = [
   { code: '+353', country: 'IE', name: 'Irlanda', flag: '🇮🇪' },
   { code: '+352', country: 'LU', name: 'Luxemburgo', flag: '🇱🇺' },
   { code: '+377', country: 'MC', name: 'Mónaco', flag: '🇲🇨' },
+  { code: '+350', country: 'GI', name: 'Gibraltar', flag: '🇬🇮' },
+  { code: '+376', country: 'AD', name: 'Andorra', flag: '🇦🇩' },
+  { code: '+379', country: 'VA', name: 'Ciudad del Vaticano', flag: '🇻🇮' },
 
   // Europa del Norte
   { code: '+45', country: 'DK', name: 'Dinamarca', flag: '🇩🇰' },
@@ -80,6 +83,20 @@ export const COUNTRY_CODES = [
   { code: '+1', country: 'TT', name: 'Trinidad y Tobago', flag: '🇹🇹' },
   { code: '+1', country: 'BS', name: 'Bahamas', flag: '🇧🇸' },
   { code: '+1', country: 'BB', name: 'Barbados', flag: '🇧🇧' },
+
+  // Caribe - Territorios adicionales
+  { code: '+1264', country: 'AI', name: 'Anguilla', flag: '🇦🇮' },
+  { code: '+1268', country: 'AG', name: 'Antigua y Barbuda', flag: '🇦🇬' },
+  { code: '+1284', country: 'VG', name: 'Islas Vírgenes Británicas', flag: '🇻🇬' },
+  { code: '+1340', country: 'VI', name: 'Islas Vírgenes de EE.UU.', flag: '🇻🇮' },
+  { code: '+1345', country: 'KY', name: 'Islas Caimán', flag: '🇰🇾' },
+  { code: '+1473', country: 'GD', name: 'Granada', flag: '🇬🇩' },
+  { code: '+1649', country: 'TC', name: 'Islas Turks y Caicos', flag: '🇹🇨' },
+  { code: '+1664', country: 'MS', name: 'Montserrat', flag: '🇲🇸' },
+  { code: '+1758', country: 'LC', name: 'Santa Lucía', flag: '🇱🇨' },
+  { code: '+1767', country: 'DM', name: 'Dominica', flag: '🇩🇲' },
+  { code: '+1784', country: 'VC', name: 'San Vicente y Granadinas', flag: '🇻🇨' },
+  { code: '+1869', country: 'KN', name: 'San Cristóbal y Nieves', flag: '🇰🇲' },
 
   // América del Sur
   { code: '+58', country: 'VE', name: 'Venezuela', flag: '🇻🇪' },
@@ -152,6 +169,17 @@ export const COUNTRY_CODES = [
   { code: '+218', country: 'LY', name: 'Libia', flag: '🇱🇾' },
   { code: '+249', country: 'SD', name: 'Sudán', flag: '🇸🇩' },
 
+  // Territorios Franceses
+  { code: '+262', country: 'RE', name: 'Reunión', flag: '🇷🇪' },
+  { code: '+262', country: 'YT', name: 'Mayotte', flag: '🇾🇹' },
+  { code: '+590', country: 'GP', name: 'Guadalupe', flag: '🇬🇵' },
+  { code: '+596', country: 'MQ', name: 'Martinica', flag: '🇲🇶' },
+
+  // Territorios Atlánticos
+  { code: '+290', country: 'SH', name: 'Santa Elena', flag: '🇸🇭' },
+  { code: '+290', country: 'AC', name: 'Isla Ascensión', flag: '🇦🇶' },
+  { code: '+500', country: 'FK', name: 'Islas Malvinas', flag: '🇫🇰' },
+
   // África Occidental
   { code: '+234', country: 'NG', name: 'Nigeria', flag: '🇳🇬' },
   { code: '+233', country: 'GH', name: 'Ghana', flag: '🇬🇭' },
@@ -191,6 +219,14 @@ export const COUNTRY_CODES = [
   { code: '+676', country: 'TO', name: 'Tonga', flag: '🇹🇴' },
   { code: '+685', country: 'WS', name: 'Samoa', flag: '🇼🇸' },
   { code: '+686', country: 'KI', name: 'Kiribati', flag: '🇰🇮' },
+
+  // Pacífico - Territorios adicionales
+  { code: '+691', country: 'GU', name: 'Guam', flag: '🇬🇺' },
+  { code: '+677', country: 'SB', name: 'Islas Salomón', flag: '🇸🇧' },
+  { code: '+678', country: 'VU', name: 'Vanuatu', flag: '🇻🇺' },
+  { code: '+687', country: 'NC', name: 'Nueva Caledonia', flag: '🇳🇨' },
+  { code: '+689', country: 'PF', name: 'Polinesia Francesa', flag: '🇵🇫' },
+  { code: '+872', country: 'PN', name: 'Islas Pitcairn', flag: '🇵🇳' },
 ];
 
 /**

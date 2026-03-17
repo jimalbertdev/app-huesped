@@ -45,7 +45,7 @@ const MobileDatePicker: React.FC<MobileDatePickerProps> = ({
     ], [t]);
 
     // Parse initial value or use current date
-    const initialDate = value && isValid(new Date(value)) ? new Date(value) : new Date();
+    const initialDate = value && isValid(new Date(value + "T12:00:00")) ? new Date(value + "T12:00:00") : new Date();
 
     const [pickerValue, setPickerValue] = useState({
         day: initialDate.getDate().toString(),
@@ -55,8 +55,8 @@ const MobileDatePicker: React.FC<MobileDatePickerProps> = ({
 
     // Sync internal state when external value changes
     useEffect(() => {
-        if (value && isValid(new Date(value))) {
-            const date = new Date(value);
+        if (value && isValid(new Date(value + "T12:00:00"))) {
+            const date = new Date(value + "T12:00:00");
             setPickerValue({
                 day: date.getDate().toString(),
                 month: months[date.getMonth()],
@@ -84,13 +84,13 @@ const MobileDatePicker: React.FC<MobileDatePickerProps> = ({
         const maxDays = getDaysInMonth(new Date(year, monthIdx));
         const validDay = Math.min(day, maxDays);
 
-        const date = new Date(year, monthIdx, validDay);
+        const date = new Date(year, monthIdx, validDay, 12, 0, 0);
         const formattedDate = format(date, "yyyy-MM-dd");
         onChange(formattedDate);
         setIsOpen(false);
     };
 
-    const displayValue = value ? format(new Date(value), "dd/MM/yyyy") : "";
+    const displayValue = value ? format(new Date(value + "T12:00:00"), "dd/MM/yyyy") : "";
 
     return (
         <div className={className}>

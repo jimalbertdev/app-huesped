@@ -314,6 +314,22 @@ export const clientService = {
   getById: (id: number) => api.get(`/clients/${id}`),
 };
 
+// Validación de documentos
+export const documentValidationService = {
+  /**
+   * Verificar si un documento ya existe en una reserva
+   * Usa el endpoint de guests que ya tiene la lógica implementada
+   * @param documentNumber - Número de documento
+   * @param reservationId - ID de la reserva
+   * @returns {exists: boolean, valid: boolean}
+   */
+  checkDocument: (documentNumber: string, reservationId: number) =>
+    api.post('/guests/check-document', {
+      document_number: documentNumber,
+      reservation_id: reservationId,
+    }),
+};
+
 // Términos y Condiciones
 export const termsService = {
   /**

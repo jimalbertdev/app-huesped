@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Camera, Edit3, ArrowRight, ArrowLeft, CheckCircle2, Search, ChevronDown } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useReservation } from "@/hooks/useReservation";
@@ -16,7 +17,7 @@ import vacanflyLogo from "@/assets/vacanfly-logo.png";
 import { DOCUMENT_TYPES, RELATIONSHIP_TYPES, SEX_OPTIONS, calculateAge, isMinor, requiresSecondSurname, requiresSupportNumber } from "@/lib/catalogs";
 import { validateDNI, validateNIE, validateDocument } from "@/lib/documentValidation";
 import { validatePhoneNumber, COUNTRY_CODES } from "@/lib/phoneValidation";
-import { countryService, municipalityService, postalCodeService, documentScanService, clientService } from "@/services/api";
+import { countryService, municipalityService, postalCodeService, documentScanService, clientService, guestService } from "@/services/api";
 import type { Country, Municipality } from "@/schemas/guestSchema";
 import { PhoneCountryCodeSelect } from "@/components/PhoneCountryCodeSelect";
 import FloatingActionBar from "@/components/FloatingActionBar";
@@ -91,6 +92,9 @@ const Register = () => {
   const [residenceCountryNotFound, setResidenceCountryNotFound] = useState(false);
   const [municipalityNotFound, setMunicipalityNotFound] = useState(false);
   const [postalCodeNotFound, setPostalCodeNotFound] = useState(false);
+
+  // Estado para diálogo de confirmación de responsable
+  const [showResponsibleDialog, setShowResponsibleDialog] = useState(false);
 
   // Refs for click outside handling
   const nationalityRef = useRef<HTMLDivElement>(null);
@@ -201,6 +205,11 @@ const Register = () => {
     if (birthDate) {
       const calculatedAge = calculateAge(birthDate);
       setAge(calculatedAge);
+      
+      // Si la edad cambia a menor de 18, desmarcar automáticamente el checkbox de responsable
+      if (calculatedAge < 18 && isResponsible) {
+        setIsResponsible(false);
+      }
     } else {
       setAge(null);
     }
@@ -575,7 +584,7 @@ const Register = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Helper para scroll y focus a un campo
@@ -622,6 +631,22 @@ const Register = () => {
         focusField("docNumber", validationResult.error || "Formato de documento inválido");
         return;
       }
+    }
+
+    // Validar unicidad de documento en la reserva
+    try {
+      const guestsResponse = await guestService.getByReservation(reservationData.id);
+      if (guestsResponse.data.success && guestsResponse.data.data) {
+        const existingGuest = guestsResponse.data.data.find(
+          (g: any) => g.document_number?.toUpperCase() === documentNumber.toUpperCase()
+        );
+        if (existingGuest) {
+          focusField("docNumber", t('register.documentAlreadyExists'));
+          return;
+        }
+      }
+    } catch (error) {
+      console.error("Error checking existing guests:", error);
     }
 
     // Validaciones condicionales - DNI/NIE requiere número de soporte
@@ -793,12 +818,44 @@ const Register = () => {
       document_image_path: uploadedImage || undefined,
     } as any);
 
+    // Verificar si debe preguntar por responsable
+    const shouldAskResponsible = !hasResponsible && age !== null && age >= 18 && !isResponsibleValue;
+
+    // Si es mayor de edad, no hay responsable y no se ha marcado, mostrar diálogo
+    if (shouldAskResponsible) {
+      setShowResponsibleDialog(true);
+      return;
+    }
+
     // Redirigir según si es responsable o no
     if (isResponsibleValue) {
       navigate(buildPathWithReservation("/register/preferences"));
     } else {
       navigate(buildPathWithReservation("/register/terms"));
     }
+  };
+
+  // Función para manejar la confirmación del diálogo
+  const handleResponsibleConfirm = () => {
+    // Marcar como responsable
+    setIsResponsible(true);
+    setShowResponsibleDialog(false);
+    
+    // También actualizar guestData con el nuevo valor
+    setGuestData((prev: any) => ({
+      ...prev,
+      is_responsible: true
+    }));
+    
+    // Navegar a preferencias
+    navigate(buildPathWithReservation("/register/preferences"));
+  };
+
+  // Función para manejar cuando el usuario dice que NO es responsable
+  const handleResponsibleDeny = () => {
+    setShowResponsibleDialog(false);
+    // Navegar a términos sin ser responsable
+    navigate(buildPathWithReservation("/register/terms"));
   };
 
   return (
@@ -1011,21 +1068,37 @@ const Register = () => {
                   {/* Checkbox: ¿Eres el responsable? - PRIMERO */}
                   {!hasResponsible && (
                     <div className="space-y-2">
-                      <div className="flex items-center space-x-3 p-6 rounded-lg bg-blue-50 border-2 border-blue-200">
+                      <div className={`flex items-center space-x-3 p-6 rounded-lg ${age !== null && age < 18 ? 'bg-gray-100 border-2 border-gray-300 opacity-75' : 'bg-blue-50 border-2 border-blue-200'}`}>
                         <Checkbox
                           id="isResponsible"
                           checked={isResponsible}
                           onCheckedChange={handleResponsibleChange}
+                          disabled={age !== null && age < 18}
                         />
                         <div className="flex-1">
-                          <Label htmlFor="isResponsible" className="cursor-pointer text-lg font-semibold text-blue-900">
+                          <Label 
+                            htmlFor="isResponsible" 
+                            className={`cursor-pointer text-lg font-semibold ${age !== null && age < 18 ? 'text-gray-600' : 'text-blue-900'}`}
+                          >
                             {t('register.imBookingHolder')}
                           </Label>
-                          <p className="text-sm text-blue-700 mt-1">
+                          <p className={`text-sm mt-1 ${age !== null && age < 18 ? 'text-gray-500' : 'text-blue-700'}`}>
                             {t('register.bookingHolderInfo')}
                           </p>
+                          {/* Mensaje para menores de edad */}
+                          {age !== null && age < 18 && (
+                            <p className="text-xs text-red-600 mt-1 font-medium">
+                              ⚠️ {t('register.minorCannotBeResponsible')}
+                            </p>
+                          )}
                         </div>
                       </div>
+                      {/* Hint informativo - solo para mayores de edad */}
+                      {age === null || age >= 18 && (
+                        <p className="text-sm text-yellow-700 px-2 mt-2">
+                          💡 {t("register.responsibleHint")}
+                        </p>
+                      )}
                     </div>
                   )}
                   {hasResponsible && (
@@ -1558,6 +1631,28 @@ const Register = () => {
 
       {/* Barra flotante de acciones */}
       < FloatingActionBar />
+
+      {/* Dialog para confirmar responsable */}
+      <AlertDialog open={showResponsibleDialog} onOpenChange={setShowResponsibleDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("register.responsibleDialogTitle")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("register.responsibleDialogDescription")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleResponsibleDeny}>
+              {t("register.responsibleDialogCancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleResponsibleConfirm}>
+              {t("register.responsibleDialogConfirm")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div >
   );
 };

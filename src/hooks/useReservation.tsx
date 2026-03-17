@@ -102,7 +102,14 @@ export const ReservationProvider = ({ children }: { children: ReactNode }) => {
       }>(response);
 
       setReservationData(data.reservation);
-      setGuests(data.guests || []);
+      
+      // Normalizar datos de guests: convertir is_responsible de 0/1 a boolean
+      const normalizedGuests = (data.guests || []).map((guest: GuestData) => ({
+        ...guest,
+        is_responsible: guest.is_responsible === 1 || guest.is_responsible === true
+      }));
+      setGuests(normalizedGuests);
+      
       setPreferences(data.preferences || null);
     } catch (err: any) {
       const errorMessage = handleApiError(err);

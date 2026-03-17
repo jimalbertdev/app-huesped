@@ -1178,6 +1178,23 @@ const Dashboard = () => {
                   ))}
                 </div>
 
+                {/* Warning: No hay responsable - solo se muestra cuando no hay ninguno */}
+                {!hasResponsibleGuest && guests.length > 0 && (
+                  <div className="p-3 rounded-lg bg-yellow-50 border border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-800 mb-3">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">
+                          ⚠️ {t("dashboard.responsibleWarningTitle")}
+                        </p>
+                        <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                          {t("dashboard.responsibleWarning")}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <Button
                   variant="outline"
                   className="w-full gap-2 border-primary/20 hover:bg-primary/5 text-primary"

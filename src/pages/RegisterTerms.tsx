@@ -20,7 +20,7 @@ const RegisterTerms = () => {
   const navigate = useNavigate();
   const { buildPathWithReservation } = useReservationParams();
   const { guestData, preferenceData, signatureData, setSignatureData, clearRegistrationData, isGuestDataComplete } = useRegistrationFlow();
-  const { reservationData, refreshReservation } = useReservation();
+  const { reservationData, refreshReservation, guests } = useReservation();
 
   const [accepted, setAccepted] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
@@ -217,6 +217,35 @@ const RegisterTerms = () => {
       return;
     }
 
+    // Solución 1: Forzar actualización de datos antes de validar
+    await refreshReservation();
+
+    // Recalcular con datos actualizados después del refresh
+    const currentTotalGuests = reservationData?.total_guests || 0;
+    const currentRegisteredGuests = reservationData?.registered_guests || 0;
+
+    // Solución 3: Validación robusta - cubrir todos los casos
+    // Los datos ya están normalizados en useReservation (is_responsible siempre boolean)
+    // 1. Verificar si ya hay un responsable registrado (distinto del actual)
+    const hasOtherResponsible = guests.some(g => g.is_responsible === true);
+    // 2. Verificar si el usuario actual se marcó como responsable
+    const currentUserIsResponsible = guestData?.is_responsible === true;
+    // 3. Determinar si es el último huésped
+    const isLastGuest = currentTotalGuests === (currentRegisteredGuests + 1);
+    // 4. Si es el último Y no hay otro responsable Y el actual no se marcó → BLOQUEAR
+    const needsToBeResponsible = isLastGuest && !hasOtherResponsible && !currentUserIsResponsible;
+
+    if (needsToBeResponsible) {
+      toast({
+        title: "⚠️ Responsable requerido",
+        description: "Eres el último huésped en registrarte. Debes marcar que eres el responsable de la reserva para continuar.",
+        variant: "destructive",
+      });
+      return; // Bloquea el envío
+    }
+
+    // 5. La pregunta de responsable ahora se hace en Register.tsx antes de navegar
+
     setLoading(true);
 
     try {
@@ -289,15 +318,25 @@ const RegisterTerms = () => {
       // 3. GUARDAR HUÉSPED EN DB CON FIRMA
       const guestResponse = await guestService.createWithSignature(formData);
 
+      // Verificar que la respuesta del servidor sea exitosa
+      if (!guestResponse.data.success) {
+        throw new Error(guestResponse.data.message || 'Error al guardar el huésped');
+      }
+
       const createdGuest = guestResponse.data.data;
 
       // 4. SI HAY DATOS DE PREFERENCIAS, GUARDARLAS
       // (Si existe preferenceData implica que pasó por el paso 2, el cual está restringido a responsables)
       if (preferenceData) {
-        await preferenceService.save({
+        const prefResponse = await preferenceService.save({
           reservation_id: reservationData.id,
           ...preferenceData,
         });
+
+        // Verificar que las preferencias se guardaron correctamente
+        if (!prefResponse.data.success) {
+          throw new Error(prefResponse.data.message || 'Error al guardar preferencias');
+        }
       }
 
       // 5. ACTUALIZAR DATOS DE LA RESERVA

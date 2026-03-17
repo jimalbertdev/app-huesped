@@ -1,6 +1,6 @@
 <?php
 /**
- * VACANFLY API - Router Principal
+ * VACANFLY API - Router Principal (v2 - 2026-03-17)
  * Este archivo maneja todas las peticiones a la API y las enruta a los endpoints correspondientes
  */
 
