@@ -290,6 +290,25 @@ class DoorUnlock {
      * Call Raixer API to open door
      */
     private function callRaixerAPI($device_id, $door_id, $door_type) {
+        // SIMULACIÓN PARA LOCAL - Cuando está en desarrollo, simula respuesta positiva
+        $is_development = (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'development') 
+                      || (isset($_SERVER['APP_ENV']) && $_SERVER['APP_ENV'] === 'development');
+        
+        if ($is_development) {
+            error_log("RAIXER SIMULATE: Simulando apertura exitosa para $door_type (device: $device_id, door: $door_id)");
+            return [
+                'success' => true,
+                'error_message' => null,
+                'response' => [
+                    'simulated' => true,
+                    'device_id' => $device_id,
+                    'door_id' => $door_id,
+                    'door_type' => $door_type,
+                    'timestamp' => date('Y-m-d H:i:s')
+                ]
+            ];
+        }
+        
         try {
             // Raixer API credentials
             $auth = base64_encode('maxi.daniel:A529j3fG4utdLGH32uhjhh6E3g5qb2vT');
