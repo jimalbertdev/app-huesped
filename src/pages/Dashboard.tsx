@@ -1772,7 +1772,7 @@ const Dashboard = () => {
                     </p>
                   </div>
                 </div>
-              ) : accommodationInfo && accommodationInfo.length > 0 ? (
+              ) : (
                 <Accordion
                   type="single"
                   collapsible
@@ -1844,10 +1844,6 @@ const Dashboard = () => {
                     },
                   )}
                 </Accordion>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Cargando información...
-                </p>
               )}
             </div>
           </Card>

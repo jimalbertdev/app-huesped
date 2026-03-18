@@ -81,7 +81,7 @@ class ContractService
         error_log("CONTRACT: PDF generado en: " . $file_path);
 
         // 7. RUTA RELATIVA Y FECHA
-        $contract_path = '/uploads/contracts/RES' . $reservation_id . '/' . $filename;
+        $contract_path = '/app_huesped/uploads/contracts/RES' . $reservation_id . '/' . $filename;
         $contract_date = date('Y-m-d H:i:s');
 
         error_log("CONTRACT: Ruta relativa: " . $contract_path);
@@ -115,7 +115,7 @@ class ContractService
      */
     private function getReservationData($reservation_id)
     {
-        $sql = "SELECT 
+        $sql = "SELECT
                     r.*,
                     r.localizador_canal as reservation_code,
                     a.nombre as accommodation_name,
@@ -164,26 +164,26 @@ class ContractService
 
         // Calcular número de huéspedes
         $num_guests = $reservation['total_huespedes'] ?? 'N/A';
-        
+
         // Precio total
         $total_price = number_format($reservation['total'], 2, ',', '.');
-        
+
         // Nombre del alojamiento
         $property_name = $reservation['accommodation_name'];
-        
+
         // Nombre completo del huésped
         $guest_full_name = trim(($guest['n0mbr3s'] ?? '') . ' ' . ($guest['p3ll1d01'] ?? '') . ' ' . ($guest['p3ll1d02'] ?? ''));
-        
+
         // Documento del huésped
         $guest_document = ($guest['tipo_documento'] ?? 'DNI') . ': ' . ($guest['nvm3r0_d0cvm3nt0'] ?? 'N/A');
 
         // Registros turísticos desde la tabla establecimiento
         $registro_turistico = $reservation['registrotur'] ?? 'Pendiente de registro';
         $nrua_registro = $reservation['nrua'] ?? 'Pendiente de registro';
-        
+
         // Nombre de la entidad explotadora desde la tabla entidad
         $entidad_explotadora = $reservation['entidad_nombre'] ?? 'GESTIÓN DE INMUEBLES SSL';
-        
+
         // TODO: Obtener este valor de la base de datos cuando el usuario indique la fuente
         $fianza_amount = '300,00'; // Monto de la fianza
 
@@ -191,9 +191,9 @@ class ContractService
         $signature_img = '';
         $clean_path = ltrim($signature_path, '/');
         $full_signature_path = __DIR__ . '/../../' . $clean_path;
-        
+
         error_log("CONTRACT: Verificando firma en: " . $full_signature_path);
-        
+
         if ($signature_path && file_exists($full_signature_path)) {
             $clean_full_path = realpath($full_signature_path);
             $signature_img = '
@@ -307,17 +307,17 @@ class ContractService
 </head>
 <body>
     <div class="header-notice">
-        Este documento tiene valor de <strong>CONTRATO DE ARRENDAMIENTO</strong> y se rige por la Ley 29/1994, 
-        de Arrendamientos Urbanos (LAU), y la normativa turística específica de la Comunidad Autónoma de 
+        Este documento tiene valor de <strong>CONTRATO DE ARRENDAMIENTO</strong> y se rige por la Ley 29/1994,
+        de Arrendamientos Urbanos (LAU), y la normativa turística específica de la Comunidad Autónoma de
         ubicación del inmueble.
     </div>
 
     <h1>Contrato de Arrendamiento de Uso Turístico</h1>
 
     <h2>Datos de la Reserva:</h2>
-    
+
     <div class="section-subtitle">Detalles:</div>
-    
+
     <table class="data-table">
         <tr>
             <td class="label">Alojamiento (Nombre):</td>
@@ -365,18 +365,18 @@ class ContractService
 
     <h3>1. Objeto y Naturaleza</h3>
     <div class="clause">
-        El objeto del presente es el Arrendamiento de Temporada con destino a uso turístico/vacacional del inmueble. 
-        Este contrato no se destina a cubrir la necesidad de vivienda permanente del huésped y, por lo tanto, 
+        El objeto del presente es el Arrendamiento de Temporada con destino a uso turístico/vacacional del inmueble.
+        Este contrato no se destina a cubrir la necesidad de vivienda permanente del huésped y, por lo tanto,
         queda excluido del régimen de prórroga obligatoria de la LAU.
     </div>
 
     <h3>2. Duración y Extensión</h3>
     <div class="clause">
-        El período de arrendamiento es el estipulado en la tabla superior. El huésped deberá abandonar la propiedad 
+        El período de arrendamiento es el estipulado en la tabla superior. El huésped deberá abandonar la propiedad
         en la fecha y hora de salida.<br><br>
-        El huésped renuncia a cualquier derecho de prórroga o renovación forzosa del contrato. No obstante, 
-        si El huésped solicitara una extensión de la estadía, esta podrá ser concedida sólo si La Arrendadora 
-        tiene disponibilidad y ambas partes firman un nuevo acuerdo de extensión con las condiciones económicas 
+        El huésped renuncia a cualquier derecho de prórroga o renovación forzosa del contrato. No obstante,
+        si El huésped solicitara una extensión de la estadía, esta podrá ser concedida sólo si La Arrendadora
+        tiene disponibilidad y ambas partes firman un nuevo acuerdo de extensión con las condiciones económicas
         y temporales pactadas.
     </div>
 
@@ -387,39 +387,39 @@ class ContractService
 
     <h3>4. Fianza</h3>
     <div class="clause">
-        El Arrendador podrá reclamar una vez comprobado el estado del alojamiento en concepto de fianza el importe 
-        de hasta ({$fianza_amount}€) para cubrir posibles daños en la conservación del inmueble y el cumplimiento 
+        El Arrendador podrá reclamar una vez comprobado el estado del alojamiento en concepto de fianza el importe
+        de hasta ({$fianza_amount}€) para cubrir posibles daños en la conservación del inmueble y el cumplimiento
         de las obligaciones.
     </div>
 
     <h3>5. Obligaciones del Huésped</h3>
     <div class="clause">
         <ul>
-            <li><strong>Responsabilidad por Daños:</strong> El huésped es directa y totalmente responsable de los daños, 
+            <li><strong>Responsabilidad por Daños:</strong> El huésped es directa y totalmente responsable de los daños,
             desperfectos, pérdidas o menoscabos causados en el inmueble, mobiliario o enseres, por él o por sus acompañantes.</li>
-            
-            <li><strong>Ocupación Máxima:</strong> El número de ocupantes no podrá exceder del máximo indicado. 
-            El incumplimiento o el subarriendo de la vivienda son causas de resolución contractual y desalojo 
+
+            <li><strong>Ocupación Máxima:</strong> El número de ocupantes no podrá exceder del máximo indicado.
+            El incumplimiento o el subarriendo de la vivienda son causas de resolución contractual y desalojo
             inmediato sin derecho a reembolso.</li>
-            
-            <li><strong>Normas de Convivencia:</strong> Queda estrictamente prohibido realizar fiestas, actividades 
+
+            <li><strong>Normas de Convivencia:</strong> Queda estrictamente prohibido realizar fiestas, actividades
             molestas, insalubres o ilícitas, debiendo respetar el descanso vecinal, especialmente en horas nocturnas.</li>
-            
-            <li><strong>Identificación:</strong> El huésped se compromete a facilitar los datos de identificación de 
+
+            <li><strong>Identificación:</strong> El huésped se compromete a facilitar los datos de identificación de
             todos los ocupantes, según lo exige la normativa española de seguridad ciudadana (Libro Registro).</li>
         </ul>
     </div>
 
     <h3>6. Ley Aplicable y Jurisdicción</h3>
     <div class="clause">
-        Este contrato se interpreta y aplica conforme a la ley española. Para cualquier controversia, las partes 
-        se someten expresamente a los Juzgados y Tribunales del lugar donde se ubica el inmueble, con renuncia 
+        Este contrato se interpreta y aplica conforme a la ley española. Para cualquier controversia, las partes
+        se someten expresamente a los Juzgados y Tribunales del lugar donde se ubica el inmueble, con renuncia
         a cualquier otro fuero.
     </div>
 
     <div class="signature-section">
         <h2>Firmas</h2>
-        
+
         <table width="100%">
             <tr>
                 <td width="50%" style="vertical-align: top;">
@@ -449,7 +449,7 @@ class ContractService
     </div>
 
     <div class="footer-note">
-        <p>Este contrato incluye ahora de forma prominente el Nº de Registro Turístico, esencial para operar legalmente 
+        <p>Este contrato incluye ahora de forma prominente el Nº de Registro Turístico, esencial para operar legalmente
         y demostrar el cumplimiento de las normativas de turismo de las Comunidades Autónomas.</p>
         <p>Generado automáticamente por VACANFLY</p>
     </div>
