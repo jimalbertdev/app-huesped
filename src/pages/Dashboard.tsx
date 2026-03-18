@@ -73,7 +73,7 @@ import { LiteYouTube } from "@/components/LiteYouTube";
 const Dashboard = () => {
   const { language, setLanguage, t, getLanguageName, translateCategory } =
     useLanguage();
-  const { reservationData, loading, error, guests } = useReservation();
+  const { reservationData, loading, error, guests, refreshReservation } = useReservation();
   const { buildPathWithReservation } = useReservationParams();
   const { toast } = useToast();
   const [showContactDialog, setShowContactDialog] = useState(false);
@@ -464,7 +464,8 @@ const Dashboard = () => {
         door_type: selectedDoor,
       });
 
-      const success = response.data.success;
+      const responseData = response.data as any;
+      const success = responseData.success === true || responseData.data?.success === true;
       const doorName =
         selectedDoor === "portal" ? t("dashboard.portal") : "Alojamiento";
 
@@ -525,6 +526,9 @@ const Dashboard = () => {
       });
 
       setShowConfirmEntryDialog(false);
+      
+      // Actualizar datos de la reserva para reflejar el nuevo estado
+      await refreshReservation();
     } catch (error) {
       console.error("Error confirmando entrada:", error);
       setShowConfirmEntryDialog(false);

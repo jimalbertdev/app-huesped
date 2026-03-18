@@ -38,7 +38,7 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.copyLink": "Compartir enlace",
     "dashboard.responsibleWarningTitle": "¡Importante!",
     "dashboard.responsibleWarning":
-      "No olvides registrarte como el usuario responsable respondiendo a la pregunta \"¿Eres tú quien realizó la reserva?\". Sin un responsable definido, no tendrás acceso a las funciones de Apertura de Puertas.",
+      'No olvides registrarte como el usuario responsable respondiendo a la pregunta "¿Eres tú quien realizó la reserva?". Sin un responsable definido, no tendrás acceso a las funciones de Apertura de Puertas.',
     "dashboard.myStay": "Mi Estancia",
     "dashboard.myReservation": "Mi Reserva",
     "dashboard.accommodation": "Alojamiento",
@@ -224,7 +224,8 @@ const translations: Record<Language, Record<string, string>> = {
     "confirmation.of": "de",
     "confirmation.responsible": "Responsable",
     "confirmation.registered": "Registrado",
-    "confirmation.adultNotResponsible": "No has marcado que eres el responsable de la reserva. ¿Estás seguro de continuar sin ser el responsable?",
+    "confirmation.adultNotResponsible":
+      "No has marcado que eres el responsable de la reserva. ¿Estás seguro de continuar sin ser el responsable?",
     "confirmation.pending": "Pendiente",
     "confirmation.registerNext": "Registrar siguiente huésped",
     "confirmation.pendingPlural": "pendientes",
@@ -297,8 +298,9 @@ const translations: Record<Language, Record<string, string>> = {
       "Ya hay un huésped responsable registrado para esta reserva",
     "register.responsibleHint":
       "No se ha asignado un huésped responsable. Por ello, no tendrías acceso a las funciones de apertura de puerta hasta que se complete el registro.",
-    "register.responsibleDialogTitle": "¿Eres tú quien realizó la reserva?",
-    "register.responsibleDialogDescription": "Si eres el responsable, tendrás acceso completo al portal incluyendo la apertura de puertas.",
+    "register.responsibleDialogTitle": "¿Eres tú el responsable de la reserva?",
+    "register.responsibleDialogDescription":
+      "Si eres el responsable, tendrás acceso completo al portal incluyendo la apertura de puertas.",
     "register.responsibleDialogCancel": "No, continuar sin ser responsable",
     "register.responsibleDialogConfirm": "Sí, soy el responsable",
     "register.firstNamesPlaceholder": "Nombre(s)",
@@ -328,7 +330,8 @@ const translations: Record<Language, Record<string, string>> = {
     "register.expiryDate": "Fecha de Caducidad",
     "register.supportNumber": "Número de Soporte",
     "register.supportPlaceholder": "Ej: AAA000000",
-    "register.documentAlreadyExists": "Este documento ya está registrado en esta reserva",
+    "register.documentAlreadyExists":
+      "Este documento ya está registrado en esta reserva",
 
     // Register - Personal Data Section
     "register.personalSection": "Datos Personales",
@@ -388,7 +391,8 @@ const translations: Record<Language, Record<string, string>> = {
     "register.documentExpired": "El documento ha caducado",
     "register.futureDate": "La fecha no puede ser futura",
     "register.minorAge": "Debes ser mayor de edad",
-    "register.minorCannotBeResponsible": "Los menores de edad no pueden ser responsables de la reserva",
+    "register.minorCannotBeResponsible":
+      "Los menores de edad no pueden ser responsables de la reserva",
 
     // Register - Steps
     "register.step": "Paso",
@@ -700,7 +704,8 @@ const translations: Record<Language, Record<string, string>> = {
     "confirmation.of": "of",
     "confirmation.responsible": "Responsible",
     "confirmation.registered": "Registered",
-    "confirmation.adultNotResponsible": "You have not indicated that you are the responsible for the reservation. Are you sure you want to continue without being the responsible?",
+    "confirmation.adultNotResponsible":
+      "You have not indicated that you are the responsible for the reservation. Are you sure you want to continue without being the responsible?",
     "confirmation.pending": "Pending",
     "confirmation.registerNext": "Register next guest",
     "confirmation.pendingPlural": "pending",
@@ -773,9 +778,12 @@ const translations: Record<Language, Record<string, string>> = {
       "There is already a responsible guest registered for this reservation",
     "register.responsibleHint":
       "No responsible guest has been assigned. Therefore, you would not have access to door opening functions until the registration is completed.",
-    "register.responsibleDialogTitle": "Are you the one who made the reservation?",
-    "register.responsibleDialogDescription": "If you are the responsible, you will have full access to the portal including door opening.",
-    "register.responsibleDialogCancel": "No, continue without being responsible",
+    "register.responsibleDialogTitle":
+      "Are you the one who made the reservation?",
+    "register.responsibleDialogDescription":
+      "If you are the responsible, you will have full access to the portal including door opening.",
+    "register.responsibleDialogCancel":
+      "No, continue without being responsible",
     "register.responsibleDialogConfirm": "Yes, I am the responsible",
     firstNamesPlaceholder: "First name(s)",
     "register.optional": "(optional)",
@@ -803,7 +811,8 @@ const translations: Record<Language, Record<string, string>> = {
     "register.expiryDate": "Expiry Date",
     "register.supportNumber": "Support Number",
     "register.supportPlaceholder": "E.g: AAA000000",
-    "register.documentAlreadyExists": "This document is already registered in this reservation",
+    "register.documentAlreadyExists":
+      "This document is already registered in this reservation",
 
     // Register - Personal Data Section
     "register.personalSection": "Personal Data",
@@ -863,7 +872,8 @@ const translations: Record<Language, Record<string, string>> = {
     "register.documentExpired": "The document has expired",
     "register.futureDate": "The date cannot be in the future",
     "register.minorAge": "You must be of legal age",
-    "register.minorCannotBeResponsible": "Minors cannot be responsible for the reservation. Only an adult can be the responsible.",
+    "register.minorCannotBeResponsible":
+      "Minors cannot be responsible for the reservation. Only an adult can be the responsible.",
 
     // Register - Steps
     "register.step": "Step",
@@ -991,7 +1001,7 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.copyLink": "Compartir enllaç",
     "dashboard.responsibleWarningTitle": "Important!",
     "dashboard.responsibleWarning":
-      "No oblidis registrar-te com a usuari responsable responent a la pregunta \"Ets tu qui va fer la reserva?\". Sense un responsable definit, no tindràs accés a les funcions d'Obertura de Portes.",
+      'No oblidis registrar-te com a usuari responsable responent a la pregunta "Ets tu qui va fer la reserva?". Sense un responsable definit, no tindràs accés a les funcions d\'Obertura de Portes.',
     "dashboard.myStay": "La Meva Estada",
     "dashboard.myReservation": "La Meva Reserva",
     "dashboard.accommodation": "Allotjament",
@@ -1172,7 +1182,8 @@ const translations: Record<Language, Record<string, string>> = {
     "confirmation.of": "de",
     "confirmation.responsible": "Responsable",
     "confirmation.registered": "Registrat",
-    "confirmation.adultNotResponsible": "No has indicat que ets el responsable de la reserva. Estàs segur que vols continuar sense ser el responsable?",
+    "confirmation.adultNotResponsible":
+      "No has indicat que ets el responsable de la reserva. Estàs segur que vols continuar sense ser el responsable?",
     "confirmation.pending": "Pendent",
     "confirmation.registerNext": "Registrar següent hoste",
     "confirmation.pendingPlural": "pendents",
@@ -1246,7 +1257,8 @@ const translations: Record<Language, Record<string, string>> = {
     "register.responsibleHint":
       "No s'ha assignat un hoste responsable. Per tant, no tindràs accés a les funcions d'obertura de porta fins que es completi el registre.",
     "register.responsibleDialogTitle": "Ets tu qui va fer la reserva?",
-    "register.responsibleDialogDescription": "Si ets el responsable, tindràs accés complet al portal incloent l'obertura de portes.",
+    "register.responsibleDialogDescription":
+      "Si ets el responsable, tindràs accés complet al portal incloent l'obertura de portes.",
     "register.responsibleDialogCancel": "No, continuar sense ser responsable",
     "register.responsibleDialogConfirm": "Sí, sóc el responsable",
     "register.firstNamesPlaceholder": "Nom(s)",
@@ -1276,7 +1288,8 @@ const translations: Record<Language, Record<string, string>> = {
     "register.expiryDate": "Data de Caducitat",
     "register.supportNumber": "Número de Suport",
     "register.supportPlaceholder": "Ex: AAA000000",
-    "register.documentAlreadyExists": "Aquest document ja està registrat en aquesta reserva",
+    "register.documentAlreadyExists":
+      "Aquest document ja està registrat en aquesta reserva",
 
     // Register - Personal Data Section
 
@@ -1338,7 +1351,8 @@ const translations: Record<Language, Record<string, string>> = {
     "register.documentExpired": "El document ha caducat",
     "register.futureDate": "La data no pot ser futura",
     "register.minorAge": "Has de ser major d'edat",
-    "register.minorCannotBeResponsible": "Els menors d'edat no poden ser responsables de la reserva. Només un adult pot ser el responsable.",
+    "register.minorCannotBeResponsible":
+      "Els menors d'edat no poden ser responsables de la reserva. Només un adult pot ser el responsable.",
 
     // Register - Steps
     "register.step": "Pas",
@@ -1635,7 +1649,8 @@ const translations: Record<Language, Record<string, string>> = {
     "confirmation.of": "de",
     "confirmation.responsible": "Responsable",
     "confirmation.registered": "Enregistré",
-    "confirmation.adultNotResponsible": "Vous n'avez pas indiqué que vous êtes le responsable de la réservation. Êtes-vous sûr de vouloir continuer sans être le responsable?",
+    "confirmation.adultNotResponsible":
+      "Vous n'avez pas indiqué que vous êtes le responsable de la réservation. Êtes-vous sûr de vouloir continuer sans être le responsable?",
     "confirmation.pending": "En attente",
     "confirmation.registerNext": "Enregistrer l'invité suivant",
     "confirmation.pendingPlural": "en attente",
@@ -1713,8 +1728,10 @@ const translations: Record<Language, Record<string, string>> = {
       "Il y a déjà un invité responsable enregistré pour cette réservation",
     "register.responsibleHint":
       "Aucun invité responsable n'a été assigné. Par conséquent, vous n'aurez pas accès aux fonctions d'ouverture de porte avant la fin de l'inscription.",
-    "register.responsibleDialogTitle": "Êtes-vous celui qui a effectué la réservation?",
-    "register.responsibleDialogDescription": "Si vous êtes le responsable, vous aurez un accès complet au portail, y compris l'ouverture des portes.",
+    "register.responsibleDialogTitle":
+      "Êtes-vous celui qui a effectué la réservation?",
+    "register.responsibleDialogDescription":
+      "Si vous êtes le responsable, vous aurez un accès complet au portail, y compris l'ouverture des portes.",
     "register.responsibleDialogCancel": "Non, continuer sans être responsable",
     "register.responsibleDialogConfirm": "Oui, je suis le responsable",
     "register.firstNamesPlaceholder": "Prénom(s)",
@@ -1744,7 +1761,8 @@ const translations: Record<Language, Record<string, string>> = {
     "register.expiryDate": "Date d'Expiration",
     "register.supportNumber": "Numéro de Support",
     "register.supportPlaceholder": "Ex: AAA000000",
-    "register.documentAlreadyExists": "Ce document est déjà enregistré dans cette réservation",
+    "register.documentAlreadyExists":
+      "Ce document est déjà enregistré dans cette réservation",
 
     // Register - Personal Data Section
     "register.personalSection": "Données Personnelles",
@@ -1804,7 +1822,8 @@ const translations: Record<Language, Record<string, string>> = {
     "register.documentExpired": "Le document a expiré",
     "register.futureDate": "La date ne peut pas être dans le futur",
     "register.minorAge": "Vous devez être majeur",
-    "register.minorCannotBeResponsible": "Les mineurs ne peuvent pas être responsables de la réservation. Seul un adulte peut être le responsable.",
+    "register.minorCannotBeResponsible":
+      "Les mineurs ne peuvent pas être responsables de la réservation. Seul un adulte peut être le responsable.",
 
     // Register - Steps
     "register.step": "Étape",
@@ -1929,7 +1948,7 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.copyLink": "Link teilen",
     "dashboard.responsibleWarningTitle": "Wichtig!",
     "dashboard.responsibleWarning":
-      "Vergessen Sie nicht, sich als verantwortlicher Benutzer zu registrieren, indem Sie die Frage \"Sind Sie die Person, die die Reservierung vorgenommen hat?\" beantworten. Ohne definierten Verantwortlichen haben Sie keinen Zugang zu Türöffnungsfunktionen.",
+      'Vergessen Sie nicht, sich als verantwortlicher Benutzer zu registrieren, indem Sie die Frage "Sind Sie die Person, die die Reservierung vorgenommen hat?" beantworten. Ohne definierten Verantwortlichen haben Sie keinen Zugang zu Türöffnungsfunktionen.',
     "dashboard.myStay": "Mein Aufenthalt",
     "dashboard.myReservation": "Meine Reservierung",
     "dashboard.accommodation": "Unterkunft",
@@ -2105,7 +2124,8 @@ const translations: Record<Language, Record<string, string>> = {
     "confirmation.of": "von",
     "confirmation.responsible": "Verantwortlich",
     "confirmation.registered": "Registriert",
-    "confirmation.adultNotResponsible": "Sie haben nicht angegeben, dass Sie für die Reservierung verantwortlich sind. Sind Sie sicher, dass Sie ohne Verantwortlicher fortfahren möchten?",
+    "confirmation.adultNotResponsible":
+      "Sie haben nicht angegeben, dass Sie für die Reservierung verantwortlich sind. Sind Sie sicher, dass Sie ohne Verantwortlicher fortfahren möchten?",
     "confirmation.pending": "Ausstehend",
     "confirmation.registerNext": "Nächsten Gast registrieren",
     "confirmation.pendingPlural": "ausstehend",
@@ -2178,7 +2198,8 @@ const translations: Record<Language, Record<string, string>> = {
     "register.supportNumber": "Unterstützungsnummer",
     "register.supportPlaceholder": "z.B: AAA000000",
     "register.supportNumberHint": "📌 Erscheint oben auf dem DNI/NIE",
-    "register.documentAlreadyExists": "Dieses Dokument ist bereits in dieser Reservierung registriert",
+    "register.documentAlreadyExists":
+      "Dieses Dokument ist bereits in dieser Reservierung registriert",
   },
   nl: {
     // Welcome
@@ -2200,7 +2221,8 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.pendingGuest": "Openstaande gast",
     "dashboard.copyLink": "Link delen",
     "dashboard.important": "Belangrijk!",
-    "dashboard.noResponsibleWarning": "Vergeet niet uzelf te registreren als verantwoordelijke gebruiker door de vraag \"Bent u de persoon die de reservering heeft gemaakt?\" te beantwoorden. Zonder gedefinieerde verantwoordelijke heeft u geen toegang tot deuropeningsfuncties.",
+    "dashboard.noResponsibleWarning":
+      'Vergeet niet uzelf te registreren als verantwoordelijke gebruiker door de vraag "Bent u de persoon die de reservering heeft gemaakt?" te beantwoorden. Zonder gedefinieerde verantwoordelijke heeft u geen toegang tot deuropeningsfuncties.',
     "dashboard.myStay": "Mijn verblijf",
     "dashboard.myReservation": "Mijn reservering",
     "dashboard.accommodation": "Accommodatie",
@@ -2231,7 +2253,8 @@ const translations: Record<Language, Record<string, string>> = {
     "register.supportNumber": "Ondersteuningsnummer",
     "register.supportPlaceholder": "Bijv.: AAA000000",
     "register.supportNumberHint": "📌 Verschijnt bovenaan het DNI/NIE",
-    "register.documentAlreadyExists": "Dit document is al geregistreerd in deze reservering",
+    "register.documentAlreadyExists":
+      "Dit document is al geregistreerd in deze reservering",
 
     // Register - Personal Data Section
     "register.personalSection": "Persoonlijke Gegevens",

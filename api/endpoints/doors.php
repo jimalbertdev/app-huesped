@@ -115,26 +115,52 @@ try {
     if ($method === 'POST' && isset($uri_parts[$api_index + 2]) && $uri_parts[$api_index + 2] === 'confirm-entry') {
         $reservation_id = $uri_parts[$api_index + 3];
 
+        error_log("CONFIRM-ENTRY: Iniciando confirm-entry para reserva ID: " . $reservation_id);
+
         // Validar reserva
         ValidateReservation::validate($reservationModel, $reservation_id, false);
 
+        // Verificar estado actual de la reserva
+        $checkSql = "SELECT estado_reserva_id FROM reserva WHERE id = ?";
+        $stmt = $db->prepare($checkSql);
+        $stmt->execute([$reservation_id]);
+        $currentStatus = $stmt->fetch(PDO::FETCH_ASSOC);
+        error_log("CONFIRM-ENTRY: Estado actual de reserva: " . ($currentStatus['estado_reserva_id'] ?? 'desconocido'));
+
         // Update reservation status to "in-house" or "confirmed"
         $sql = "UPDATE reserva SET estado_reserva_id = 5, updated_at = NOW() WHERE id = ?";
-        $result = $db->execute($sql, [$reservation_id]);
+        
+        try {
+            $stmt = $db->prepare($sql);
+            $stmt->execute([$reservation_id]);
+            $rowsAffected = $stmt->rowCount();
+            
+            error_log("CONFIRM-ENTRY: Filas afectadas: " . $rowsAffected);
+            
+            // Verificar estado después de actualizar
+            $stmt = $db->prepare($checkSql);
+            $stmt->execute([$reservation_id]);
+            $newStatus = $stmt->fetch(PDO::FETCH_ASSOC);
+            error_log("CONFIRM-ENTRY: Nuevo estado de reserva: " . ($newStatus['estado_reserva_id'] ?? 'desconocido'));
 
-        if ($result) {
-            // Log the entry confirmation
-            $doorUnlockModel->logUnlock(
-                $reservation_id,
-                null,
-                'accommodation',
-                true,
-                'Huésped ha confirmado ingreso al alojamiento'
-            );
+            if ($rowsAffected > 0) {
+                // Log the entry confirmation
+                $doorUnlockModel->logUnlock(
+                    $reservation_id,
+                    null,
+                    'accommodation',
+                    true,
+                    'Huésped ha confirmado ingreso al alojamiento'
+                );
 
-            Response::success(['message' => 'Entry confirmed successfully']);
-        } else {
-            Response::error('Failed to confirm entry');
+                Response::success(['message' => 'Entry confirmed successfully']);
+            } else {
+                error_log("CONFIRM-ENTRY: No se affectó ninguna fila");
+                Response::error('No se pudo confirmar la entrada');
+            }
+        } catch (Exception $e) {
+            error_log("CONFIRM-ENTRY ERROR: " . $e->getMessage());
+            Response::error('Error al confirmar entrada: ' . $e->getMessage());
         }
     }
 
