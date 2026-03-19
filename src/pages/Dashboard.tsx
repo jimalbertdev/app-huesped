@@ -73,7 +73,8 @@ import { LiteYouTube } from "@/components/LiteYouTube";
 const Dashboard = () => {
   const { language, setLanguage, t, getLanguageName, translateCategory } =
     useLanguage();
-  const { reservationData, loading, error, guests, refreshReservation } = useReservation();
+  const { reservationData, loading, error, guests, refreshReservation } =
+    useReservation();
   const { buildPathWithReservation } = useReservationParams();
   const { toast } = useToast();
   const [showContactDialog, setShowContactDialog] = useState(false);
@@ -122,6 +123,7 @@ const Dashboard = () => {
   // Helper para construir URLs de imágenes correctamente (evitando dobles slashes)
   const getImageUrl = (path: string | undefined | null) => {
     if (!path) return "";
+    // Si la ruta ya es una URL completa, devolverla directamente
     if (path.startsWith("http")) return path;
 
     // Asegurar que no haya doble slash al concatenar
@@ -129,6 +131,20 @@ const Dashboard = () => {
     const cleanPath = path.startsWith("/") ? path : `/${path}`;
 
     return `${baseUrl}${cleanPath}`;
+  };
+
+  // Processed accommodation info con código reemplazado
+  const [processedAccommodationInfo, setProcessedAccommodationInfo] = useState<any[]>([]);
+
+  // Obtener código del cajetín desde codigos_cajetin
+  const getCajetinDisplayCode = (): string => {
+    const accessCode = doorInfo?.access_codes?.[0]?.codigo;
+    return accessCode ? String(accessCode) : '';
+  };
+
+  // Verificar si existe código cajetin activo
+  const hasCajetinCode = (): boolean => {
+    return doorInfo?.access_codes?.length > 0;
   };
 
   const [isRegistered] = useState(true);
@@ -250,10 +266,11 @@ const Dashboard = () => {
 
   // Agrupar información del alojamiento por categoría
   const groupedAccommodationInfo = () => {
-    if (!accommodationInfo || !Array.isArray(accommodationInfo)) return {};
+    const infoToUse = processedAccommodationInfo.length > 0 ? processedAccommodationInfo : accommodationInfo;
+    if (!infoToUse || !Array.isArray(infoToUse)) return {};
 
     const grouped: { [key: string]: any[] } = {};
-    accommodationInfo.forEach((item) => {
+    infoToUse.forEach((item) => {
       const category = String(item.category);
       if (!grouped[category]) {
         grouped[category] = [];
@@ -278,6 +295,23 @@ const Dashboard = () => {
     const key = categoryKeys[categoryId];
     return key ? t(key) : "";
   };
+
+  // Reemplazar {codigo} en accommodationInfo cuando se carga doorInfo
+  useEffect(() => {
+    if (!accommodationInfo.length || !doorInfo?.access_codes?.length) return;
+
+    const cajetinCode = String(doorInfo.access_codes[0].codigo);
+    const processed = accommodationInfo.map((item: any) => {
+      if (item.description && item.description.includes('{codigo}')) {
+        return {
+          ...item,
+          description: item.description.replace(/{codigo}/g, cajetinCode),
+        };
+      }
+      return item;
+    });
+    setProcessedAccommodationInfo(processed);
+  }, [accommodationInfo, doorInfo?.access_codes]);
 
   // Cargar preferencias cuando se carga la reserva
   useEffect(() => {
@@ -465,7 +499,8 @@ const Dashboard = () => {
       });
 
       const responseData = response.data as any;
-      const success = responseData.success === true || responseData.data?.success === true;
+      const success =
+        responseData.success === true || responseData.data?.success === true;
       const doorName =
         selectedDoor === "portal" ? t("dashboard.portal") : "Alojamiento";
 
@@ -526,7 +561,7 @@ const Dashboard = () => {
       });
 
       setShowConfirmEntryDialog(false);
-      
+
       // Actualizar datos de la reserva para reflejar el nuevo estado
       await refreshReservation();
     } catch (error) {
@@ -953,11 +988,15 @@ const Dashboard = () => {
                 ) : doorInfoLoaded && doorInfo?.has_locks === true ? (
                   <>
                     {/* Botones de apertura Raixer */}
-                    <div className={`grid ${doorInfo?.portal && doorInfo?.casa ? 'grid-cols-2' : 'grid-cols-1'} gap-2`}>
+                    <div
+                      className={`grid ${doorInfo?.portal && doorInfo?.casa ? "grid-cols-2" : "grid-cols-1"} gap-2`}
+                    >
                       {doorInfo?.portal && (
                         <Button
                           className="gap-2 bg-gradient-primary hover:opacity-90"
-                          disabled={!allGuestsRegistered || !isReservationActive}
+                          disabled={
+                            !allGuestsRegistered || !isReservationActive
+                          }
                           onClick={() => handleOpenDoorClick("portal")}
                         >
                           <Unlock className="w-4 h-4" />
@@ -968,7 +1007,9 @@ const Dashboard = () => {
                         <Button
                           variant="secondary"
                           className="gap-2"
-                          disabled={!allGuestsRegistered || !isReservationActive}
+                          disabled={
+                            !allGuestsRegistered || !isReservationActive
+                          }
                           onClick={() => handleOpenDoorClick("accommodation")}
                         >
                           <Unlock className="w-4 h-4" />
@@ -985,63 +1026,63 @@ const Dashboard = () => {
 
                 {/* Ver Historial de Aperturas */}
                 {doorInfoLoaded && doorInfo?.has_locks === true && (
-                    <Dialog
-                      open={showUnlockHistoryDialog}
-                      onOpenChange={setShowUnlockHistoryDialog}
+                  <Dialog
+                    open={showUnlockHistoryDialog}
+                    onOpenChange={setShowUnlockHistoryDialog}
+                  >
+                    <Button
+                      variant="outline"
+                      className="w-full text-xs"
+                      onClick={() => setShowUnlockHistoryDialog(true)}
                     >
-                      <Button
-                        variant="outline"
-                        className="w-full text-xs"
-                        onClick={() => setShowUnlockHistoryDialog(true)}
-                      >
-                        {t("dashboard.unlockHistory")}
-                      </Button>
-                      <DialogContent className="max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>
-                            {t("dashboard.unlockHistory")}
-                          </DialogTitle>
-                          <DialogDescription>
-                            Registro de aperturas desde la app
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-2 max-h-96 overflow-y-auto">
-                          {unlockHistory.length === 0 ? (
-                            <p className="text-center text-muted-foreground py-8">
-                              No hay aperturas registradas
-                            </p>
-                          ) : (
-                            unlockHistory.map((entry, index) => (
-                              <div
-                                key={index}
-                                className={`p-3 rounded-lg flex items-center justify-between ${
-                                  entry.success
-                                    ? "bg-success/10 border border-success/20"
-                                    : "bg-destructive/10 border border-destructive/20"
-                                }`}
-                              >
-                                <div className="flex-1">
-                                  <p
-                                    className={`font-semibold text-sm ${entry.success ? "text-success" : "text-destructive"}`}
-                                  >
-                                    {entry.description || entry.door}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    {entry.date} a las {entry.time}
-                                  </p>
-                                </div>
-                                <span
-                                  className={`text-2xl ml-3 ${entry.success ? "text-success" : "text-destructive"}`}
+                      {t("dashboard.unlockHistory")}
+                    </Button>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>
+                          {t("dashboard.unlockHistory")}
+                        </DialogTitle>
+                        <DialogDescription>
+                          Registro de aperturas desde la app
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {unlockHistory.length === 0 ? (
+                          <p className="text-center text-muted-foreground py-8">
+                            No hay aperturas registradas
+                          </p>
+                        ) : (
+                          unlockHistory.map((entry, index) => (
+                            <div
+                              key={index}
+                              className={`p-3 rounded-lg flex items-center justify-between ${
+                                entry.success
+                                  ? "bg-success/10 border border-success/20"
+                                  : "bg-destructive/10 border border-destructive/20"
+                              }`}
+                            >
+                              <div className="flex-1">
+                                <p
+                                  className={`font-semibold text-sm ${entry.success ? "text-success" : "text-destructive"}`}
                                 >
-                                  {entry.success ? "✓" : "✗"}
-                                </span>
+                                  {entry.description || entry.door}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {entry.date} a las {entry.time}
+                                </p>
                               </div>
-                            ))
-                          )}
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  )}
+                              <span
+                                className={`text-2xl ml-3 ${entry.success ? "text-success" : "text-destructive"}`}
+                              >
+                                {entry.success ? "✓" : "✗"}
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
 
                 {/* Información Cajetín */}
                 {reservationData?.info_cajetin_app_huesped && (
@@ -1054,12 +1095,15 @@ const Dashboard = () => {
                         <h3 className="font-semibold text-sm mb-1">
                           {t("dashboard.cajetinInfo")}
                         </h3>
-                        <div 
-                          className="text-sm text-muted-foreground text-justify prose prose-sm max-w-none dark:prose-invert"
-                          dangerouslySetInnerHTML={{ 
-                            __html: reservationData?.info_cajetin_app_huesped || "" 
-                          }}
-                        />
+                        {hasCajetinCode() ? (
+                          <div className="text-3xl font-bold text-primary tracking-wider text-center py-2">
+                            {getCajetinDisplayCode()}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground italic">
+                            Sin Código Asignado
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>

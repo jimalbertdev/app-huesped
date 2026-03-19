@@ -92,7 +92,8 @@ class ContractService
         if ($reservationModel !== null) {
             try {
                 error_log("CONTRACT: Intentando actualizar reserva ID: " . $reservation_id);
-                $result = $reservationModel->updateContract($reservation_id, $contract_path, $contract_date);
+                //$result = $reservationModel->updateContract($reservation_id, $contract_path, $contract_date);
+                $result = $reservationModel->updateContract($reservation_id, $file_path, $contract_date);
                 error_log("CONTRACT: Resultado de updateContract: " . ($result ? "SUCCESS" : "FAILED"));
             } catch (Exception $e) {
                 error_log("CONTRACT ERROR: Error guardando contrato en tabla reserva: " . $e->getMessage());
