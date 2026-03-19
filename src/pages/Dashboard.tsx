@@ -139,12 +139,12 @@ const Dashboard = () => {
   // Obtener código del cajetín desde codigos_cajetin
   const getCajetinDisplayCode = (): string => {
     const accessCode = doorInfo?.access_codes?.[0]?.codigo;
-    return accessCode ? String(accessCode) : '';
+    return accessCode ? String(accessCode) : "Sin Código Establecido";
   };
 
   // Verificar si existe código cajetin activo
   const hasCajetinCode = (): boolean => {
-    return doorInfo?.access_codes?.length > 0;
+    return processedAccommodationInfo.length > 0;
   };
 
   const [isRegistered] = useState(true);
@@ -298,9 +298,15 @@ const Dashboard = () => {
 
   // Reemplazar {codigo} en accommodationInfo cuando se carga doorInfo
   useEffect(() => {
-    if (!accommodationInfo.length || !doorInfo?.access_codes?.length) return;
+    if (!accommodationInfo.length) {
+      setProcessedAccommodationInfo([]);
+      return;
+    }
 
-    const cajetinCode = String(doorInfo.access_codes[0].codigo);
+    const cajetinCode = doorInfo?.access_codes?.length > 0
+      ? String(doorInfo.access_codes[0].codigo)
+      : "Sin Código Establecido";
+
     const processed = accommodationInfo.map((item: any) => {
       if (item.description && item.description.includes('{codigo}')) {
         return {
