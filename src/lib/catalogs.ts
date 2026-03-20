@@ -7,52 +7,73 @@
 // TIPOS DE DOCUMENTO
 // ============================================
 export const DOCUMENT_TYPES = [
-  { value: 'DNI', label: 'DNI - DNI Español', requiresSecondSurname: true, requiresSupport: true },
-  { value: 'NIE', label: 'NIE - Número de identidad de extranjero Español', requiresSecondSurname: false, requiresSupport: true },
-  { value: 'PAS', label: 'Pasaporte', requiresSecondSurname: false, requiresSupport: false },
-  { value: 'OTRO', label: 'Otro documento', requiresSecondSurname: false, requiresSupport: false }
+  {
+    value: "DNI",
+    label: "DNI - DNI Español",
+    requiresSecondSurname: true,
+    requiresSupport: true,
+  },
+  {
+    value: "NIE",
+    label: "NIE - Número de identidad de extranjero Español",
+    requiresSecondSurname: false,
+    requiresSupport: true,
+  },
+  {
+    value: "PAS",
+    label: "Pasaporte",
+    requiresSecondSurname: false,
+    requiresSupport: false,
+  },
+  {
+    value: "OTRO",
+    label: "Otro documento",
+    requiresSecondSurname: false,
+    requiresSupport: false,
+  },
 ] as const;
 
 // ============================================
 // TIPOS DE PARENTESCO
 // ============================================
 export const RELATIONSHIP_TYPES = [
-  { value: 'HJ', label: 'Hijo/a' },
-  { value: 'HR', label: 'Hermano/a' },
-  { value: 'AB', label: 'Abuelo/a' },
-  { value: 'NI', label: 'Nieto/a' },
-  { value: 'PM', label: 'Primo/a' },
-  { value: 'TI', label: 'Tío/a' },
-  { value: 'SB', label: 'Sobrino/a' },
-  { value: 'CY', label: 'Cónyuge' },
-  { value: 'CD', label: 'Cuñado/a' },
-  { value: 'SG', label: 'Suegro/a' },
-  { value: 'YN', label: 'Yerno/Nuera' },
-  { value: 'BA', label: 'Bisabuelo/a' },
-  { value: 'BN', label: 'Bisnieto/a' },
-  { value: 'TU', label: 'Tutor/a' },
-  { value: 'OT', label: 'Otro' }
+  { value: "HJ", label: "Hijo/a" },
+  { value: "HR", label: "Hermano/a" },
+  { value: "AB", label: "Abuelo/a" },
+  { value: "NI", label: "Nieto/a" },
+  { value: "PM", label: "Padre o madre" },
+  { value: "TI", label: "Tío/a" },
+  { value: "SB", label: "Sobrino/a" },
+  { value: "CY", label: "Cónyuge" },
+  { value: "CD", label: "Cuñado/a" },
+  { value: "SG", label: "Suegro/a" },
+  { value: "YN", label: "Yerno/Nuera" },
+  { value: "BA", label: "Bisabuelo/a" },
+  { value: "BN", label: "Bisnieto/a" },
+  { value: "TU", label: "Tutor/a" },
+  { value: "OT", label: "Otro" },
 ] as const;
 
 // ============================================
 // OPCIONES DE SEXO
 // ============================================
 export const SEX_OPTIONS = [
-  { value: 'm', label: 'Masculino' },
-  { value: 'f', label: 'Femenino' },
-  { value: 'other', label: 'Otro' },
-  { value: 'prefer-not', label: 'Prefiero no decir' }
+  { value: "H", label: "Masculino" },
+  { value: "M", label: "Femenino" },
+  { value: "O", label: "Otro" },
 ] as const;
 
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
-
+export function requiresSecondLastName(documentType: string): boolean {
+  return ["DNI", "NIE", "Pasaporte"].includes(documentType);
+}
 /**
  * Verifica si un tipo de documento requiere segundo apellido
  */
 export const requiresSecondSurname = (documentType: string): boolean => {
-  const doc = DOCUMENT_TYPES.find(d => d.value === documentType);
+  const doc = DOCUMENT_TYPES.find((d) => d.value === documentType);
   return doc?.requiresSecondSurname ?? false;
 };
 
@@ -60,7 +81,7 @@ export const requiresSecondSurname = (documentType: string): boolean => {
  * Verifica si un tipo de documento requiere número de soporte
  */
 export const requiresSupportNumber = (documentType: string): boolean => {
-  const doc = DOCUMENT_TYPES.find(d => d.value === documentType);
+  const doc = DOCUMENT_TYPES.find((d) => d.value === documentType);
   return doc?.requiresSupport ?? false;
 };
 

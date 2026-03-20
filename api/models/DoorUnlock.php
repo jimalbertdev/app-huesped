@@ -128,10 +128,25 @@ class DoorUnlock {
     }
 
     /**
+     * Obtener códigos activos del cajetín para un alojamiento
+     */
+    private function getCajetinCodes($accommodation_id) {
+        $codeQuery = "
+            SELECT codigo, tipo, fecha
+            FROM codigos_cajetin
+            WHERE id_alojamiento = ?
+            AND estatus = 1
+            ORDER BY fecha DESC
+        ";
+        return $this->db->query($codeQuery, [$accommodation_id]);
+    }
+
+    /**
      * Get lock information for a reservation
      */
     public function getLockInfo($reservation_id) {
         $sql = "SELECT
+                    a.idalojamiento,
                     a.id_cerradura_raixer,
                     a.informacion_portal,
                     a.informacion_casa
@@ -141,27 +156,13 @@ class DoorUnlock {
 
         $accommodation = $this->db->queryOne($sql, [$reservation_id]);
 
+        // Obtener códigos del cajetín (siempre, para todos los alojamientos)
+        $access_codes = [];
+        if ($accommodation && $accommodation['idalojamiento']) {
+            $access_codes = $this->getCajetinCodes($accommodation['idalojamiento']);
+        }
+
         if (!$accommodation || !$accommodation['id_cerradura_raixer']) {
-            // Query codigos_cajetin for active access codes
-            $access_codes = [];
-            if ($accommodation) {
-                // Get accommodation ID from reservation
-                $accomSql = "SELECT alojamiento_id FROM reserva WHERE id = ?";
-                $reserva = $this->db->queryOne($accomSql, [$reservation_id]);
-                
-                if ($reserva) {
-                    $codeQuery = "
-                        SELECT codigo, tipo, fecha
-                        FROM codigos_cajetin
-                        WHERE id_alojamiento = ?
-                        AND estatus = 1
-                        ORDER BY fecha DESC
-                    ";
-                    
-                    $access_codes = $this->db->query($codeQuery, [$reserva['alojamiento_id']]);
-                }
-            }
-            
             return [
                 'has_locks' => false,
                 'portal' => null,
@@ -212,7 +213,8 @@ class DoorUnlock {
             'portal' => $portal,
             'casa' => $casa,
             'portal_info' => html_entity_decode($accommodation['informacion_portal'] ?? ''),
-            'casa_info' => html_entity_decode($accommodation['informacion_casa'] ?? '')
+            'casa_info' => html_entity_decode($accommodation['informacion_casa'] ?? ''),
+            'access_codes' => $access_codes
         ];
     }
 

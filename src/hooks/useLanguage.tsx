@@ -280,6 +280,8 @@ const translations: Record<Language, Record<string, string>> = {
     // Register - Personal Info Form
     "register.personalInfo": "Información Personal",
     "register.reviewExtractedData": "Revisa y completa los datos extraídos",
+    "register.scannedData": "Datos del documento escaneado",
+    "register.reviewScannedData": "Revisa los datos del documento escaneado",
     "register.completeYourData": "Completa tus datos de registro",
     "register.imBookingHolder": "¿Eres tú quien realizó la reserva?",
     "register.bookingHolderInfo":
@@ -760,6 +762,8 @@ const translations: Record<Language, Record<string, string>> = {
     // Register - Personal Info Form
     "register.personalInfo": "Personal Information",
     "register.reviewExtractedData": "Review and complete the extracted data",
+    "register.scannedData": "Scanned document data",
+    "register.reviewScannedData": "Review the scanned document data",
     "register.completeYourData": "Complete your registration data",
     "register.imBookingHolder": "Are you the one who made the reservation?",
     "register.bookingHolderInfo":
@@ -1238,6 +1242,8 @@ const translations: Record<Language, Record<string, string>> = {
     // Register - Personal Info Form
     "register.personalInfo": "Informació Personal",
     "register.reviewExtractedData": "Revisa i completa les dades extretes",
+    "register.scannedData": "Dades del document escanejat",
+    "register.reviewScannedData": "Revisa les dades del document escanejat",
     "register.completeYourData": "Completa les teves dades de registre",
     "register.imBookingHolder": "Ets tu qui va fer la reserva?",
     "register.bookingHolderInfo":
@@ -1709,6 +1715,8 @@ const translations: Record<Language, Record<string, string>> = {
     "register.personalInfo": "Informations Personnelles",
     "register.reviewExtractedData":
       "Vérifiez et complétez les données extraites",
+    "register.scannedData": "Données du document scanné",
+    "register.reviewScannedData": "Vérifiez les données du document scanné",
     "register.completeYourData": "Complétez vos données d'enregistrement",
     "register.imBookingHolder":
       "Êtes-vous la personne qui a fait la réservation ?",
@@ -2186,6 +2194,8 @@ const translations: Record<Language, Record<string, string>> = {
     "register.personalInfo": "Persönliche Informationen",
     "register.reviewExtractedData":
       "Überprüfen und vervollständigen Sie die extrahierten Daten",
+    "register.scannedData": "Gescanntes Dokumentdaten",
+    "register.reviewScannedData": "Überprüfen Sie die gescannten Dokumentdaten",
     "register.completeYourData":
       "Vervollständigen Sie Ihre Registrierungsdaten",
     "register.imBookingHolder":

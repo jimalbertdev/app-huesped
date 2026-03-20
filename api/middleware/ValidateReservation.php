@@ -60,9 +60,21 @@ class ValidateReservation {
      * @param array $reservation Datos de la reserva
      */
     private static function validateDates($reservation) {
-        $now = new DateTime();
-        $check_in = new DateTime($reservation['check_in_date']);
-        $check_out = new DateTime($reservation['check_out_date']);
+        // Usar zona horaria de España para consistencia con frontend
+        $timezone = new DateTimeZone('Europe/Madrid');
+        $now = new DateTime('now', $timezone);
+
+        // Obtener check_in con hora (valor por defecto: 16:00 si no existe)
+        $check_in_time = !empty($reservation['check_in_time']) 
+            ? $reservation['check_in_time'] 
+            : '16:00:00';
+        $check_in = new DateTime($reservation['check_in_date'] . ' ' . $check_in_time, $timezone);
+
+        // Obtener check_out con hora (valor por defecto: 11:00 si no existe)
+        $check_out_time = !empty($reservation['check_out_time']) 
+            ? $reservation['check_out_time'] 
+            : '11:00:00';
+        $check_out = new DateTime($reservation['check_out_date'] . ' ' . $check_out_time, $timezone);
 
         // Obtener margen de acceso anticipado (horas antes del check-in)
         $early_access_hours = intval($_ENV['CHECKIN_EARLY_ACCESS_HOURS'] ?? 4);
@@ -77,6 +89,7 @@ class ValidateReservation {
             Logger::info("Intento de acceso antes del check-in permitido", [
                 'reservation_id' => $reservation['id'],
                 'check_in_date' => $reservation['check_in_date'],
+                'check_in_time' => $check_in_time,
                 'current_time' => $now->format('Y-m-d H:i:s')
             ]);
             Response::error(
@@ -90,6 +103,7 @@ class ValidateReservation {
             Logger::info("Intento de acceso después del check-out", [
                 'reservation_id' => $reservation['id'],
                 'check_out_date' => $reservation['check_out_date'],
+                'check_out_time' => $check_out_time,
                 'current_time' => $now->format('Y-m-d H:i:s')
             ]);
             Response::error(

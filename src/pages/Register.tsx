@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Camera, Edit3, ArrowRight, ArrowLeft, CheckCircle2, Search, ChevronDown } from "lucide-react";
@@ -67,6 +68,9 @@ const Register = () => {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [isResponsible, setIsResponsible] = useState(false);
+
+  // Estado para rastrear si los datos vienen del escaneo
+  const [dataFromScan, setDataFromScan] = useState(false);
 
   // Estados para autocompletado y búsqueda
   const [countries, setCountries] = useState<Country[]>([]);
@@ -191,6 +195,9 @@ const Register = () => {
       if (guestData.phone) setPhone(guestData.phone);
       if (guestData.email) setEmail(guestData.email);
       if (guestData.is_responsible !== undefined) setIsResponsible(guestData.is_responsible);
+
+      // Resetear flag de datos del escaneo al cargar datos existentes
+      setDataFromScan(false);
 
       // Avanzar directamente al formulario si ya había datos
       if (step === "method") {
@@ -464,6 +471,8 @@ const Register = () => {
           description: "Los datos se han cargado automáticamente. Revisa y completa la información faltante.",
         });
 
+        // Marcar que los datos vienen del escaneo
+        setDataFromScan(true);
         setStep("form");
       } else {
         toast({
@@ -479,20 +488,33 @@ const Register = () => {
         description: "Hubo un problema al procesar el documento. Por favor, intenta de nuevo o ingresa los datos manualmente.",
         variant: "destructive",
       });
-      // Aún así permitir continuar al formulario
+      // Permitir continuar al formulario pero sin marcar como escaneado
+      setDataFromScan(false);
       setStep("form");
     } finally {
       setScanningDocument(false);
     }
   };
 
-  /**
-   * Manejar cambio del checkbox "Soy el responsable"
-   * Si se marca, cargar datos del cliente automáticamente
-   */
+   /**
+    * Manejar cambio del checkbox "Soy el responsable"
+    * Si se marca, cargar datos del cliente automáticamente
+    */
   const handleResponsibleChange = async (checked: boolean) => {
     setIsResponsible(checked);
 
+    // Si hay datos del escaneo, no sobrescribir con datos del cliente
+    if (dataFromScan) {
+      if (checked) {
+        toast({
+          title: "Modo responsable activado",
+          description: "Los datos del documento escaneado se mantendrán. Solo verifica que seas el titular de la reserva.",
+        });
+      }
+      return; // NO ejecutar el autocompletado del cliente
+    }
+
+    // Si NO hay datos del escaneo, continuar con lógica actual de autocompletado
     // Si se marca como responsable y hay cliente_id en la reserva
     if (checked && reservationData?.cliente_id) {
       try {
@@ -1031,7 +1053,10 @@ const Register = () => {
                       variant="outline"
                       size="lg"
                       className="gap-2"
-                      onClick={() => setStep("method")}
+                      onClick={() => {
+                        setStep("method");
+                        setDataFromScan(false);
+                      }}
                     >
                       <ArrowLeft className="w-4 h-4" />
                       {t('register.back')}
@@ -1055,10 +1080,19 @@ const Register = () => {
           ) : (
             <div className="space-y-6 animate-slide-up">
               <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold">{t('register.personalInfo')}</h1>
+                <div className="flex items-center justify-center gap-2">
+                  <h1 className="text-3xl font-bold">{t('register.personalInfo')}</h1>
+                  {dataFromScan && (
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                      📄 {t('register.scannedData')}
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-muted-foreground">
                   {captureMethod === "scan"
-                    ? t('register.reviewExtractedData')
+                    ? dataFromScan
+                      ? t('register.reviewScannedData')
+                      : t('register.reviewExtractedData')
                     : t('register.completeYourData')}
                 </p>
               </div>
@@ -1603,7 +1637,10 @@ const Register = () => {
                       variant="outline"
                       size="lg"
                       className="gap-2"
-                      onClick={() => setStep("method")}
+                      onClick={() => {
+                        setStep("method");
+                        setDataFromScan(false);
+                      }}
                     >
                       <ArrowLeft className="w-4 h-4" />
                       {t('register.back')}
