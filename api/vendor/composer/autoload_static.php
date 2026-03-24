@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit395efbc604859c0d2966b2b91d435dd3
+class ComposerStaticInit4984483c815bb8a5f451835dd3e58835
 {
     public static $files = array (
         '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
@@ -15,104 +15,117 @@ class ComposerStaticInit395efbc604859c0d2966b2b91d435dd3
     );
 
     public static $prefixLengthsPsr4 = array (
-        's' => 
+        's' =>
         array (
             'setasign\\Fpdi\\' => 14,
         ),
-        'l' => 
+        'l' =>
         array (
             'libphonenumber\\' => 15,
         ),
-        'S' => 
+        'S' =>
         array (
             'Symfony\\Polyfill\\Php80\\' => 23,
             'Symfony\\Polyfill\\Mbstring\\' => 26,
             'Symfony\\Polyfill\\Ctype\\' => 23,
         ),
-        'P' => 
+        'P' =>
         array (
             'Psr\\Log\\' => 8,
             'Psr\\Http\\Message\\' => 17,
             'PhpOption\\' => 10,
+            'PHPMailer\\PHPMailer\\' => 20,
         ),
-        'M' => 
+        'M' =>
         array (
             'Mpdf\\PsrLogAwareTrait\\' => 22,
             'Mpdf\\PsrHttpMessageShim\\' => 24,
             'Mpdf\\' => 5,
         ),
-        'G' => 
+        'G' =>
         array (
             'GrahamCampbell\\ResultType\\' => 26,
             'Giggsey\\Locale\\' => 15,
         ),
-        'D' => 
+        'D' =>
         array (
             'Dotenv\\' => 7,
             'DeepCopy\\' => 9,
         ),
+        'A' =>
+        array (
+            'App\\' => 4,
+        ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'setasign\\Fpdi\\' => 
+        'setasign\\Fpdi\\' =>
         array (
             0 => __DIR__ . '/..' . '/setasign/fpdi/src',
         ),
-        'libphonenumber\\' => 
+        'libphonenumber\\' =>
         array (
             0 => __DIR__ . '/..' . '/giggsey/libphonenumber-for-php/src',
         ),
-        'Symfony\\Polyfill\\Php80\\' => 
+        'Symfony\\Polyfill\\Php80\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-php80',
         ),
-        'Symfony\\Polyfill\\Mbstring\\' => 
+        'Symfony\\Polyfill\\Mbstring\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-mbstring',
         ),
-        'Symfony\\Polyfill\\Ctype\\' => 
+        'Symfony\\Polyfill\\Ctype\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-ctype',
         ),
-        'Psr\\Log\\' => 
+        'Psr\\Log\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/log/Psr/Log',
         ),
-        'Psr\\Http\\Message\\' => 
+        'Psr\\Http\\Message\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/http-message/src',
         ),
-        'PhpOption\\' => 
+        'PhpOption\\' =>
         array (
             0 => __DIR__ . '/..' . '/phpoption/phpoption/src/PhpOption',
         ),
-        'Mpdf\\PsrLogAwareTrait\\' => 
+        'PHPMailer\\PHPMailer\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/phpmailer/phpmailer/src',
+        ),
+        'Mpdf\\PsrLogAwareTrait\\' =>
         array (
             0 => __DIR__ . '/..' . '/mpdf/psr-log-aware-trait/src',
         ),
-        'Mpdf\\PsrHttpMessageShim\\' => 
+        'Mpdf\\PsrHttpMessageShim\\' =>
         array (
             0 => __DIR__ . '/..' . '/mpdf/psr-http-message-shim/src',
         ),
-        'Mpdf\\' => 
+        'Mpdf\\' =>
         array (
             0 => __DIR__ . '/..' . '/mpdf/mpdf/src',
         ),
-        'GrahamCampbell\\ResultType\\' => 
+        'GrahamCampbell\\ResultType\\' =>
         array (
             0 => __DIR__ . '/..' . '/graham-campbell/result-type/src',
         ),
-        'Giggsey\\Locale\\' => 
+        'Giggsey\\Locale\\' =>
         array (
             0 => __DIR__ . '/..' . '/giggsey/locale/src',
         ),
-        'Dotenv\\' => 
+        'Dotenv\\' =>
         array (
             0 => __DIR__ . '/..' . '/vlucas/phpdotenv/src',
         ),
-        'DeepCopy\\' => 
+        'DeepCopy\\' =>
         array (
             0 => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy',
+        ),
+        'App\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/includes',
         ),
     );
 
@@ -128,9 +141,9 @@ class ComposerStaticInit395efbc604859c0d2966b2b91d435dd3
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit395efbc604859c0d2966b2b91d435dd3::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit395efbc604859c0d2966b2b91d435dd3::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit395efbc604859c0d2966b2b91d435dd3::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit4984483c815bb8a5f451835dd3e58835::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit4984483c815bb8a5f451835dd3e58835::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit4984483c815bb8a5f451835dd3e58835::$classMap;
 
         }, null, ClassLoader::class);
     }

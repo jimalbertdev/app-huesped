@@ -1,10 +1,21 @@
 {
-    "name": "vacanfly/api",
-    "description": "VACANFLY Guest API",
-    "type": "project",
-    "require": {
-        "vlucas/phpdotenv": "^5.6",
-        "mpdf/mpdf": "^8.2",
-        "giggsey/libphonenumber-for-php": "^8.13"
+  "name": "vacanfly/api",
+  "description": "API for Vacanfly Propietario",
+  "type": "project",
+  "config": {
+    "platform": {
+      "php": "7.4.0"
     }
+  },
+  "require": {
+    "vlucas/phpdotenv": "^5.5",
+    "phpmailer/phpmailer": "^7.0",
+    "mpdf/mpdf": "^8.2",
+    "giggsey/libphonenumber-for-php": "^8.13"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "includes/"
+    }
+  }
 }

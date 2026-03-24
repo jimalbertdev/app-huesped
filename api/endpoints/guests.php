@@ -17,6 +17,8 @@ require_once __DIR__ . '/../models/Guest.php';
 require_once __DIR__ . '/../models/Viajero.php';
 require_once __DIR__ . '/../models/Checkin.php';
 require_once __DIR__ . '/../models/Reservation.php';
+require_once __DIR__ . '/../models/Preference.php';
+require_once __DIR__ . '/../models/Cliente.php';
 require_once __DIR__ . '/../middleware/RateLimit.php';
 require_once __DIR__ . '/../services/ContractService.php';
 
@@ -226,6 +228,20 @@ try {
         $data['support_number'] = isset($data['support_number']) ? strtoupper(trim($data['support_number'])) : null;
         $data['email'] = strtolower(trim($data['email']));
 
+        // ============================================
+        // VALIDACIONES DE DOCUMENTO
+        // ============================================
+        
+        // VALIDACIÓN: document_number no puede ser "0"
+        if (!empty($data['document_number']) && $data['document_number'] === '0') {
+            Response::error("El número de documento no puede ser 0", 400);
+        }
+
+        // VALIDACIÓN: support_number maxLength 9
+        if (!empty($data['support_number']) && strlen($data['support_number']) > 9) {
+            Response::error("El número de soporte no puede tener más de 9 caracteres", 400);
+        }
+
         // Convertir is_responsible a booleano
         $is_responsible = filter_var($data['is_responsible'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
@@ -280,11 +296,16 @@ try {
             }
         }
 
-        // CREAR VIAJERO en la nueva tabla
-        $viajero_id = $viajeroModel->create($data);
-
-        // CREAR REGISTRO EN CHECKIN (enlazar reserva con viajero)
-        $checkin_id = $checkinModel->create($data['reservation_id'], $viajero_id);
+        // CREAR VIAJERO + CHECKIN de forma atómica
+        $database->beginTransaction();
+        try {
+            $viajero_id = $viajeroModel->create($data);
+            $checkin_id  = $checkinModel->create($data['reservation_id'], $viajero_id);
+            $database->commit();
+        } catch (Exception $e) {
+            $database->rollback();
+            throw $e;
+        }
 
         // Si es responsable, generar contrato PDF y actualizar estado de reserva
         if ($is_responsible) {
@@ -333,6 +354,70 @@ try {
         $reservationModel->updateRegisteredGuests($data['reservation_id']);
 
         $viajero = $viajeroModel->getById($viajero_id);
+
+        // Obtener datos completos de la reserva para el email
+        $reservation = $reservationModel->getById($data['reservation_id']);
+
+        // Obtener preferencias para detectar excedencia de camas (solo si es responsable)
+        $excessBedsInfo = null;
+        if ($is_responsible) {
+            $preferenceModel = new Preference($database);
+            $preferences = $preferenceModel->getByReservation($data['reservation_id']);
+            
+            if ($preferences && $reservation) {
+                $totalBeds = ($preferences['double_beds'] ?? 0) + 
+                             ($preferences['single_beds'] ?? 0) + 
+                             ($preferences['sofa_beds'] ?? 0) + 
+                             ($preferences['bunk_beds'] ?? 0);
+                $totalGuests = $reservation['total_guests'] ?? 0;
+                
+                if ($totalBeds > $totalGuests) {
+                    $excessBedsInfo = [
+                        'requested' => $totalBeds,
+                        'guests' => $totalGuests,
+                        'difference' => $totalBeds - $totalGuests,
+                        'double_beds' => $preferences['double_beds'] ?? 0,
+                        'single_beds' => $preferences['single_beds'] ?? 0,
+                        'sofa_beds' => $preferences['sofa_beds'] ?? 0,
+                        'bunk_beds' => $preferences['bunk_beds'] ?? 0
+                    ];
+                }
+            }
+        }
+
+        // Enviar notificación por email a hosts/propietario/super-host
+        try {
+            require_once __DIR__ . '/../services/EmailService.php';
+            $emailService = new EmailService($database);
+            $emailService->sendGuestRegisteredNotification(
+                $reservation, 
+                $viajero, 
+                $is_responsible,
+                $excessBedsInfo
+            );
+        } catch (Exception $e) {
+            error_log("Email notification error: " . $e->getMessage());
+        }
+
+        // Si es responsable, enviar al CLIENTE con enlace a contrato PDF
+        if ($is_responsible && !empty($reservation['contract_path'])) {
+            $clienteModel = new Cliente($database);
+            $cliente = $clienteModel->getById($reservation['cliente_id']);
+            
+            if ($cliente && !empty($cliente['email'])) {
+                try {
+                    require_once __DIR__ . '/../services/EmailService.php';
+                    $emailService = new EmailService($database);
+                    $emailService->sendResponsibleWithContract(
+                        $reservation,
+                        $viajero,
+                        $cliente['email']
+                    );
+                } catch (Exception $e) {
+                    error_log("Email contract error: " . $e->getMessage());
+                }
+            }
+        }
 
         Response::success($viajero, "Huésped registrado exitosamente", 201);
     }

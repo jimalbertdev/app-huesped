@@ -43,6 +43,11 @@ class ValidateReservation {
                 'reservation_id' => $reservation_id,
                 'status' => $reservation['status']
             ]);
+            
+            if ($reservation['status'] === 'cancelled') {
+                Response::error("Esta reserva ha sido cancelada", 403);
+            }
+            
             Response::error("Esta reserva no está activa", 403);
         }
 
@@ -137,6 +142,9 @@ class ValidateReservation {
         // Validar estado
         $valid_statuses = ['confirmed', 'active', 'checked_in'];
         if (!in_array($reservation['status'], $valid_statuses)) {
+            if ($reservation['status'] === 'cancelled') {
+                Response::error("Esta reserva ha sido cancelada", 403);
+            }
             Response::error("Esta reserva no está activa", 403);
         }
 

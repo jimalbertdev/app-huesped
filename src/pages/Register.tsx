@@ -369,6 +369,12 @@ const Register = () => {
   // Validar formato de documento en tiempo real
   useEffect(() => {
     if (documentNumber && documentType) {
+      // Validar que no sea "0"
+      if (documentNumber === "0") {
+        setDocumentError("El número de documento no puede ser 0");
+        return;
+      }
+      
       const result = validateDocument(documentType, documentNumber);
       if (!result.valid && documentNumber.length > 5) {
         setDocumentError(result.error || "");
@@ -1202,6 +1208,7 @@ const Register = () => {
                             className="h-12"
                             value={supportNumber}
                             onChange={(e) => setSupportNumber(e.target.value.toUpperCase())}
+                            maxLength={9}
                             required
                           />
                           <p className="text-xs text-muted-foreground">

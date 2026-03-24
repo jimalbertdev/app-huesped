@@ -115,13 +115,23 @@ export const ReservationProvider = ({ children }: { children: ReactNode }) => {
       const errorMessage = handleApiError(err);
       setError(errorMessage);
 
-      // Si la reserva no existe (404 o similar), redirigir a página de error
+      // Si la reserva no existe (404), redirigir a página de error
       if (err.response?.status === 404 || errorMessage.includes('no encontrad')) {
         console.error('Reserva no encontrada:', reservationCode);
-        // Redirigir a página 404
         navigate('/404', { replace: true });
-      } else {
-        // Otros errores, mostrar toast
+      } 
+      // Si la reserva está cancelada (403), redirigir a 404 con mensaje específico
+      else if (err.response?.status === 403) {
+        navigate('/404', { 
+          replace: true,
+          state: { 
+            message: err.response?.data?.message || "Esta reserva ha sido cancelada",
+            type: 'cancelled'
+          } 
+        });
+      }
+      // Otros errores, mostrar toast genérico
+      else {
         toast({
           title: 'Error al cargar reserva',
           description: errorMessage,

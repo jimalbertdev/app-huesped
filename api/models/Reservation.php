@@ -45,6 +45,7 @@ class Reservation {
                     COALESCE(pia.correo, ac.email_anfitrion) as host_email,
                     COALESCE(pia.telefono, ac.tel_anfitrion) as host_phone,
                     pi.foto as host_photo,
+                    a.email as owner_email,
                     -- Campos del Súper Anfitrión (Responsable)
                     spi.identificador as super_host_document,
                     CONCAT(spi.nombres, ' ', spi.apellidos) as super_host_name,
@@ -132,9 +133,20 @@ class Reservation {
                     r.fecha_contrato as contract_date,
                     r.created_at,
                     r.updated_at,
-                    a.nombre as accommodation_name
+                    a.nombre as accommodation_name,
+                    a.direccion as address,
+                    a.email as owner_email,
+                    ac.nombre_anfitrion as host_name,
+                    COALESCE(pia.correo, ac.email_anfitrion) as host_email,
+                    COALESCE(pia.telefono, ac.tel_anfitrion) as host_phone,
+                    spia.correo as super_host_email
                 FROM reserva r
                 LEFT JOIN alojamiento a ON r.alojamiento_id = a.idalojamiento
+                LEFT JOIN alojamiento_caracteristica ac ON a.idalojamiento = ac.idalojamiento
+                LEFT JOIN personal_interno pi ON ac.id_personal_interno_anfitrion = pi.id
+                LEFT JOIN personal_interno_anfitrion pia ON pi.id = pia.personal_interno_id
+                LEFT JOIN personal_interno spi ON ac.id_personal_interno_responsable = spi.id
+                LEFT JOIN personal_interno_anfitrion spia ON spi.id = spia.personal_interno_id
                 WHERE r.id = ?";
 
         $result = $this->db->queryOne($sql, [$id]);
@@ -283,16 +295,14 @@ class Reservation {
      * para compatibilidad con ValidateReservation middleware
      */
     private function mapStatusToText($status_id) {
-        // Mapeo basado en los estados de tu sistema:
-        // 5 = confirmado/active
-        // 8 = por confirmar/pending
         $statusMap = [
-            5 => 'confirmed',    // Confirmado (después de registrar responsable)
-            8 => 'confirmed',    // Por confirmar (permitir acceso durante registro)
-            // Agregar más estados según necesites
+            5 => 'confirmed',     // Confirmado
+            6 => 'cancelled',     // CANCELADO
+            8 => 'confirmed',     // Por confirmar
+            13 => 'checked_in',   // Check-in completado
         ];
 
-        return $statusMap[$status_id] ?? 'confirmed'; // Por defecto, permitir acceso
+        return $statusMap[$status_id] ?? 'confirmed';
     }
 
     /**

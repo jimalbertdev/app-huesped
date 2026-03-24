@@ -14,6 +14,7 @@ return array(
     'Psr\\Log\\' => array($vendorDir . '/psr/log/Psr/Log'),
     'Psr\\Http\\Message\\' => array($vendorDir . '/psr/http-message/src'),
     'PhpOption\\' => array($vendorDir . '/phpoption/phpoption/src/PhpOption'),
+    'PHPMailer\\PHPMailer\\' => array($vendorDir . '/phpmailer/phpmailer/src'),
     'Mpdf\\PsrLogAwareTrait\\' => array($vendorDir . '/mpdf/psr-log-aware-trait/src'),
     'Mpdf\\PsrHttpMessageShim\\' => array($vendorDir . '/mpdf/psr-http-message-shim/src'),
     'Mpdf\\' => array($vendorDir . '/mpdf/mpdf/src'),
@@ -21,4 +22,5 @@ return array(
     'Giggsey\\Locale\\' => array($vendorDir . '/giggsey/locale/src'),
     'Dotenv\\' => array($vendorDir . '/vlucas/phpdotenv/src'),
     'DeepCopy\\' => array($vendorDir . '/myclabs/deep-copy/src/DeepCopy'),
+    'App\\' => array($baseDir . '/includes'),
 );

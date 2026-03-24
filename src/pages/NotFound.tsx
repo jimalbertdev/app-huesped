@@ -11,6 +11,9 @@ const NotFound = () => {
   const { buildPathWithReservation } = useReservationParams();
   const { t } = useLanguage();
 
+  const customMessage = location.state?.message as string | undefined;
+  const messageType = location.state?.type as string | undefined;
+
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
   }, [location.pathname]);
@@ -49,7 +52,7 @@ const NotFound = () => {
               {t('notFound.title')}
             </h2>
             <p className="text-muted-foreground text-lg">
-              {t('notFound.message')}
+              {customMessage || t('notFound.message')}
             </p>
           </div>
 
