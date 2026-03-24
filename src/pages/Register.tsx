@@ -1134,7 +1134,7 @@ const Register = () => {
                         </div>
                       </div>
                       {/* Hint informativo - solo para mayores de edad */}
-                      {age === null || age >= 18 && (
+                      {(age === null || age >= 18) && !isResponsible && (
                         <p className="text-sm text-yellow-700 px-2 mt-2">
                           💡 {t("register.responsibleHint")}
                         </p>
@@ -1342,6 +1342,7 @@ const Register = () => {
                           label={t('register.birthDate')}
                           placeholder="DD/MM/YYYY"
                           required
+                          maxDate={new Date().toISOString().split('T')[0]}
                         />
                         {age !== null && (
                           <p className="text-xs text-muted-foreground">
@@ -1568,7 +1569,7 @@ const Register = () => {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="residencePostalCode">{t('register.postalCode')}</Label>
+                            <Label htmlFor="residencePostalCode">{t('register.postalCode')} <span className="text-destructive">*</span></Label>
                             <Input
                               id="residencePostalCode"
                               placeholder={t('register.postalCodePlaceholder')}

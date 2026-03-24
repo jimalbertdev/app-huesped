@@ -238,10 +238,9 @@ const RegisterTerms = () => {
     if (needsToBeResponsible) {
       toast({
         title: "⚠️ Responsable requerido",
-        description: "Eres el último huésped en registrarte. Debes marcar que eres el responsable de la reserva para continuar.",
-        variant: "destructive",
+        description: "No se ha asignado un huésped responsable. Se notificará al anfitrión.",
+        variant: "default",
       });
-      return; // Bloquea el envío
     }
 
     // 5. La pregunta de responsable ahora se hace en Register.tsx antes de navegar

@@ -60,6 +60,34 @@ class EmailService {
         );
     }
 
+    public function sendNoResponsibleWarning($reservation, $guest) {
+        if (!$this->config) {
+            error_log("EmailService: No hay configuración SMTP");
+            return false;
+        }
+
+        $recipients = [];
+        if (!empty($reservation['super_host_email'])) {
+            $recipients[] = $reservation['super_host_email'];
+        }
+        if (empty($recipients) && !empty($this->config['email'])) {
+            $recipients[] = $this->config['email'];
+        }
+
+        if (empty($recipients)) {
+            error_log("EmailService: No hay destinatarios para advertencia de responsable");
+            return false;
+        }
+
+        $html = $this->buildNoResponsibleWarningHTML($reservation, $guest);
+
+        return $this->sendEmail(
+            $recipients,
+            "⚠️ Reserva sin huésped responsable - {$reservation['reservation_code']}",
+            $html
+        );
+    }
+
     private function getRecipients($reservation) {
         $recipients = [];
         
@@ -359,6 +387,119 @@ class EmailService {
                         <td style="background:#f1f5f9;padding:20px;text-align:center;">
                             <p style="color:#94a3b8;margin:0;font-size:12px;">Este email ha sido enviado automáticamente por el sistema VACANFLY</p>
                             <p style="color:#64748b;margin:10px 0 0 0;font-size:11px;">© ' . date('Y') . ' VACANFLY - Guest Application</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>';
+    }
+
+    private function buildNoResponsibleWarningHTML($reservation, $guest) {
+        $fullName = trim(($guest['first_name'] ?? '') . ' ' . ($guest['last_name'] ?? ''));
+        $documento = ($guest['document_type'] ?? '') . ': ' . ($guest['document_number'] ?? '');
+        $checkIn = !empty($reservation['check_in_date']) ? date('d/m/Y', strtotime($reservation['check_in_date'])) : 'N/D';
+        $checkOut = !empty($reservation['check_out_date']) ? date('d/m/Y', strtotime($reservation['check_out_date'])) : 'N/D';
+        $registrationDate = date('d/m/Y H:i');
+        $reservationCode = $reservation['reservation_code'] ?? 'N/D';
+        $accommodationName = $reservation['accommodation_name'] ?? 'N/D';
+        $totalGuests = $reservation['total_guests'] ?? 'N/D';
+
+        return '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:20px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;">
+                    <tr>
+                        <td style="background:#dc2626;padding:30px;text-align:center;">
+                            <h1 style="color:#ffffff;margin:0;font-size:24px;">⚠️ ADVERTENCIA</h1>
+                            <p style="color:#fecaca;margin:5px 0 0 0;font-size:14px;">Reserva sin huésped responsable</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:30px;">
+                            <p style="color:#1e293b;font-size:16px;line-height:1.6;">
+                                Todos los huéspedes de la reserva <strong>' . $reservationCode . '</strong> se han registrado,
+                                pero <strong>ninguno ha sido marcado como responsable</strong>.
+                            </p>
+                            <p style="color:#dc2626;font-size:14px;font-weight:bold;">
+                                Esto significa que no tendrán acceso a las funciones de apertura de puertas desde la app.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:0 30px 20px 30px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background:#fef2f2;border-radius:8px;border:1px solid #fca5a5;">
+                                <tr>
+                                    <td colspan="2" style="padding:15px;border-bottom:1px solid #fca5a5;">
+                                        <strong style="color:#dc2626;">DETALLE DE LA RESERVA</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:12px 15px;color:#64748b;">Código</td>
+                                    <td style="padding:12px 15px;color:#1e293b;font-weight:bold;">' . $reservationCode . '</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:12px 15px;color:#64748b;">Alojamiento</td>
+                                    <td style="padding:12px 15px;color:#1e293b;">' . $accommodationName . '</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:12px 15px;color:#64748b;">Entrada</td>
+                                    <td style="padding:12px 15px;color:#1e293b;">' . $checkIn . '</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:12px 15px;color:#64748b;">Salida</td>
+                                    <td style="padding:12px 15px;color:#1e293b;">' . $checkOut . '</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:12px 15px;color:#64748b;">Huéspedes</td>
+                                    <td style="padding:12px 15px;color:#1e293b;">' . $totalGuests . '</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:0 30px 20px 30px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background:#fef9c3;border-radius:8px;border:1px solid #fbbf24;">
+                                <tr>
+                                    <td colspan="2" style="padding:15px;border-bottom:1px solid #fbbf24;">
+                                        <strong style="color:#92400e;">ÚLTIMO HUÉSPED REGISTRADO</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:12px 15px;color:#92400e;">Nombre</td>
+                                    <td style="padding:12px 15px;color:#1e293b;font-weight:bold;">' . $fullName . '</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:12px 15px;color:#92400e;">Documento</td>
+                                    <td style="padding:12px 15px;color:#1e293b;">' . $documento . '</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:12px 15px;color:#92400e;">Registro</td>
+                                    <td style="padding:12px 15px;color:#1e293b;">' . $registrationDate . '</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:0 30px 30px 30px;">
+                            <p style="color:#64748b;font-size:13px;line-height:1.5;">
+                                Acción recomendada: Contactar al huésped para confirmar quién es el responsable de la reserva
+                                o asignar uno manualmente desde el panel de administración.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background:#1e293b;padding:20px;text-align:center;">
+                            <p style="color:#94a3b8;margin:0;font-size:12px;">VACANFLY Guest Application</p>
                         </td>
                     </tr>
                 </table>

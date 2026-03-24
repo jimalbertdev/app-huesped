@@ -136,6 +136,7 @@ class Reservation {
                     a.nombre as accommodation_name,
                     a.direccion as address,
                     a.email as owner_email,
+                    ac.info_cajetin_app_huesped,
                     ac.nombre_anfitrion as host_name,
                     COALESCE(pia.correo, ac.email_anfitrion) as host_email,
                     COALESCE(pia.telefono, ac.tel_anfitrion) as host_phone,

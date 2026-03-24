@@ -1101,15 +1101,12 @@ const Dashboard = () => {
                         <h3 className="font-semibold text-sm mb-1">
                           {t("dashboard.cajetinInfo")}
                         </h3>
-                        {hasCajetinCode() ? (
-                          <div className="text-3xl font-bold text-primary tracking-wider text-center py-2">
-                            {getCajetinDisplayCode()}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground italic">
-                            Sin Código Asignado
-                          </p>
-                        )}
+                        <div
+                          className="text-sm text-muted-foreground [&_h2]:font-semibold [&_h3]:font-semibold [&_h4]:font-semibold [&_a]:text-primary [&_a]:underline [&_a]:hover:text-primary/80 [&_a]:break-all"
+                          dangerouslySetInnerHTML={{
+                            __html: reservationData.info_cajetin_app_huesped,
+                          }}
+                        />
                       </div>
                     </div>
                   </div>

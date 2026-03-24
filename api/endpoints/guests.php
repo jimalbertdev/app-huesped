@@ -169,6 +169,11 @@ try {
                 Response::error("Debe seleccionar un municipio español", 400);
             }
 
+            // Requiere código postal
+            if (empty($data['residence_postal_code']) || trim($data['residence_postal_code']) === '') {
+                Response::error("El código postal es obligatorio", 400);
+            }
+
             // Si tiene código de municipio, obtener datos completos desde BD
             if (!empty($data['residence_municipality_code'])) {
                 $database->getConnection();
@@ -237,8 +242,8 @@ try {
             Response::error("El número de documento no puede ser 0", 400);
         }
 
-        // VALIDACIÓN: support_number maxLength 9
-        if (!empty($data['support_number']) && strlen($data['support_number']) > 9) {
+        // VALIDACIÓN: support_number maxLength 9 (solo DNI/NIE)
+        if (in_array($data['document_type'], ['DNI', 'NIE']) && !empty($data['support_number']) && strlen($data['support_number']) > 9) {
             Response::error("El número de soporte no puede tener más de 9 caracteres", 400);
         }
 
@@ -268,9 +273,10 @@ try {
             // Verificar si ya hay un responsable registrado
             $hasResponsible = $viajeroModel->getResponsibleByReservation($data['reservation_id']);
             
-            // Si es el último huésped, no hay responsable existente, y no se está marcando como responsable → ERROR
+            // Si es el último huésped sin responsable, flag para notificar al super anfitrión
+            $lastGuestNoResponsible = false;
             if ($isLastGuest && !$hasResponsible && !$is_responsible) {
-                Response::error("Eres el último huésped en registrarte. Debes marcar que eres el responsable de la reserva para continuar.", 400);
+                $lastGuestNoResponsible = true;
             }
         }
 
@@ -397,6 +403,17 @@ try {
             );
         } catch (Exception $e) {
             error_log("Email notification error: " . $e->getMessage());
+        }
+
+        // Si el último huésped se registró sin ser responsable, notificar al super anfitrión
+        if ($lastGuestNoResponsible) {
+            try {
+                require_once __DIR__ . '/../services/EmailService.php';
+                $emailService = new EmailService($database);
+                $emailService->sendNoResponsibleWarning($reservation, $viajero);
+            } catch (Exception $e) {
+                error_log("No responsible warning email error: " . $e->getMessage());
+            }
         }
 
         // Si es responsable, enviar al CLIENTE con enlace a contrato PDF

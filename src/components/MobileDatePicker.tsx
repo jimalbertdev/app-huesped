@@ -24,6 +24,7 @@ interface MobileDatePickerProps {
     id?: string;
     className?: string;
     required?: boolean;
+    maxDate?: string; // YYYY-MM-DD - limita la fecha máxima seleccionable
 }
 
 const MobileDatePicker: React.FC<MobileDatePickerProps> = ({
@@ -33,7 +34,8 @@ const MobileDatePicker: React.FC<MobileDatePickerProps> = ({
     placeholder,
     id,
     className,
-    required
+    required,
+    maxDate
 }) => {
     const { t } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
@@ -66,12 +68,32 @@ const MobileDatePicker: React.FC<MobileDatePickerProps> = ({
     }, [value, months]);
 
     const currentYear = new Date().getFullYear();
-    const years = Array.from({ length: 101 }, (_, i) => (currentYear - 80 + i).toString());
+    const maxDateObj = maxDate ? new Date(maxDate + "T23:59:59") : null;
+    const maxYear = maxDateObj ? maxDateObj.getFullYear() : currentYear + 20;
+    const minYear = currentYear - 120;
+    const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => (minYear + i).toString());
 
     // Get days for selected month/year
     const monthIndex = months.indexOf(pickerValue.month);
-    const daysInMonth = getDaysInMonth(new Date(parseInt(pickerValue.year), monthIndex === -1 ? 0 : monthIndex));
-    const days = Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString());
+    const selectedYear = parseInt(pickerValue.year);
+
+    // Filter months based on maxDate
+    const availableMonths = useMemo(() => {
+        if (!maxDateObj || selectedYear < maxDateObj.getFullYear()) return months;
+        if (selectedYear > maxDateObj.getFullYear()) return months.slice(0, 0);
+        return months.slice(0, maxDateObj.getMonth() + 1);
+    }, [months, selectedYear, maxDateObj]);
+
+    // Filter days based on maxDate
+    const daysInMonth = getDaysInMonth(new Date(selectedYear, monthIndex === -1 ? 0 : monthIndex));
+    const availableDays = useMemo(() => {
+        const allDays = Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString());
+        if (!maxDateObj || selectedYear < maxDateObj.getFullYear()) return allDays;
+        if (selectedYear > maxDateObj.getFullYear()) return allDays.slice(0, 0);
+        if (monthIndex < maxDateObj.getMonth()) return allDays;
+        if (monthIndex === maxDateObj.getMonth()) return allDays.slice(0, maxDateObj.getDate());
+        return allDays.slice(0, 0);
+    }, [daysInMonth, selectedYear, monthIndex, maxDateObj]);
 
     const handleConfirm = () => {
         const monthIdx = months.indexOf(pickerValue.month);
@@ -85,6 +107,14 @@ const MobileDatePicker: React.FC<MobileDatePickerProps> = ({
         const validDay = Math.min(day, maxDays);
 
         const date = new Date(year, monthIdx, validDay, 12, 0, 0);
+
+        // Validar que no supere la fecha máxima
+        if (maxDateObj && date > maxDateObj) {
+            const formattedMax = format(maxDateObj, "dd/MM/yyyy");
+            alert(`La fecha no puede ser posterior a ${formattedMax}`);
+            return;
+        }
+
         const formattedDate = format(date, "yyyy-MM-dd");
         onChange(formattedDate);
         setIsOpen(false);
@@ -117,7 +147,7 @@ const MobileDatePicker: React.FC<MobileDatePickerProps> = ({
                     <div className="px-4 py-8" data-vaul-no-drag>
                         <Picker value={pickerValue} onChange={(newValue) => setPickerValue(newValue as typeof pickerValue)} wheelMode="natural">
                             <Picker.Column name="day">
-                                {days.map(day => (
+                                {availableDays.map(day => (
                                     <Picker.Item key={day} value={day}>
                                         {({ selected }) => (
                                             <div className={`text-xl ${selected ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
@@ -128,7 +158,7 @@ const MobileDatePicker: React.FC<MobileDatePickerProps> = ({
                                 ))}
                             </Picker.Column>
                             <Picker.Column name="month">
-                                {months.map(month => (
+                                {availableMonths.map(month => (
                                     <Picker.Item key={month} value={month}>
                                         {({ selected }) => (
                                             <div className={`text-xl ${selected ? 'text-primary font-bold' : 'text-muted-foreground'}`}>

@@ -100,6 +100,18 @@ export const extendedGuestSchema = baseGuestSchema
     path: ["residence_municipality_name"]
   })
 
+  // VALIDACIÓN 4b: España requiere código postal
+  .refine((data) => {
+    const country = data.residence_country.toUpperCase();
+    if (['ES', 'ESP'].includes(country)) {
+      return !!data.residence_postal_code && data.residence_postal_code.trim().length > 0;
+    }
+    return true;
+  }, {
+    message: "El código postal es obligatorio",
+    path: ["residence_postal_code"]
+  })
+
   // VALIDACIÓN 5: Fecha vencimiento > fecha expedición
   .refine((data) => {
     if (data.issue_date && data.expiry_date) {
