@@ -683,6 +683,17 @@ const Register = () => {
       return;
     }
 
+    // Validaciones de fecha de expedición y vencimiento
+    if (!issueDate) {
+      focusField("issueDate", "Debes ingresar la fecha de expedición");
+      return;
+    }
+
+    if (!expiryDate) {
+      focusField("expiryDate", "Debes ingresar la fecha de vencimiento");
+      return;
+    }
+
     // Validaciones de datos personales
     if (!nationality) {
       focusField("nationality", "Debes seleccionar la nacionalidad");
@@ -1217,23 +1228,25 @@ const Register = () => {
                         </div>
                       )}
                       <div className="space-y-2">
-                        <Label htmlFor="issueDate">{t('register.issueDate')}</Label>
+                        <Label htmlFor="issueDate">{t('register.issueDate')} <span className="text-destructive">*</span></Label>
                         <MobileDatePicker
                           id="issueDate"
                           value={issueDate}
                           onChange={setIssueDate}
                           label={t('register.issueDate')}
                           placeholder="DD/MM/YYYY"
+                          required
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="expiryDate">{t('register.expiryDate')}</Label>
+                        <Label htmlFor="expiryDate">{t('register.expiryDate')} <span className="text-destructive">*</span></Label>
                         <MobileDatePicker
                           id="expiryDate"
                           value={expiryDate}
                           onChange={setExpiryDate}
                           label={t('register.expiryDate')}
                           placeholder="DD/MM/YYYY"
+                          required
                         />
                       </div>
                     </div>

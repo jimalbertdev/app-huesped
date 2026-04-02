@@ -18,7 +18,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 segundos
+  timeout: 300000, // 60 segundos
 });
 
 // Interceptor para manejar errores globalmente
@@ -299,7 +299,7 @@ export const documentScanService = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-      timeout: 30000, // 30 segundos (escaneo puede tardar más)
+      timeout: 60000, // 30 segundos (escaneo puede tardar más)
     });
   },
 };

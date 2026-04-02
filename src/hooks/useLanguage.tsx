@@ -82,6 +82,8 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.noRaixerTitle": "¡Estamos para ayudarte!",
     "dashboard.noRaixerMessage":
       "Por favor, contacta con tu anfitrión para obtener los códigos de acceso",
+    "dashboard.noRaixerMessageBefore": "¡Tu estancia está cada vez más cerca! Tus códigos de acceso se activarán automáticamente el día de tu reserva una vez que todos los huéspedes estéis registrados. ¡Estamos deseando recibirte!",
+    "dashboard.noRaixerMessageActivePending": "¡Ya ha llegado el gran día! Solo falta que todos los huéspedes completen su registro para revelar tus códigos de acceso y que podáis disfrutar de vuestra estancia.",
     "dashboard.accessCodesTitle": "Códigos del Cajetín",
     "dashboard.accessCodesMessage":
       "Usa estos códigos para abrir el cajetín y retirar las llaves del alojamiento",
@@ -94,6 +96,7 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.accessFinishedOn": "El acceso a las puertas finalizó el",
     "dashboard.spainTime": "hora de España",
     "dashboard.loadingAccessInfo": "Cargando información de acceso...",
+    "dashboard.codeRevealedOnCheckin": "El código será revelado el día de su reserva",
 
     // Dashboard - Preferences
     "dashboard.arrival": "Llegada",
@@ -564,6 +567,8 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.noRaixerTitle": "We're here to help!",
     "dashboard.noRaixerMessage":
       "Please contact your host to obtain access codes and key box locations",
+    "dashboard.noRaixerMessageBefore": "Your stay is getting closer! Your access codes will be automatically activated on the day of your reservation once all guests are registered. We look forward to welcoming you!",
+    "dashboard.noRaixerMessageActivePending": "The big day is here! All that's left is for all guests to complete their registration to reveal your access codes so you can enjoy your stay.",
     "dashboard.accessCodesTitle": "Key Box Codes",
     "dashboard.accessCodesMessage":
       "Use these codes to open the key box and retrieve the accommodation keys",
@@ -575,6 +580,7 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.accessFinishedOn": "Door access ended on",
     "dashboard.spainTime": "Spain time",
     "dashboard.loadingAccessInfo": "Loading access information...",
+    "dashboard.codeRevealedOnCheckin": "The code will be revealed on the day of your reservation",
 
     // Dashboard - Preferences
     "dashboard.arrival": "Arrival",
@@ -1048,6 +1054,8 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.noRaixerTitle": "Estem per ajudar-te!",
     "dashboard.noRaixerMessage":
       "Si us plau, contacta amb el teu amfitrió per obtenir els codis d'accés i la ubicació dels cajetins",
+    "dashboard.noRaixerMessageBefore": "La teva estada és cada cop més a prop! Els teus codis d'accés s'activaran automàticament el dia de la teva reserva un cop tots els hostes estigueu registrats. Tenim moltes ganes de rebre't!",
+    "dashboard.noRaixerMessageActivePending": "Ja ha arribat el gran dia! Només falta que tots els hostes completin el seu registre per revelar els teus codis d'accés i que pugueu gaudir de la vostra estada.",
     "dashboard.accessCodesTitle": "Codis del Cajetí",
     "dashboard.accessCodesMessage":
       "Utilitza aquests codis per obrir el cajetí i retirar les claus de l'allotjament",
@@ -1060,6 +1068,7 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.accessFinishedOn": "L'accés a les portes va finalitzar el",
     "dashboard.spainTime": "hora d'Espanya",
     "dashboard.loadingAccessInfo": "Carregant informació d'accés...",
+    "dashboard.codeRevealedOnCheckin": "El codi serà revelat el dia de la seva reserva",
 
     // Dashboard - Preferences
     "dashboard.arrival": "Arribada",
@@ -1522,6 +1531,8 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.noRaixerTitle": "Nous sommes là pour vous aider!",
     "dashboard.noRaixerMessage":
       "Veuillez contacter votre hôte pour obtenir les codes d'accès et l'emplacement des boîtes à clés",
+    "dashboard.noRaixerMessageBefore": "Votre séjour approche à grands pas ! Vos codes d'accès seront automatiquement activés le jour de votre réservation une fois que tous les invités seront inscrits. Nous avons hâte de vous accueillir !",
+    "dashboard.noRaixerMessageActivePending": "Le grand jour est arrivé ! Il ne reste plus qu'à tous les invités de compléter leur inscription pour révéler vos codes d'accès afin que vous puissiez profiter de votre séjour.",
     "dashboard.accessCodesTitle": "Codes de la Boîte à Clés",
     "dashboard.accessCodesMessage":
       "Utilisez ces codes pour ouvrir la boîte à clés et récupérer les clés du logement",
@@ -1534,6 +1545,7 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.accessFinishedOn": "L'accès aux portes s'est terminé le",
     "dashboard.spainTime": "heure d'Espagne",
     "dashboard.loadingAccessInfo": "Chargement des informations d'accès...",
+    "dashboard.codeRevealedOnCheckin": "Le code sera révélé le jour de votre réservation",
 
     // Dashboard - Preferences
     "dashboard.arrival": "Arrivée",
@@ -2001,6 +2013,8 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.noRaixerTitle": "Wir sind hier, um zu helfen!",
     "dashboard.noRaixerMessage":
       "Bitte kontaktieren Sie Ihren Gastgeber, um Zugangscodes und Schlüsselkastenstandorte zu erhalten",
+    "dashboard.noRaixerMessageBefore": "Ihr Aufenthalt rückt immer näher! Ihre Zugangscodes werden am Tag Ihrer Reservierung automatisch aktiviert, sobald alle Gäste registriert sind. Wir freuen uns darauf, Sie begrüßen zu dürfen!",
+    "dashboard.noRaixerMessageActivePending": "Der große Tag ist da! Es fehlt nur noch, dass alle Gäste ihre Registrierung abschließen, um Ihre Zugangscodes freizuschalten, damit Sie Ihren Aufenthalt genießen können.",
     "dashboard.accessCodesTitle": "Schlüsselkasten-Codes",
     "dashboard.accessCodesMessage":
       "Verwenden Sie diese Codes, um den Schlüsselkasten zu öffnen und die Unterkunftsschlüssel zu entnehmen",
@@ -2012,6 +2026,7 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.accessFinishedOn": "Der Türzugang endete am",
     "dashboard.spainTime": "Spanische Zeit",
     "dashboard.loadingAccessInfo": "Zugriffsinformationen werden geladen...",
+    "dashboard.codeRevealedOnCheckin": "Der Code wird am Tag Ihrer Reservierung bekannt gegeben",
 
     // Dashboard - Preferences
     "dashboard.arrival": "Ankunft",
@@ -2255,6 +2270,9 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.seeAll": "Alles zien",
     "dashboard.information": "Informatie",
     "dashboard.access": "Toegang",
+    "dashboard.codeRevealedOnCheckin": "De code wordt onthuld op de dag van uw reservering",
+    "dashboard.noRaixerMessageBefore": "Uw verblijf komt steeds dichterbij! Uw toegangscodes worden automatisch geactiveerd op de dag van uw reservering zodra alle gasten zijn geregistreerd. We kijken ernaar uit u te verwelkomen!",
+    "dashboard.noRaixerMessageActivePending": "De grote dag is aangebroken! Het enige wat nog moet gebeuren is dat alle gasten hun registratie voltooien om uw toegangscodes te onthullen, zodat u van uw verblijf kunt genieten.",
 
     // Register - Document Section
     "register.identityDocument": "Identiteitsdocument",

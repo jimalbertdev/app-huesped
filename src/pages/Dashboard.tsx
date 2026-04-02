@@ -303,12 +303,15 @@ const Dashboard = () => {
       return;
     }
 
-    const cajetinCode = doorInfo?.access_codes?.length > 0
-      ? String(doorInfo.access_codes[0].codigo)
-      : "Sin Código Establecido";
+    const isAccessAvailable = isReservationActive && allGuestsRegistered;
+    const cajetinCode = isAccessAvailable
+      ? doorInfo?.access_codes?.length > 0
+        ? String(doorInfo.access_codes[0].codigo)
+        : ""
+      : t("dashboard.codeRevealedOnCheckin");
 
     const processed = accommodationInfo.map((item: any) => {
-      if (item.description && item.description.includes('{codigo}')) {
+      if (item.description && item.description.includes("{codigo}")) {
         return {
           ...item,
           description: item.description.replace(/{codigo}/g, cajetinCode),
@@ -317,7 +320,13 @@ const Dashboard = () => {
       return item;
     });
     setProcessedAccommodationInfo(processed);
-  }, [accommodationInfo, doorInfo?.access_codes]);
+  }, [
+    accommodationInfo,
+    doorInfo?.access_codes,
+    isReservationActive,
+    allGuestsRegistered,
+    t,
+  ]);
 
   // Cargar preferencias cuando se carga la reserva
   useEffect(() => {
@@ -924,9 +933,63 @@ const Dashboard = () => {
                 </div>
               </div>
               <div className="space-y-3">
-                {/* Mostrar códigos de acceso o mensaje si no hay cerraduras Raixer configuradas */}
-                {doorInfoLoaded && doorInfo?.has_locks === false ? (
+                {/* Información de acceso condicionada horaria y registro */}
+                {!doorInfoLoaded ? (
+                  <div className="text-center text-muted-foreground text-sm py-4">
+                    {t("dashboard.loadingAccessInfo")}
+                  </div>
+                ) : !isReservationActive || !allGuestsRegistered ? (
+                  <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <MessageSquare className="w-8 h-8 text-green-600 dark:text-green-400" />
+                      <div>
+                        <h5 className="font-semibold text-green-900 dark:text-green-100 mb-1">
+                          {t("dashboard.noRaixerTitle")}
+                        </h5>
+                        <p className="text-sm text-green-800 dark:text-green-200">
+                          {reservationTimeStatus === "active"
+                            ? t("dashboard.noRaixerMessageActivePending")
+                            : t("dashboard.noRaixerMessageBefore")}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : doorInfo?.has_locks === true ? (
                   <>
+                    {/* Botones de apertura Raixer */}
+                    <div
+                      className={`grid ${doorInfo?.portal && doorInfo?.casa ? "grid-cols-2" : "grid-cols-1"} gap-2`}
+                    >
+                      {doorInfo?.portal && (
+                        <Button
+                          className="gap-2 bg-gradient-primary hover:opacity-90"
+                          disabled={
+                            !allGuestsRegistered || !isReservationActive
+                          }
+                          onClick={() => handleOpenDoorClick("portal")}
+                        >
+                          <Unlock className="w-4 h-4" />
+                          {t("dashboard.openPortal")}
+                        </Button>
+                      )}
+                      {doorInfo?.casa && (
+                        <Button
+                          variant="secondary"
+                          className="gap-2"
+                          disabled={
+                            !allGuestsRegistered || !isReservationActive
+                          }
+                          onClick={() => handleOpenDoorClick("accommodation")}
+                        >
+                          <Unlock className="w-4 h-4" />
+                          {t("dashboard.openAccommodation")}
+                        </Button>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Mostrar códigos de acceso o mensaje si no hay cerraduras Raixer configuradas */}
                     {doorInfo?.access_codes &&
                     doorInfo.access_codes.length > 0 ? (
                       <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
@@ -991,44 +1054,8 @@ const Dashboard = () => {
                       </div>
                     )}
                   </>
-                ) : doorInfoLoaded && doorInfo?.has_locks === true ? (
-                  <>
-                    {/* Botones de apertura Raixer */}
-                    <div
-                      className={`grid ${doorInfo?.portal && doorInfo?.casa ? "grid-cols-2" : "grid-cols-1"} gap-2`}
-                    >
-                      {doorInfo?.portal && (
-                        <Button
-                          className="gap-2 bg-gradient-primary hover:opacity-90"
-                          disabled={
-                            !allGuestsRegistered || !isReservationActive
-                          }
-                          onClick={() => handleOpenDoorClick("portal")}
-                        >
-                          <Unlock className="w-4 h-4" />
-                          {t("dashboard.openPortal")}
-                        </Button>
-                      )}
-                      {doorInfo?.casa && (
-                        <Button
-                          variant="secondary"
-                          className="gap-2"
-                          disabled={
-                            !allGuestsRegistered || !isReservationActive
-                          }
-                          onClick={() => handleOpenDoorClick("accommodation")}
-                        >
-                          <Unlock className="w-4 h-4" />
-                          {t("dashboard.openAccommodation")}
-                        </Button>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center text-muted-foreground text-sm py-4">
-                    {t("dashboard.loadingAccessInfo")}
-                  </div>
                 )}
+
 
                 {/* Ver Historial de Aperturas */}
                 {doorInfoLoaded && doorInfo?.has_locks === true && (
@@ -1091,7 +1118,7 @@ const Dashboard = () => {
                 )}
 
                 {/* Información Cajetín */}
-                {reservationData?.info_cajetin_app_huesped && (
+                {reservationData?.info_cajetin_app_huesped && isReservationActive && allGuestsRegistered && (
                   <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -1725,7 +1752,7 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Cargando videos...
+                  No hay videos disponibles por el momento
                 </p>
               )}
             </div>
@@ -1769,7 +1796,7 @@ const Dashboard = () => {
                                 navigator.clipboard.writeText(
                                   reservationData.wifi_ssid || "",
                                 );
-                                toast({ description: "Nombre de red copiado" });
+                                toast({ description: t("dashboard.copied") || "Nombre de red copiado" });
                               }}
                             >
                               <Copy className="w-3 h-3 text-muted-foreground" />
@@ -1795,7 +1822,7 @@ const Dashboard = () => {
                                 navigator.clipboard.writeText(
                                   reservationData.wifi_password || "",
                                 );
-                                toast({ description: "Contraseña copiada" });
+                                toast({ description: t("dashboard.copied") || "Contraseña copiada" });
                               }}
                             >
                               <Copy className="w-3 h-3 text-muted-foreground" />
