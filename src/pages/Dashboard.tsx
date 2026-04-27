@@ -211,6 +211,27 @@ const Dashboard = () => {
       return "unknown";
     }
   }, [isReservationActive, checkInDate, checkInTime]);
+
+  // Validar si la reserva sigue en el mismo día del checkout para los códigos
+  const isCheckoutDayActive = useMemo(() => {
+    if (isReservationActive) return true;
+    if (!rawCheckInDate || !rawCheckOutDate || rawCheckOutDate === "?") return false;
+
+    try {
+      const nowInSpain = new Date().toLocaleString("en-US", {
+        timeZone: "Europe/Madrid",
+      });
+      const currentDateTime = new Date(nowInSpain);
+      
+      const checkInDateTime = new Date(`${rawCheckInDate}T${checkInTime || "15:00:00"}`);
+      const checkoutEndOfDay = new Date(`${rawCheckOutDate}T23:59:59`);
+      
+      return currentDateTime >= checkInDateTime && currentDateTime <= checkoutEndOfDay;
+    } catch (error) {
+      return false;
+    }
+  }, [isReservationActive, rawCheckInDate, rawCheckOutDate]);
+
   const [showIncidentDialog, setShowIncidentDialog] = useState(false);
   const [incidentType, setIncidentType] = useState<"complaint" | "suggestion">(
     "complaint",
@@ -938,7 +959,7 @@ const Dashboard = () => {
                   <div className="text-center text-muted-foreground text-sm py-4">
                     {t("dashboard.loadingAccessInfo")}
                   </div>
-                ) : !isReservationActive || !allGuestsRegistered ? (
+                ) : !allGuestsRegistered ? (
                   <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <MessageSquare className="w-8 h-8 text-green-600 dark:text-green-400" />
@@ -955,42 +976,71 @@ const Dashboard = () => {
                     </div>
                   </div>
                 ) : doorInfo?.has_locks === true ? (
-                  <>
-                    {/* Botones de apertura Raixer */}
-                    <div
-                      className={`grid ${doorInfo?.portal && doorInfo?.casa ? "grid-cols-2" : "grid-cols-1"} gap-2`}
-                    >
-                      {doorInfo?.portal && (
-                        <Button
-                          className="gap-2 bg-gradient-primary hover:opacity-90"
-                          disabled={
-                            !allGuestsRegistered || !isReservationActive
-                          }
-                          onClick={() => handleOpenDoorClick("portal")}
-                        >
-                          <Unlock className="w-4 h-4" />
-                          {t("dashboard.openPortal")}
-                        </Button>
-                      )}
-                      {doorInfo?.casa && (
-                        <Button
-                          variant="secondary"
-                          className="gap-2"
-                          disabled={
-                            !allGuestsRegistered || !isReservationActive
-                          }
-                          onClick={() => handleOpenDoorClick("accommodation")}
-                        >
-                          <Unlock className="w-4 h-4" />
-                          {t("dashboard.openAccommodation")}
-                        </Button>
-                      )}
+                  !isReservationActive ? (
+                    <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <MessageSquare className="w-8 h-8 text-green-600 dark:text-green-400" />
+                        <div>
+                          <h5 className="font-semibold text-green-900 dark:text-green-100 mb-1">
+                            {t("dashboard.noRaixerTitle")}
+                          </h5>
+                          <p className="text-sm text-green-800 dark:text-green-200">
+                            {t("dashboard.noRaixerMessageBefore")}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </>
+                  ) : (
+                    <>
+                      {/* Botones de apertura Raixer */}
+                      <div
+                        className={`grid ${doorInfo?.portal && doorInfo?.casa ? "grid-cols-2" : "grid-cols-1"} gap-2`}
+                      >
+                        {doorInfo?.portal && (
+                          <Button
+                            className="gap-2 bg-gradient-primary hover:opacity-90"
+                            disabled={
+                              !allGuestsRegistered || !isReservationActive
+                            }
+                            onClick={() => handleOpenDoorClick("portal")}
+                          >
+                            <Unlock className="w-4 h-4" />
+                            {t("dashboard.openPortal")}
+                          </Button>
+                        )}
+                        {doorInfo?.casa && (
+                          <Button
+                            variant="secondary"
+                            className="gap-2"
+                            disabled={
+                              !allGuestsRegistered || !isReservationActive
+                            }
+                            onClick={() => handleOpenDoorClick("accommodation")}
+                          >
+                            <Unlock className="w-4 h-4" />
+                            {t("dashboard.openAccommodation")}
+                          </Button>
+                        )}
+                      </div>
+                    </>
+                  )
                 ) : (
                   <>
-                    {/* Mostrar códigos de acceso o mensaje si no hay cerraduras Raixer configuradas */}
-                    {doorInfo?.access_codes &&
+                    {!isCheckoutDayActive ? (
+                      <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
+                        <div className="flex flex-col items-center gap-3">
+                          <MessageSquare className="w-8 h-8 text-green-600 dark:text-green-400" />
+                          <div>
+                            <h5 className="font-semibold text-green-900 dark:text-green-100 mb-1">
+                              {t("dashboard.noRaixerTitle")}
+                            </h5>
+                            <p className="text-sm text-green-800 dark:text-green-200">
+                              {t("dashboard.noRaixerMessageBefore")}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : doorInfo?.access_codes &&
                     doorInfo.access_codes.length > 0 ? (
                       <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                         <div className="flex flex-col items-center gap-3">

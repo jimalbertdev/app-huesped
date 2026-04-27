@@ -416,6 +416,9 @@ try {
             }
         }
 
+        // DESACTIVADO: Por ahora el huésped no debe recibir ninguna notificación por email.
+        // Reactivar este bloque cuando se quiera enviar el contrato al cliente.
+        /*
         // Si es responsable, enviar al CLIENTE con enlace a contrato PDF
         if ($is_responsible && !empty($reservation['contract_path'])) {
             $clienteModel = new Cliente($database);
@@ -435,6 +438,7 @@ try {
                 }
             }
         }
+        */
 
         Response::success($viajero, "Huésped registrado exitosamente", 201);
     }
